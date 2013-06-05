@@ -1,0 +1,6 @@
+
+rel-20130605
+============
+* ru-translit-de scim-table replaced by ru-phonde M17N mdbIM
+* hcdplay: new utility for control of analog CDROM playback
+* cp437AB font: Czech and Polish support/maps
