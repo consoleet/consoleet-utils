@@ -1,4 +1,9 @@
 
+rel-20131222
+============
+* bin2c: new utility which replaces png2wx.pl and png2wx.py
+* peicon: new utility to extract icons from PE executables
+
 rel-20130605
 ============
 * ru-translit-de scim-table replaced by ru-phonde M17N mdbIM
