@@ -1,4 +1,8 @@
 
+HEAD
+====
+* clt2pbm: new utility to convert from CLT to PBM
+
 rel-20131222
 ============
 * bin2c: new utility which replaces png2wx.pl and png2wx.py
