@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -191,6 +192,28 @@ static int p_process_glyph_file(struct bdf_handle *bdf, const char *glyph_file)
 	fprintf(fp, "BITMAP\n");
 
 	while (HX_getl(&line, glyph_handle) != NULL) {
+		const char *x = line;
+		unsigned int bit = 0, pixel = 0;
+
+		HX_chomp(line);
+		for (x = line; x[0] != '\0' && x[1] != '\0'; x += 2) {
+			if ((x[0] == '.' || HX_isspace(x[0])) &&
+			    (x[1] == '.' || HX_isspace(x[1])))
+				/* whitespace */;
+			else
+				pixel |= 1 << (7 - bit);
+			if (bit++ != 8)
+				continue;
+			fprintf(fp, "%02x", pixel);
+			pixel = 0;
+			bit = 0;
+		}
+		if (bit > 0) {
+			fprintf(fp, "%02x", pixel);
+			pixel = 0;
+			bit = 0;
+		}
+		fprintf(fp, "\n");
 	}
 
 	fprintf(fp, "ENDCHAR\n");
@@ -251,7 +274,7 @@ static bool p_get_options(int *argc, const char ***argv)
 {
 	static const struct HXoption options_table[] = {
 		{.sh = 'o', .type = HXTYPE_STRING, .ptr = &p_output_file,
-		 .help = "Emit PSF data to this file", .htyp = "NAME"},
+		 .help = "Emit BDF data to this file", .htyp = "NAME"},
 		HXOPT_AUTOHELP,
 		HXOPT_TABLEEND,
 	};
