@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
+#include <libHX/map.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 
@@ -163,7 +164,7 @@ static int p_process_glyph_file(struct bdf_handle *bdf, const char *glyph_file)
 	glyph_handle = fopen(glyph_file, "r");
 	if (glyph_handle == NULL) {
 		ret = -errno;
-		fprintf(stderr, "%s\n", strerror(errno));
+		fprintf(stderr, "%s: %s\n", glyph_file, strerror(errno));
 		return ret;
 	}
 	glyph_file = HX_basename(glyph_file);
@@ -222,17 +223,30 @@ static int p_process_glyph_file(struct bdf_handle *bdf, const char *glyph_file)
 	return 1;
 }
 
+static int
+p_process_filemap(struct bdf_handle *bdf, const struct HXmap *filemap)
+{
+	struct HXmap_trav *trav = HXmap_travinit(filemap, HXMAP_NOFLAGS);
+	const struct HXmap_node *node;
+	int ret = EXIT_SUCCESS;
+
+	while ((node = HXmap_traverse(trav)) != NULL)
+		ret = p_process_glyph_file(bdf, node->data);
+
+	HXmap_travfree(trav);
+	return ret;
+}
+
 /**
  * @dir_handle:	directory handle for currently-inspected directory
- * @bdf:	filehandle to the BDF file being generated
  */
-static int p_process_dirhandle(struct bdf_handle *bdf,
+static int p_collect_files_dh(struct HXmap *filemap,
     const char *dir_path, struct HXdir *dir_handle)
 {
-	int ret = EXIT_SUCCESS;
 	struct stat sb;
 	const char *de;
 	hxmc_t *filepath = NULL;
+	int ret;
 
 	while ((de = HXdir_read(dir_handle)) != NULL) {
 		if (HXmc_strcpy(&filepath, dir_path) == NULL ||
@@ -241,21 +255,17 @@ static int p_process_dirhandle(struct bdf_handle *bdf,
 			abort();
 		if (stat(filepath, &sb) < 0 || !S_ISREG(sb.st_mode))
 			continue;
-		fprintf(stderr, "Reading %s...", filepath);
-		ret = p_process_glyph_file(bdf, filepath);
-		if (ret == 0) {
-			fprintf(stderr, "skipped\n");
-		} else if (ret < 0) {
-			fprintf(stderr, "error\n");
-			break;
+		ret = HXmap_add(filemap, de, filepath);
+		if (ret < 0) {
+			fprintf(stderr, "%s\n", strerror(-ret));
+			return EXIT_FAILURE;
 		}
-		fprintf(stderr, "\n");
 	}
 	HXmc_free(filepath);
-	return (ret < 0) ? EXIT_FAILURE : EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 
-static int p_process_directory(struct bdf_handle *bdf, const char *dir_name)
+static int p_collect_files(struct HXmap *map, const char *dir_name)
 {
 	struct HXdir *dir_handle = HXdir_open(dir_name);
 	int ret;
@@ -265,7 +275,7 @@ static int p_process_directory(struct bdf_handle *bdf, const char *dir_name)
 		        dir_name, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	ret = p_process_dirhandle(bdf, dir_name, dir_handle);
+	ret = p_collect_files_dh(map, dir_name, dir_handle);
 	HXdir_close(dir_handle);
 	return ret;
 }
@@ -293,19 +303,30 @@ static bool p_get_options(int *argc, const char ***argv)
 int main(int argc, const char **argv)
 {
 	int ret = EXIT_SUCCESS;
-	struct bdf_handle *bdf;
+	struct bdf_handle *bdf = NULL;
+	struct HXmap *filemap;
 
 	if (!p_get_options(&argc, &argv))
 		return EXIT_FAILURE;
 
+	/*
+	 * gbdfed likes to have all characters ordered by their Unicode point,
+	 * so sort-filter it through a sorted map.
+	 */
+	filemap = HXmap_init(HXMAPT_ORDERED, HXMAP_SCKEY | HXMAP_SCDATA);
+	while (*++argv != NULL) {
+		ret = p_collect_files(filemap, *argv);
+		if (ret != EXIT_SUCCESS)
+			goto out;
+	}
+
 	bdf = bdf_open(p_output_file);
 	if (bdf == NULL)
-		return EXIT_FAILURE;
-	while (*++argv != NULL) {
-		ret = p_process_directory(bdf, *argv);
-		if (ret < 0)
-			break;
-	}
-	bdf_close(bdf);
+		goto out;
+	ret = p_process_filemap(bdf, filemap);
+ out:
+	HXmap_free(filemap);
+	if (bdf != NULL)
+		bdf_close(bdf);
 	return ret;
 }
