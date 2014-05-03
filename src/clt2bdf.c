@@ -48,6 +48,7 @@ struct bdf_handle {
 };
 
 static char *p_output_file;
+static unsigned int p_descent, p_xheight = UINT_MAX;
 
 /**
  * @bdf:	in-memory BDF header structure
@@ -108,10 +109,10 @@ static struct bdf_handle *bdf_open(const char *file)
 		errno = ret;
 		return NULL;
 	}
-	bdf->bbox.width = bdf->bbox.height = UINT_MAX;
-	bdf->descent = UINT_MAX;
+	bdf->bbox.width = bdf->bbox.height = 0;
+	bdf->descent = p_descent;
 	bdf->ascent = UINT_MAX;
-	bdf->xheight = UINT_MAX;
+	bdf->xheight = p_xheight;
 	bdf->capheight = UINT_MAX;
 	bdf->num_glyphs = UINT_MAX;
 	bdf_emit(bdf);
@@ -128,6 +129,8 @@ static void bdf_close(struct bdf_handle *bdf)
 		bdf->ascent = bdf->bbox.height - bdf->descent;
 	if (bdf->capheight == UINT_MAX)
 		bdf->capheight = bdf->ascent;
+	if (bdf->xheight == UINT_MAX)
+		bdf->xheight = bdf->ascent / 2;
 	of = fseek(bdf->handle, 0, SEEK_SET);
 	if (of < 0) {
 		perror("fseek");
@@ -185,6 +188,11 @@ static int p_process_glyph_file(struct bdf_handle *bdf, const char *glyph_file)
 	}
 
 	++bdf->num_glyphs;
+	if (glyph_width > bdf->bbox.width)
+		bdf->bbox.width = glyph_width;
+	if (glyph_height > bdf->bbox.height)
+		bdf->bbox.height = glyph_height;
+
 	fprintf(fp, "STARTCHAR U+%04x\n", glyph_number);
 	fprintf(fp, "ENCODING %d\n", glyph_number);
 	fprintf(fp, "SWIDTH %u 0\n", glyph_width * 1000);
@@ -283,8 +291,12 @@ static int p_collect_files(struct HXmap *map, const char *dir_name)
 static bool p_get_options(int *argc, const char ***argv)
 {
 	static const struct HXoption options_table[] = {
+		{.sh = 'd', .type = HXTYPE_UINT, .ptr = &p_descent,
+		 .help = "Set the font's descent"},
 		{.sh = 'o', .type = HXTYPE_STRING, .ptr = &p_output_file,
 		 .help = "Emit BDF data to this file", .htyp = "NAME"},
+		{.sh = 'x', .type = HXTYPE_UINT, .ptr = &p_xheight,
+		 .help = "Set the font's x-height"},
 		HXOPT_AUTOHELP,
 		HXOPT_TABLEEND,
 	};
