@@ -1,4 +1,4 @@
-.TH clt2pbm 1 "2014-06-01" "hxtools" "hxtools"
+.TH clt2pbm 1 "2014-01-06" "hxtools" "hxtools"
 .SH Name
 .PP
 clt2pbm \(em convert Consoleet text bitmaps to PBM Portable Bitmap
@@ -31,7 +31,7 @@ Scale by the given positive integral factor in the vertical direction.
 The Consoleet text bitmap format is very similar to PBM itself. Instead of "P1"
 as in PBM, a CLT file begins with "PCLT" on the first line. In the second line,
 width and height of the bitmap in pixels is given. What follow is the bitmap
-data: Each "off" pixel is represented by the 2-character string ".." or " "
+data: Each "off" pixel is represented by the 2-character string ".." or "  "
 (any space character considered by \fBisspace\fP(3)). Each "on" pixel is
 represented by any other 2-character string \(em for contrast, a "large"
 character is usually chosen, such as '#'. Each row of pixels is terminated by a
