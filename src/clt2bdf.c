@@ -18,6 +18,7 @@
 #include <libHX/io.h>
 #include <libHX/map.h>
 #include <libHX/option.h>
+#include <libHX/proc.h>
 #include <libHX/string.h>
 
 enum {
@@ -58,6 +59,7 @@ struct bdf_handle {
 static char *p_output_file;
 static unsigned int p_descent, p_xheight = UINT_MAX;
 static unsigned int p_output_filetype;
+static int p_optimize = -1;
 
 static struct bdf_handle *generic_open(const char *file)
 {
@@ -415,6 +417,38 @@ static int p_collect_files(struct HXmap *map, const char *dir_name)
 	return ret;
 }
 
+static int p_run_optimizer(const char *file)
+{
+	const char *q, *args[] = {"fontforge", "-lang=ff", "-c", NULL, NULL};
+	hxmc_t *script = HXmc_strinit("");
+	int ret = EXIT_FAILURE;
+	char *fm = NULL;
+
+	if (script == NULL)
+		return EXIT_FAILURE;
+	if (HXmc_strcat(&script, "Open(\"") == NULL)
+		goto out;
+	q = HX_strquote(file, HXQUOTE_DQUOTE, &fm);
+	if (q == NULL)
+		goto out;
+	if (HXmc_strcat(&script, q) == NULL)
+		goto out;
+	if (HXmc_strcat(&script, "\"); SelectAll(); RemoveOverlap(); "
+	   "Simplify(); Save(\"") == NULL)
+		goto out;
+	if (HXmc_strcat(&script, q) == NULL)
+		goto out;
+	if (HXmc_strcat(&script, "\");") == NULL)
+		goto out;
+	args[3] = script;
+	fprintf(stderr, "Running optimizer (FontForge)... %s\n", args[3]);
+	ret = HXproc_run_sync(args, 0);
+ out:
+	free(fm);
+	HXmc_free(script);
+	return ret;
+}
+
 static bool p_get_options(int *argc, const char ***argv)
 {
 	static const struct HXoption options_table[] = {
@@ -422,6 +456,8 @@ static bool p_get_options(int *argc, const char ***argv)
 		 .val = FT_BDF, .help = "Generate BDF output (for gbdfed, bdftopcf)"},
 		{.ln = "sfd", .type = HXTYPE_VAL, .ptr = &p_output_filetype,
 		 .val = FT_SFD, .help = "Generate SFD output (for Fontforge)"},
+		{.sh = 'O', .type = HXTYPE_NONE | HXOPT_INC, .ptr = &p_optimize,
+		 .help = "Optimize: Postprocess generated file using FontForge"},
 		{.sh = 'd', .type = HXTYPE_UINT, .ptr = &p_descent,
 		 .help = "Set the font's descent"},
 		{.sh = 'o', .type = HXTYPE_STRING, .ptr = &p_output_file,
@@ -475,5 +511,7 @@ int main(int argc, const char **argv)
 	HXmap_free(filemap);
 	if (bdf != NULL)
 		bdf->close(bdf);
+	if (ret == EXIT_SUCCESS && p_output_filetype == FT_SFD)
+		ret = p_run_optimizer(p_output_file);
 	return ret;
 }
