@@ -1,11 +1,21 @@
 .TH clt2bdf 1 "2014-01-09" "hxtools" "hxtools"
 .SH Name
 .PP
-clt2bdf \(em convert Consoleet text bitmaps to Glyph Bitmap Distribution Format
+clt2bdf \(em convert Consoleet text bitmaps to Glyph Bitmap Distribution
+or Spline Font Database format
 .SH Syntax
-\fBclt2bdf\fP \fB\-o\fP \fIoutput.bdf\fP \fIdirectory\fP...
+\fBclt2bdf\fP [\fB\-\-bdf\fP|\fB\-\-sfd\fP] \fB\-o\fP \fIoutput.bdf\fP
+\fIdirectory\fP...
 .SH Description
+.PP
 clt2bdf scans one or more directories recursively for Consoleet text bitmap
-files, collects and converts these into a single BDF file. The names of the
-bitmap files have to match the Unicode point the glyph is representing.
-
+files, collects and converts these into a single BDF or SFD file. The names of
+the bitmap files have to match the Unicode point the glyph is representing.
+The default output format is SFD.
+.PP
+In case of SFD generation, each pixel is transformed into a polygon. This means
+the file will be bloated, and you are encouraged to run the FontForge editing
+tools to combine polygons, either via UI or the command line,
+.PP
+fontforge -lang=ff 'Open("foo.sfd"); SelectAll(); RemoveOverlap(); Simplify(-1,
+1; Save("foo.sfd");'
