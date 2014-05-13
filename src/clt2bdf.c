@@ -291,7 +291,6 @@ static int p_process_glyph_file(struct bdf_handle *bdf, const char *glyph_file)
 		fprintf(fp, "StartChar: %04x\n", glyph_number);
 		fprintf(fp, "Encoding: %d %d %d\n", glyph_number, glyph_number, glyph_number);
 		fprintf(fp, "Width: %d\n", glyph_width);
-		fprintf(fp, "Flags: H\n");
 		fprintf(fp, "TeX: 0 0 0 0\n");
 		fprintf(fp, "Fore\n");
 
