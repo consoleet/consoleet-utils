@@ -3,6 +3,11 @@ HEAD
 ====
 * clt2pbm: new utility to convert from CLT to PBM
 
+rel-20140325
+============
+* bin2c now supports the -p option to strip paths
+* bin2c also defaults to stripping all leading paths
+
 rel-20131222
 ============
 * bin2c: new utility which replaces png2wx.pl and png2wx.py
