@@ -59,7 +59,7 @@ struct bdf_handle {
 static char *p_output_file;
 static unsigned int p_descent, p_xheight = UINT_MAX;
 static unsigned int p_output_filetype;
-static int p_optimize = -1;
+static int p_optimize;
 
 static struct bdf_handle *generic_open(const char *file)
 {
@@ -455,7 +455,7 @@ static bool p_get_options(int *argc, const char ***argv)
 		 .val = FT_BDF, .help = "Generate BDF output (for gbdfed, bdftopcf)"},
 		{.ln = "sfd", .type = HXTYPE_VAL, .ptr = &p_output_filetype,
 		 .val = FT_SFD, .help = "Generate SFD output (for Fontforge)"},
-		{.sh = 'O', .type = HXTYPE_NONE | HXOPT_INC, .ptr = &p_optimize,
+		{.sh = 'O', .type = HXTYPE_NONE, .ptr = &p_optimize,
 		 .help = "Optimize: Postprocess generated file using FontForge"},
 		{.sh = 'd', .type = HXTYPE_UINT, .ptr = &p_descent,
 		 .help = "Set the font's descent"},
@@ -510,7 +510,7 @@ int main(int argc, const char **argv)
 	HXmap_free(filemap);
 	if (bdf != NULL)
 		bdf->close(bdf);
-	if (ret == EXIT_SUCCESS && p_output_filetype == FT_SFD)
+	if (ret == EXIT_SUCCESS && p_optimize && p_output_filetype == FT_SFD)
 		ret = p_run_optimizer(p_output_file);
 	return ret;
 }
