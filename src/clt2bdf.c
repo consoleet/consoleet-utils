@@ -56,6 +56,7 @@ struct bdf_handle {
 	void (*close)(struct bdf_handle *);
 };
 
+static char *p_fontname;
 static char *p_output_file;
 static unsigned int p_descent, p_xheight = UINT_MAX;
 static unsigned int p_output_filetype;
@@ -119,16 +120,17 @@ static void sfd_emit(struct bdf_handle *font)
 	FILE *f = font->handle;
 	fprintf(f,
 		"SplineFontDB: 3.0\n"
-		"FontName: newfont\n"
-		"FullName: New Font\n"
-		"FamilyName: newfont\n"
+		"FontName: %s\n"
+		"FullName: %s\n"
+		"FamilyName: %s\n"
 		"Weight: Medium\n"
 		"Copyright: created by clt2bdf/clt2sfd\n"
 		"UComments: created by clt2bdf/clt2sfd\n"
 		"Version: 001.000\n"
 		"ItalicAngle: 0\n"
 		"UnderlinePosition: -100\n"
-		"UnderlineWidth: 40\n"
+		"UnderlineWidth: 40\n",
+		p_fontname, p_fontname, p_fontname
 	);
 	fprintf(f,
 		"Ascent: %d\n"
@@ -455,6 +457,8 @@ static bool p_get_options(int *argc, const char ***argv)
 		 .val = FT_BDF, .help = "Generate BDF output (for gbdfed, bdftopcf)"},
 		{.ln = "sfd", .type = HXTYPE_VAL, .ptr = &p_output_filetype,
 		 .val = FT_SFD, .help = "Generate SFD output (for Fontforge)"},
+		{.sh = 'N', .type = HXTYPE_STRING, .ptr = &p_fontname,
+		 .help = "Font name"},
 		{.sh = 'O', .type = HXTYPE_NONE, .ptr = &p_optimize,
 		 .help = "Optimize: Postprocess generated file using FontForge"},
 		{.sh = 'd', .type = HXTYPE_UINT, .ptr = &p_descent,
@@ -467,6 +471,7 @@ static bool p_get_options(int *argc, const char ***argv)
 		HXOPT_TABLEEND,
 	};
 
+	p_fontname = HX_strdup("newfont");
 	p_output_filetype = FT_SFD;
 	if (HX_getopt(options_table, argc, argv, HXOPT_USAGEONERR) !=
 	    HXOPT_ERR_SUCCESS)

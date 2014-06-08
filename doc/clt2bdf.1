@@ -4,7 +4,7 @@
 clt2bdf \(em convert Consoleet text bitmaps to BDF/SFD
 .SH Syntax
 \fBclt2bdf\fP [\fB\-\-bdf\fP|\fB\-\-sfd\fP] [\fB\-O\fP]
-\fB\-o\fP \fIoutput.bdf\fP \fIdirectory\fP...
+[\fB\-N\fP \fIname\fP] \fB\-o\fP \fIoutput.bdf\fP \fIdirectory\fP...
 .SH Description
 .PP
 clt2bdf scans one or more directories recursively for Consoleet text bitmap
@@ -19,6 +19,9 @@ tools to combine polygons, either via UI or the command line,
 fontforge -lang=ff 'Open("foo.sfd"); SelectAll(); RemoveOverlap(); Simplify(-1,
 1; Save("foo.sfd");'
 .SH Options
+.TP
+\fB\-N\fP
+Display name for the new font.
 .TP
 \fB\-O\fP
 Feed the SFD data output by clt2bdf through FontForge for merging of
