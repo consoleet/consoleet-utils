@@ -39,10 +39,10 @@ static int clt_convert(FILE *ifh, FILE *ofh)
 		     p[0] != '\0' && p[1] != '\0' && x < gl_width;
 		     ++x, p += 2)
 		{
-			if ((p[0] == '.' || HX_isspace(p[0])) &&
-			    (p[1] == '.' || HX_isspace(p[1])))
-				continue;
-			bm[y*(gl_width+2)+x+1] = ~0U;
+			bool empty = ((p[0] == '.' || HX_isspace(p[0])) &&
+			    (p[1] == '.' || HX_isspace(p[1])));
+			bm[y*(gl_width+2)+x+1] =
+				empty ? 0xFF000000U : 0xFFFFFFFFU;
 		}
 		++y;
 	}
