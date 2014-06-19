@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use utf8;
+binmode(STDOUT, ":utf8");
+
+printf "U+nnnn | ";
+for (my $x = 0; $x < 64; $x += 4) {
+	if ($x % 16 == 0) {
+		printf "%x   ", int($x / 16);
+	} else {
+		print "    ";
+	}
+}
+print "\n";
+printf "U+nnnn | ";
+for (my $x = 0; $x < 64; ++$x) {
+	printf "%x", $x % 16;
+}
+print "\n";
+print "-" x 74;
+print "\n";
+for (my $y = 64; $y < 0x300; $y += 64) {
+	printf "U+%04x | ", $y;
+	for (my $x = 0; $x < 64; ++$x) {
+		print chr($y+$x);
+	}
+	print "\n";
+}
