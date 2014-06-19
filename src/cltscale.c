@@ -26,8 +26,8 @@ static int clt_convert(FILE *ifh, FILE *ofh)
 		return 0;
 	}
 
-	uint32_t *bm = calloc(gl_width * gl_height, sizeof(*bm));
-	uint32_t *bmout = calloc(gl_width * t_scale_factor * gl_height * t_scale_factor, sizeof(*bmout));
+	uint32_t *bm = calloc((gl_width + 2) * (gl_height + 2), sizeof(*bm));
+	uint32_t *bmout = calloc((gl_width + 2) * t_scale_factor * (gl_height + 2) * t_scale_factor, sizeof(*bmout));
 	if (bm == NULL || bmout == NULL)
 		abort();
 
@@ -42,19 +42,19 @@ static int clt_convert(FILE *ifh, FILE *ofh)
 			if ((p[0] == '.' || HX_isspace(p[0])) &&
 			    (p[1] == '.' || HX_isspace(p[1])))
 				continue;
-			bm[y*gl_width+x] = ~0U;
+			bm[y*(gl_width+2)+x+1] = ~0U;
 		}
 		++y;
 	}
 
-	xbrz_scale(t_scale_factor, bm, bmout, gl_width, gl_height);
+	xbrz_scale(t_scale_factor, bm, bmout, gl_width + 2, gl_height + 2);
 	gl_height *= t_scale_factor;
 	gl_width *= t_scale_factor;
 	fprintf(ofh, "PCLT\n%u %u\n", gl_width, gl_height);
-	for (y = 0; y < gl_height; ++y) {
+	for (y = t_scale_factor; y < gl_height + t_scale_factor; ++y) {
 		static const char s[][3] = {"..", "##"};
-		for (unsigned int x = 0; x < gl_width; ++x)
-			fputs(s[bmout[y*gl_width+x] != 0], ofh);
+		for (unsigned int x = t_scale_factor; x < gl_width + t_scale_factor; ++x)
+			fputs(s[bmout[y*(gl_width+2*t_scale_factor)+x] != 0], ofh);
 		fprintf(ofh, "\n");
 	}
 	free(bm);
