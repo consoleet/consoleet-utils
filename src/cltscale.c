@@ -9,7 +9,7 @@
 #include <libHX/string.h>
 #include "xbrz_call.h"
 
-static unsigned int t_scale_factor = 5;
+static unsigned int t_scale_factor = 5, t_nearest_neighbor;
 static char *t_input_file, *t_output_file;
 
 static int clt_convert(FILE *ifh, FILE *ofh)
@@ -41,13 +41,15 @@ static int clt_convert(FILE *ifh, FILE *ofh)
 		{
 			bool empty = ((p[0] == '.' || HX_isspace(p[0])) &&
 			    (p[1] == '.' || HX_isspace(p[1])));
-			bm[y*(gl_width+2)+x+1] =
-				empty ? 0xFF000000U : 0xFFFFFFFFU;
+			bm[y*(gl_width+2)+x+1] = empty ? 0 : ~0U;
 		}
 		++y;
 	}
 
-	xbrz_scale(t_scale_factor, bm, bmout, gl_width + 2, gl_height + 2);
+	if (t_nearest_neighbor)
+		xbrz_nearest(t_scale_factor, bm, bmout, gl_width + 2, gl_height + 2);
+	else
+		xbrz_scale(t_scale_factor, bm, bmout, gl_width + 2, gl_height + 2);
 	gl_height *= t_scale_factor;
 	gl_width *= t_scale_factor;
 	fprintf(ofh, "PCLT\n%u %u\n", gl_width, gl_height);
@@ -63,6 +65,8 @@ static int clt_convert(FILE *ifh, FILE *ofh)
 }
 
 static const struct HXoption clt_options_table[] = {
+	{.sh = 'N', .type = HXTYPE_NONE, .ptr = &t_nearest_neighbor,
+	 .help = "Use nearest neighbor instead of xBRZ"},
 	{.sh = 'f', .type = HXTYPE_UINT, .ptr = &t_scale_factor,
 	 .help = "Scaling factor (2--5)", .htyp = "N"},
 	{.sh = 'i', .type = HXTYPE_STRING, .ptr = &t_input_file,

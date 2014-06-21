@@ -12,7 +12,10 @@
 extern "C" {
 #endif
 
-extern void xbrz_scale(size_t, uint32_t *, uint32_t *, int, int);
+extern void xbrz_scale(size_t, const uint32_t *, uint32_t *,
+	unsigned int, unsigned int);
+extern void xbrz_nearest(size_t, const uint32_t *, uint32_t *,
+	unsigned int, unsigned int);
 
 #ifdef __cplusplus
 } /* extern "C" */
