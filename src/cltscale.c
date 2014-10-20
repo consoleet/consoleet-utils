@@ -1,3 +1,11 @@
+/*
+ *	Scale a Consoleet text bitmap with XBRZ
+ *	written by Jan Engelhardt, 2014
+ *
+ *	This program is free software; you can redistribute it and/or
+ *	modify it under the terms of the WTF Public License version 2 or
+ *	(at your option) any later version.
+ */
 #include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
