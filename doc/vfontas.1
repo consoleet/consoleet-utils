@@ -1,43 +1,135 @@
-.TH vfontas 1 "2003-03-08" "hxtools" "hxtools"
+.TH vfontas 1 "2019-04-21" "hxtools" "hxtools"
 .SH Name
 .PP
-vfontas \(em VGA font file assembler
+vfontas \(em a bitmap font file transformation utility
 .SH Syntax
 .PP
-\fBvfontas\fP [\fB\-EGW\fP] [\fB\-D\fP \fIdirectory\fP] [\fB\-c|\-\-create\fP]
-[\fB\-f\fP \fIfile\fP] [\fB\-x|\-\-extract\fP]
+\fBvfontas\fP \fIcommands\fP...
+.SS Commands
+.PP
+\fB\-blankfnt\fP
+.PP
+\fB\-canvas\fP \fIxsize\fP \fIysize\fP
+.PP
+\fB\-clearmap\fP
+.PP
+\fB\-lge\fP
+.PP
+\fB\-loadfnt\fP \fImu.fnt\fP
+.PP
+\fB\-loadmap\fP \fIcp437AB.uni\fP
+.PP
+\fB\-saveclt\fP \fIoutdir/\fP
+.PP
+\fB\-savefnt\fP \fIx.fnt\fP
+.PP
+\fB\-savepsf\fP \fInew.psfu\fP
+.PP
+\fB\-upscale\fP \fIxscale\fP \fIyscale\fP
+.PP
+\fB\-xcpi\fP \fIega437.cpi\fP \fIoutdir/\fP
+.PP
+\fB\-xlat\fP \fIxoffset\fP \fIyoffset\fP
+.PP
 .SH Description
 .PP
-VFontAS (VGA font file assembler). This small utility works on 8x16x256 bit
-raw font files (FNT). It can extract the chars from a FNT, that is, convert
-them to a textual bitmap, and merge them back; mainly to create fonts.
-.SH Syntax
-.TP
-\fB\-D\fP \fIdirectory\fP
-Directory to read/write glyphs from/to.
-.TP
-\fB\-E\fP
-Create an empty font file.
-.TP
-\fB\-G\fP
-Convert a raw 8x16 FNT file from stdin to a 9x16 PSF2 suitable for fbdev, while
-extending the 8th column to the 9th column like the PC VGA BIOS mode 01h does.
-.TP
-\fB\-W\fP
-Convert a raw 8x16 FNT file from stdin to a 16x16 PSF2, mimicing 40x25 text
-mode on a 80x25 display.
-.TP
-\fB\-c\fP, \fB\-\-create\fP
-Create a new FNT file by readnig all glyphs from the directory specified by
-\-D.
-.TP
-\fB\-f\fP \fIfile\fP
-Read/write from/to the VGA font stored in \fIfile\fP.
-.TP
-\fB\-x\fP, \fB\-\-extract\fP
-Extract the VGA font file's glyphs into the directory specified by \-D.
+vfontas (originally "VGA font file assembler") can transform raster font files
+in various ways.
+.SS blankfnt
 .PP
-Only one of \-E, \-c or \-x can be specified.
+Initializes the memory buffer with 256 empty 8x16 glyphs. The use for this is
+with \fBsaveclt\fP to get 256 blank glyph files for hand-editing.
+.SS canvas
+.PP
+Enlarges the glyph box to the specified size. (It never shrinks it.)
+.SS clearmap
+.PP
+Discards the Unicode mapping table.
+.SS fliph, flipv
+.PP
+Mirrors/flips glyphs.
+.SS lge
+.PP
+Applies a "Line Graphics Enable" transformation on glyphs. It copies the pixels
+in the second rightmost column to the rightmost column, and does this for glyph
+indices 0xC0 to 0xDF.
+.SS loadfnt
+.PP
+Reads a headerless bitmap font file, as typically used for CGA/EGA/VGA/MDA
+hardware, from the specified file into memory. 8x8x256 (width/height/glyphs),
+8x12x256, 8x14x256, 8x16x256 and 8x16x512 are supported.
+.SS loadmap
+.PP
+Reads a glyphindex <-> Unicode codepoint mapping table from the given file into
+memory. The format follows the maps from /usr/share/kbd/unimaps, that is, "0x00
+U+0000" at its simplest. Multiple U+ codepoints can be specified in a line.
+.SS saveclt
+.PP
+Saves the current in-memory glyphs as multiple CLT files to the given
+directory. CLT is a textual representation to facililtate manipulation on the
+glyph image.
+.SS savefnt
+.PP
+Saves the current in-memory glyphs to the given file, using the headerless
+format.
+.SS savemap
+.PP
+Saves the current in-memory Unicode mapping table to the given file.
+.SS savepsf
+.PP
+Saves the current in-memory glyphs as a PC Screen Font PSF2.0 file, which can
+then be loaded into a Linux text console with setfont(1).
+.SS upscale
+.PP
+Performs a linear upscale by an integral factor in both dimensions for all
+glyphs.
+.SS xcpi
+.PP
+Extracts a multi-font .cpi file (as was typically used on DOS) as separate .fnt
+files into the specified directory.
+.SS xlat
+.PP
+Moves all glyphs around within their canvases by the specified amount.
+.SH Known limits
+.PP
+The Linux kernel accepts console font glyphs of at most 32x32 in size.
+.SH Examples
+.PP
+Decompose a classic file into editable pictograph text files (with the help
+of a Unicode map):
+.PP
+.RS 4
+.nf
+vfontas \-loadfnt /usr/share/kbd/consolefonts/mu.fnt \-loadmap
+/usr/share/kbd/unimaps/cp437.uni saveclt
+.fi
+.RE
+.PP
+To convert a .fnt and make it meaningfully usable with a FullHD
+monitor for use with Linux fbdev:
+.PP
+.RS 4
+.nf
+vfontas \-loadfnt mu.fnt \-loadmap cp437.uni \-canvas 9 16 \-lge \-upscale 2 2
+\-savepsf mu.psf
+.fi
+.RE
+.SH Comparison to earlier vfontas (2005-2018) invocation syntax
+.PP
+`vfontas \-D out/ \-xf x.fnt` has become `vfontas \-loadfnt x.fnt \-saveclt
+out/`.
+.PP
+`vfontas \-D out/ \-cf x.fnt` has become `vfontas \-loadclt out/ \-savefnt x.fnt`.
+.PP
+`vfontas \-Ecf x.fnt` has become `vfontas \-blankfnt \-savefnt x.fnt`.
+.PP
+`vfontas \-G <x.fnt >x.psf` has become `vfontas \-loadfnt x.fnt \-canvas 9 16
+\-lge \-savepsf2 x.psf`.
+.PP
+`vfontas \-W <x.fnt >x.psf` has become `vfontas \-loadfnt x.fnt \-upscale 2 1
+\-savepsf2 x.psf`.
+.PP
+`vfontas \-\-cpi \-D out/ \-f x.cpi/` has become `vfontas \-xcpi x.cpi out/`.
 .SH See also
 .PP
 \fBhxtools\fP(7)
