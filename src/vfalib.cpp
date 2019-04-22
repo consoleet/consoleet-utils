@@ -183,6 +183,49 @@ ssize_t font::load_fnt(const char *file, unsigned int height)
 	return count;
 }
 
+ssize_t font::load_hex(const char *file)
+{
+	std::unique_ptr<FILE, deleter> fp(fopen(file, "r"));
+	if (fp == nullptr)
+		return -errno;
+	if (m_unicode_map == nullptr)
+		m_unicode_map = std::make_shared<unicode_map>();
+
+	char line[80], gbits[16];
+	size_t lnum = 0;
+	while (fgets(line, sizeof(line), fp.get()) != nullptr) {
+		++lnum;
+		char *end;
+		auto cp = strtoul(line, &end, 0);
+		if (*end != ':')
+			continue;
+		++end;
+
+		unsigned int z;
+		for (z = 0; z < sizeof(glyph) && end[0] != '\0' && end[1] != '\0'; ++z) {
+			gbits[z] = 0;
+			if (end[0] >= '0' && end[0] <= '9')
+				gbits[z] = end[0] - '0';
+			else if (HX_tolower(end[0]) >= 'A' && HX_tolower(end[0]) <= 'F')
+				gbits[z] = end[0] - HX_tolower(end[0]);
+			gbits[z] <<= 4;
+			if (end[1] >= '0' && end[1] <= '9')
+				gbits[z] |= end[1] - '0';
+			else if (HX_tolower(end[1]) >= 'A' && HX_tolower(end[1]) <= 'F')
+				gbits[z] |= end[1] - HX_tolower(end[1]);
+		}
+
+		if (z == 16)
+			m_glyph.emplace_back(glyph::create_from_rpad(vfsize(8, 16), gbits, z));
+		else if (z == 32)
+			m_glyph.emplace_back(glyph::create_from_rpad(vfsize(16, 16), gbits, z));
+		else
+			fprintf(stderr, "load_hex: unrecognized glyph size (%u bytes) in line %zu\n", z, lnum);
+		m_unicode_map->add_i2u(m_glyph.size() - 1, cp);
+	}
+	return 0;
+}
+
 ssize_t font::save_clt(const char *dir)
 {
 	size_t count = 0;

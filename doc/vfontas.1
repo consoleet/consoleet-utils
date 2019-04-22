@@ -23,6 +23,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-loadfnt\fP \fImu.fnt\fP
 .PP
+\fB\-loadhex\fP \fIunicode.hex\fP
+.PP
 \fB\-loadmap\fP \fIcp437AB.uni\fP
 .PP
 \fB\-saveclt\fP \fIoutdir/\fP
@@ -64,6 +66,9 @@ indices 0xC0 to 0xDF.
 Reads a headerless bitmap font file, as typically used for CGA/EGA/VGA/MDA
 hardware, from the specified file into memory. 8x8x256 (width/height/glyphs),
 8x12x256, 8x14x256, 8x16x256 and 8x16x512 are supported.
+.SS loadhex
+.PP
+Reads a Unifont .hex encoded file.
 .SS loadmap
 .PP
 Reads a glyphindex <-> Unicode codepoint mapping table from the given file into
