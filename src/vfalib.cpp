@@ -226,6 +226,32 @@ ssize_t font::load_hex(const char *file)
 	return 0;
 }
 
+static char32_t nextutf8(FILE *fp)
+{
+	unsigned int nbyte = 0;
+	auto ret = fgetc(fp);
+	if (ret == EOF || ret == 0xFF)
+		return ~0U;
+	if (ret >= 0x00 && ret < 0xC0)
+		return ret;
+
+	if (ret >= 0xC0 && ret < 0xE0) nbyte = 2;
+	else if (ret >= 0xE0 && ret < 0xF0) nbyte = 3;
+	else if (ret >= 0xF0 && ret < 0xF8) nbyte = 4;
+	else if (ret >= 0xF8 && ret < 0xFC) nbyte = 5;
+	else if (ret >= 0xFC && ret < 0xFE) nbyte = 6;
+
+	char32_t uc = ret & ~(~0U << (7 - nbyte));
+	for (unsigned int z = 1; z < nbyte; ++z) {
+		ret = fgetc(fp);
+		if (ret == EOF || ret == 0xFF || ((ret & 0xC0) != 0x80))
+			return ~0U;
+		uc <<= 6;
+		uc |= static_cast<unsigned char>(ret & 0x3F);
+	}
+	return uc;
+}
+
 ssize_t font::load_psf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
@@ -251,6 +277,25 @@ ssize_t font::load_psf(const char *file)
 		if (fread(buf.get(), hdr.charsize, 1, fp.get()) != 1)
 			break;
 		m_glyph.push_back(glyph::create_from_rpad(vfsize(hdr.width, hdr.height), buf.get(), hdr.charsize));
+	}
+
+	if (!(hdr.flags & PSF2_HAS_UNICODE_TABLE))
+		return 0;
+	m_unicode_map = std::make_shared<unicode_map>();
+	auto cd = iconv_open("UTF-32", "UTF-8");
+	if (cd == nullptr) {
+		fprintf(stderr, "iconv_open: %s\n", strerror(errno));
+		return -errno;
+	}
+	auto cdclean = make_scope_success([&]() { iconv_close(cd); });
+	for (unsigned int idx = 0; idx < hdr.length; ++idx) {
+		auto &set = m_unicode_map->m_i2u.emplace(idx, decltype(m_unicode_map->m_i2u)::mapped_type{}).first->second;
+		do {
+			auto uc = nextutf8(fp.get());
+			if (uc == ~0U)
+				break;
+			set.emplace(uc);
+		} while (true);
 	}
 	return 0;
 }
