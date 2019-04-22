@@ -226,6 +226,35 @@ ssize_t font::load_hex(const char *file)
 	return 0;
 }
 
+ssize_t font::load_psf(const char *file)
+{
+	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
+	if (fp == nullptr)
+		return -errno;
+	struct psf2_header hdr;
+	if (fread(&hdr, sizeof(hdr), 1, fp.get()) != 1)
+		return -errno;
+	hdr.version    = le32_to_cpu(hdr.version);
+	hdr.headersize = le32_to_cpu(hdr.headersize);
+	hdr.flags      = le32_to_cpu(hdr.flags);
+	hdr.length     = le32_to_cpu(hdr.length);
+	hdr.charsize   = le32_to_cpu(hdr.charsize);
+	hdr.height     = le32_to_cpu(hdr.height);
+	hdr.width      = le32_to_cpu(hdr.width);
+	if (hdr.magic[0] != PSF2_MAGIC0 || hdr.magic[1] != PSF2_MAGIC1 ||
+	    hdr.magic[2] != PSF2_MAGIC2 || hdr.magic[3] != PSF2_MAGIC3 ||
+	    hdr.version != 0)
+		return -EINVAL;
+
+	std::unique_ptr<char[]> buf(new char[hdr.charsize]);
+	for (size_t idx = 0; idx < hdr.length; ++idx) {
+		if (fread(buf.get(), hdr.charsize, 1, fp.get()) != 1)
+			break;
+		m_glyph.push_back(glyph::create_from_rpad(vfsize(hdr.width, hdr.height), buf.get(), hdr.charsize));
+	}
+	return 0;
+}
+
 ssize_t font::save_clt(const char *dir)
 {
 	size_t count = 0;
