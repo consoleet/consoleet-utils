@@ -86,6 +86,24 @@ static bool vf_clearmap(font &f, char **args)
 	return true;
 }
 
+static bool vf_fliph(font &f, char **args)
+{
+	f.flip(true, false);
+	return true;
+}
+
+static bool vf_flipv(font &f, char **args)
+{
+	f.flip(false, true);
+	return true;
+}
+
+static bool vf_invert(font &f, char **args)
+{
+	f.invert();
+	return true;
+}
+
 static bool vf_lge(font &f, char **args)
 {
 	f.lge();
@@ -275,6 +293,9 @@ static const struct vf_command {
 	{"blankfnt", 0, vf_blankfnt},
 	{"canvas", 2, vf_canvas},
 	{"clearmap", 0, vf_clearmap},
+	{"fliph", 0, vf_fliph},
+	{"flipv", 0, vf_flipv},
+	{"invert", 0, vf_invert},
 	{"lge", 0, vf_lge},
 	{"loadfnt", 1, vf_loadfnt},
 	{"loadmap", 1, vf_loadmap},

@@ -65,6 +65,8 @@ struct glyph {
 	std::string as_pclt() const;
 	std::string as_rowpad() const;
 	glyph blit(const vfsize &sel, const vfpos &sof, const vfsize &cvs, const vfpos &pof) const;
+	glyph flip(bool x, bool y) const;
+	void invert();
 	glyph upscale(const vfsize &factor) const;
 	void lge();
 
@@ -82,6 +84,10 @@ struct font {
 	ssize_t save_clt_glyph(const char *dir, size_t n, char32_t cp);
 	void blit(const vfsize &sel, const vfpos &sof, const vfsize &cvs, const vfpos &pof)
 		{ for (auto &g : m_glyph) g = g.blit(sel, sof, cvs, pof); }
+	void flip(bool x, bool y)
+		{ for (auto &g : m_glyph) g = g.flip(x, y); }
+	void invert()
+		{ for (auto &g : m_glyph) g.invert(); }
 	void upscale(const vfsize &factor)
 		{ for (auto &g : m_glyph) g = g.upscale(factor); }
 	void lge();

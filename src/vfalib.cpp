@@ -320,6 +320,22 @@ glyph glyph::blit(const vfsize &sel, const vfpos &sof, const vfsize &cvs, const 
 	return ng;
 }
 
+glyph glyph::flip(bool flipx, bool flipy) const
+{
+	glyph ng(m_size);
+	ng.m_data.resize(m_data.size());
+
+	for (unsigned int y = 0; y < m_size.y; ++y) {
+		for (unsigned int x = 0; x < m_size.x; ++x) {
+			bitpos ipos = y * m_size.x + x;
+			bitpos opos = (flipy ? m_size.y - y - 1 : y) * m_size.x + (flipx ? m_size.x - x - 1 : x);
+			if (m_data[ipos.byte] & ipos.mask)
+				ng.m_data[opos.byte] |= opos.mask;
+		}
+	}
+	return ng;
+}
+
 glyph glyph::upscale(const vfsize &factor) const
 {
 	glyph ng(vfsize(m_size.x * factor.x, m_size.y * factor.y));
@@ -334,6 +350,11 @@ glyph glyph::upscale(const vfsize &factor) const
 		}
 	}
 	return ng;
+}
+
+void glyph::invert()
+{
+	std::transform(m_data.begin(), m_data.end(), m_data.begin(), [](char c) { return ~c; });
 }
 
 void glyph::lge()
