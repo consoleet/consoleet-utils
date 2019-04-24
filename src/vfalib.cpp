@@ -354,6 +354,25 @@ ssize_t font::save_fnt(const char *file)
 	return count;
 }
 
+ssize_t font::save_map(const char *file)
+{
+	std::unique_ptr<FILE, deleter> fp(fopen(file, "w"));
+	if (fp == nullptr)
+		return -errno;
+	if (m_unicode_map == nullptr)
+		return 0;
+	size_t count = 0;
+	for (const auto &e : m_unicode_map->m_i2u) {
+		fprintf(fp.get(), "0x%02x\t", e.first);
+		for (auto uc : e.second) {
+			fprintf(fp.get(), "U+%04x ", uc);
+			++count;
+		}
+		fprintf(fp.get(), "\n");
+	}
+	return count;
+}
+
 ssize_t font::save_psf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "wb"));
