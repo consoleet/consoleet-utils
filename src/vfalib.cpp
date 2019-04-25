@@ -314,25 +314,29 @@ ssize_t font::save_bdf(const char *file, const char *name)
 		sz0 = m_glyph[0].m_size;
 	fprintf(fp, "STARTFONT 2.1\n");
 	fprintf(fp, "FONT %s\n", name);
-	fprintf(fp, "SIZE 16 75 75\n");
-	fprintf(fp, "FONTBOUNDINGBOX 8 16 0 -4\n");
-	fprintf(fp, "STARTPROPERTIES 13\n");
-	fprintf(fp, "POINT_SIZE 160\n");
+	fprintf(fp, "SIZE %u 75 75\n", sz0.y);
+	fprintf(fp, "FONTBOUNDINGBOX %u %u 0 -%u\n", sz0.x, sz0.y, sz0.y / 4);
+	fprintf(fp, "STARTPROPERTIES 17\n");
+	fprintf(fp, "PIXEL_SIZE %u\n", sz0.y);
+	fprintf(fp, "POINT_SIZE %u\n", 10 * sz0.y);
+	fprintf(fp, "SPACING \"C\"\n");
+	fprintf(fp, "AVERAGE_WIDTH %u\n", 10 * sz0.x);
 	fprintf(fp, "FONT \"%s\"\n", name);
 	fprintf(fp, "WEIGHT 10\n");
-	fprintf(fp, "RESOLUTION 103\n");
+	fprintf(fp, "RESOLUTION 75\n");
 	fprintf(fp, "RESOLUTION_X 75\n");
 	fprintf(fp, "RESOLUTION_Y 75\n");
 	fprintf(fp, "CHARSET_REGISTRY \"ISO10646\"\n");
 	fprintf(fp, "CHARSET_ENCODING \"1\"\n");
-	fprintf(fp, "X_HEIGHT -1\n");
-	fprintf(fp, "QUAD_WIDTH 8\n");
+	fprintf(fp, "QUAD_WIDTH %u\n", sz0.x);
 	if (m_unicode_map != nullptr && m_unicode_map->m_u2i.find(65533) != m_unicode_map->m_u2i.cend())
 		fprintf(fp, "DEFAULT_CHAR 65533\n");
 	else
 		fprintf(fp, "DEFAULT_CHAR 0\n");
-	fprintf(fp, "FONT_ASCENT 12\n");
-	fprintf(fp, "FONT_DESCENT 4\n");
+	fprintf(fp, "FONT_ASCENT %u\n", sz0.y * 12 / 16);
+	fprintf(fp, "FONT_DESCENT %u\n", sz0.y * 4 / 16);
+	fprintf(fp, "CAP_HEIGHT %u\n", sz0.y);
+	fprintf(fp, "X_HEIGHT %u\n", sz0.y * 7 / 16);
 	fprintf(fp, "ENDPROPERTIES\n");
 
 	if (m_unicode_map == nullptr) {
@@ -350,15 +354,15 @@ ssize_t font::save_bdf(const char *file, const char *name)
 
 void font::save_bdf_glyph(FILE *fp, size_t idx, char32_t cp)
 {
-	auto sx = m_glyph[idx].m_size.x;
+	auto sz = m_glyph[idx].m_size;
 	fprintf(fp, "STARTCHAR U+%04x\n" "ENCODING %u\n",
 		static_cast<unsigned int>(cp), static_cast<unsigned int>(cp));
-	fprintf(fp, "SWIDTH 480 0\n");
-	fprintf(fp, "DWIDTH %u 0\n", sx);
-	fprintf(fp, "BBX %u 16 0 -4\n", sx);
+	fprintf(fp, "SWIDTH 1000 0\n");
+	fprintf(fp, "DWIDTH %u 0\n", sz.x);
+	fprintf(fp, "BBX %u %u 0 -%u\n", sz.x, sz.y, sz.y / 4);
 	fprintf(fp, "BITMAP\n");
 
-	auto byteperline = (sx + 7) / 8;
+	auto byteperline = (sz.x + 7) / 8;
 	unsigned int ctr = 0;
 	for (auto c : m_glyph[idx].as_rowpad()) {
 		fputc(vfhex[(c&0xF0)>>4], fp);
