@@ -59,6 +59,8 @@ struct psf2_header {
 	uint32_t version, headersize, flags, length, charsize, height, width;
 };
 
+static const char vfhex[] = "0123456789abcdef";
+
 static unsigned int bytes_per_glyph(const vfsize &size)
 {
 	/* A 9x16 glyph occupy 18 chars in our internal representation */
@@ -298,6 +300,56 @@ ssize_t font::load_psf(const char *file)
 		} while (true);
 	}
 	return 0;
+}
+
+ssize_t font::save_bdf(const char *file, const char *name)
+{
+	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
+	if (filep == nullptr)
+		return -errno;
+	auto fp = filep.get();
+	vfsize sz0;
+	if (m_glyph.size() > 0)
+		sz0 = m_glyph[0].m_size;
+	fprintf(fp, "STARTFONT 2.1\n");
+	fprintf(fp, "FONT %s\n", name);
+	fprintf(fp, "SIZE 16 75 75\n");
+	fprintf(fp, "FONTBOUNDINGBOX 8 16 0 -4\n");
+	fprintf(fp, "STARTPROPERTIES 11\n");
+	fprintf(fp, "POINT_SIZE 160\n");
+	fprintf(fp, "FONT \"%s\"\n", name);
+	fprintf(fp, "WEIGHT 10\n");
+	fprintf(fp, "RESOLUTION 103\n");
+	fprintf(fp, "RESOLUTION_X 75\n");
+	fprintf(fp, "RESOLUTION_Y 75\n");
+	fprintf(fp, "X_HEIGHT -1\n");
+	fprintf(fp, "QUAD_WIDTH 8\n");
+	fprintf(fp, "DEFAULT_CHAR 0\n");
+	fprintf(fp, "FONT_ASCENT 12\n");
+	fprintf(fp, "FONT_DESCENT 4\n");
+	fprintf(fp, "ENDPROPERTIES\n");
+	fprintf(fp, "CHARS %zu\n", m_glyph.size());
+
+	for (size_t idx = 0; idx < m_glyph.size(); ++idx) {
+		auto sx = m_glyph[idx].m_size.x;
+		fprintf(fp, "STARTCHAR C%03zx\n" "ENCODING %zu\n", idx, idx);
+		fprintf(fp, "SWIDTH 480 0\n");
+		fprintf(fp, "DWIDTH %u 0\n", sx);
+		fprintf(fp, "BBX %u 16 0 -4\n", sx);
+		fprintf(fp, "BITMAP\n");
+
+		auto byteperline = (sx + 7) / 8;
+		unsigned int ctr = 0;
+		for (auto c : m_glyph[idx].as_rowpad()) {
+			fputc(vfhex[(c&0xF0)>>4], fp);
+			fputc(vfhex[c&0x0F], fp);
+			if (++ctr % byteperline == 0)
+				fprintf(fp, "\n");
+		}
+		fprintf(fp, "ENDCHAR\n");
+	}
+	fprintf(fp, "ENDFONT\n");
+	return m_glyph.size();
 }
 
 ssize_t font::save_clt(const char *dir)

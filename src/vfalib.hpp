@@ -79,6 +79,7 @@ struct font {
 	ssize_t load_fnt(const char *file, unsigned int height_hint = -1);
 	ssize_t load_hex(const char *file);
 	ssize_t load_psf(const char *file);
+	ssize_t save_bdf(const char *file, const char *name = "vfontasout");
 	ssize_t save_fnt(const char *file);
 	ssize_t save_map(const char *file);
 	ssize_t save_psf(const char *file);

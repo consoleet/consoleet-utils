@@ -29,6 +29,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-loadpsf\fP \fIter-v32b.psfu\fP
 .PP
+\fB\-savebdf\fP \fIout.bdf\fP \fIfontname\fP
+.PP
 \fB\-saveclt\fP \fIoutdir/\fP
 .PP
 \fB\-savefnt\fP \fIx.fnt\fP
@@ -79,6 +81,10 @@ U+0000" at its simplest. Multiple U+ codepoints can be specified in a line.
 .SS loadpsf
 .PP
 Reads a PC Screen Font PSF 2 version 0.
+.SS savebdf
+.PP
+Saves the font in a .bdf file (Glyph Bitmap Distribution Format). This can then
+be fed to bdftopcf(1) to generate an X11 bitmap font usable by e.g. xterm(1).
 .SS saveclt
 .PP
 Saves the current in-memory glyphs as multiple CLT files to the given

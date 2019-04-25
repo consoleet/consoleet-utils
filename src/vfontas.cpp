@@ -148,6 +148,15 @@ static bool vf_loadpsf(font &f, char **args)
 	return false;
 }
 
+static bool vf_savebdf(font &f, char **args)
+{
+	auto ret = f.save_bdf(args[0], args[1]);
+	if (ret >= 0)
+		return true;
+	fprintf(stderr, "Error saving %s: %s\n", args[0], strerror(-ret));
+	return false;
+}
+
 static bool vf_saveclt(font &f, char **args)
 {
 	auto ret = f.save_clt(args[0]);
@@ -328,6 +337,7 @@ static const struct vf_command {
 	{"loadhex", 1, vf_loadhex},
 	{"loadmap", 1, vf_loadmap},
 	{"loadpsf", 1, vf_loadpsf},
+	{"savebdf", 2, vf_savebdf},
 	{"saveclt", 1, vf_saveclt},
 	{"savefnt", 1, vf_savefnt},
 	{"savemap", 1, vf_savemap},
