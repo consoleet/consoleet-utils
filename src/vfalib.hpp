@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <cstdio>
 #include <endian.h>
 #if (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || \
     (defined(_BYTE_ORDER) && _BYTE_ORDER == _BIG_ENDIAN)
@@ -80,6 +81,7 @@ struct font {
 	ssize_t load_hex(const char *file);
 	ssize_t load_psf(const char *file);
 	ssize_t save_bdf(const char *file, const char *name = "vfontasout");
+	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
 	ssize_t save_fnt(const char *file);
 	ssize_t save_map(const char *file);
 	ssize_t save_psf(const char *file);

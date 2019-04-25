@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -315,41 +316,57 @@ ssize_t font::save_bdf(const char *file, const char *name)
 	fprintf(fp, "FONT %s\n", name);
 	fprintf(fp, "SIZE 16 75 75\n");
 	fprintf(fp, "FONTBOUNDINGBOX 8 16 0 -4\n");
-	fprintf(fp, "STARTPROPERTIES 11\n");
+	fprintf(fp, "STARTPROPERTIES 13\n");
 	fprintf(fp, "POINT_SIZE 160\n");
 	fprintf(fp, "FONT \"%s\"\n", name);
 	fprintf(fp, "WEIGHT 10\n");
 	fprintf(fp, "RESOLUTION 103\n");
 	fprintf(fp, "RESOLUTION_X 75\n");
 	fprintf(fp, "RESOLUTION_Y 75\n");
+	fprintf(fp, "CHARSET_REGISTRY \"ISO10646\"\n");
+	fprintf(fp, "CHARSET_ENCODING \"1\"\n");
 	fprintf(fp, "X_HEIGHT -1\n");
 	fprintf(fp, "QUAD_WIDTH 8\n");
-	fprintf(fp, "DEFAULT_CHAR 0\n");
+	if (m_unicode_map != nullptr && m_unicode_map->m_u2i.find(65533) != m_unicode_map->m_u2i.cend())
+		fprintf(fp, "DEFAULT_CHAR 65533\n");
+	else
+		fprintf(fp, "DEFAULT_CHAR 0\n");
 	fprintf(fp, "FONT_ASCENT 12\n");
 	fprintf(fp, "FONT_DESCENT 4\n");
 	fprintf(fp, "ENDPROPERTIES\n");
-	fprintf(fp, "CHARS %zu\n", m_glyph.size());
 
-	for (size_t idx = 0; idx < m_glyph.size(); ++idx) {
-		auto sx = m_glyph[idx].m_size.x;
-		fprintf(fp, "STARTCHAR C%03zx\n" "ENCODING %zu\n", idx, idx);
-		fprintf(fp, "SWIDTH 480 0\n");
-		fprintf(fp, "DWIDTH %u 0\n", sx);
-		fprintf(fp, "BBX %u 16 0 -4\n", sx);
-		fprintf(fp, "BITMAP\n");
-
-		auto byteperline = (sx + 7) / 8;
-		unsigned int ctr = 0;
-		for (auto c : m_glyph[idx].as_rowpad()) {
-			fputc(vfhex[(c&0xF0)>>4], fp);
-			fputc(vfhex[c&0x0F], fp);
-			if (++ctr % byteperline == 0)
-				fprintf(fp, "\n");
-		}
-		fprintf(fp, "ENDCHAR\n");
+	if (m_unicode_map == nullptr) {
+		fprintf(fp, "CHARS %zu\n", m_glyph.size());
+		for (size_t idx = 0; idx < m_glyph.size(); ++idx)
+			save_bdf_glyph(fp, idx, idx);
+	} else {
+		fprintf(fp, "CHARS %zu\n", m_unicode_map->m_u2i.size());
+		for (const auto &pair : m_unicode_map->m_u2i)
+			save_bdf_glyph(fp, pair.second, pair.first);
 	}
 	fprintf(fp, "ENDFONT\n");
 	return m_glyph.size();
+}
+
+void font::save_bdf_glyph(FILE *fp, size_t idx, char32_t cp)
+{
+	auto sx = m_glyph[idx].m_size.x;
+	fprintf(fp, "STARTCHAR U+%04x\n" "ENCODING %u\n",
+		static_cast<unsigned int>(cp), static_cast<unsigned int>(cp));
+	fprintf(fp, "SWIDTH 480 0\n");
+	fprintf(fp, "DWIDTH %u 0\n", sx);
+	fprintf(fp, "BBX %u 16 0 -4\n", sx);
+	fprintf(fp, "BITMAP\n");
+
+	auto byteperline = (sx + 7) / 8;
+	unsigned int ctr = 0;
+	for (auto c : m_glyph[idx].as_rowpad()) {
+		fputc(vfhex[(c&0xF0)>>4], fp);
+		fputc(vfhex[c&0x0F], fp);
+		if (++ctr % byteperline == 0)
+			fprintf(fp, "\n");
+	}
+	fprintf(fp, "ENDCHAR\n");
 }
 
 ssize_t font::save_clt(const char *dir)
