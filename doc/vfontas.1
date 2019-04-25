@@ -83,8 +83,10 @@ U+0000" at its simplest. Multiple U+ codepoints can be specified in a line.
 Reads a PC Screen Font PSF 2 version 0.
 .SS savebdf
 .PP
-Saves the font in a .bdf file (Glyph Bitmap Distribution Format). This can then
-be fed to bdftopcf(1) to generate an X11 bitmap font usable by e.g. xterm(1).
+Saves the font to a Glyph Bitmap Distribution Format file (BDF). This typefile
+can be processed further by other tools such as bdftopcf(1) or fontforge(1) to,
+for example, turn them into Portable Compiled Format (PCF) or TrueType/OpenType
+(TTF/OTF) files. (See the "Examples" section.)
 .SS saveclt
 .PP
 Saves the current in-memory glyphs as multiple CLT files to the given
@@ -127,13 +129,23 @@ vfontas \-loadfnt /usr/share/kbd/consolefonts/mu.fnt \-loadmap
 .fi
 .RE
 .PP
-To convert a .fnt and make it meaningfully usable with a FullHD
-monitor for use with Linux fbdev:
+To convert a .fnt and scale it up to make it comfortably usable with a FullHD
+resolution Linux fbconsole:
 .PP
 .RS 4
 .nf
 vfontas \-loadfnt mu.fnt \-loadmap cp437.uni \-canvas 9 16 \-lge \-upscale 2 2
 \-savepsf mu.psf
+.fi
+.RE
+.PP
+To convert a .fnt for use under X11 and XTerm (generates sizes 12, 24 and 36):
+.PP
+.RS 4
+.nf
+for i in 1 2 3; do vfontas \-loadfnt mux.fnt \-loadmap cp437AB.uni \-upscale $i
+>$i \-savebdf mux$i.bdf Mux; bdftopcf mux$i.bdf | gzip ~/.fonts/mux$i.pcf.gz;
+done; xterm -fa "misc Mux:size=24"
 .fi
 .RE
 .SH Comparison to earlier vfontas (2005-2018) invocation syntax
