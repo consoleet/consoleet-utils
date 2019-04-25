@@ -303,7 +303,7 @@ ssize_t font::load_psf(const char *file)
 	return 0;
 }
 
-ssize_t font::save_bdf(const char *file, const char *name)
+ssize_t font::save_bdf(const char *file, const char *aname)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
 	if (filep == nullptr)
@@ -312,16 +312,31 @@ ssize_t font::save_bdf(const char *file, const char *name)
 	vfsize sz0;
 	if (m_glyph.size() > 0)
 		sz0 = m_glyph[0].m_size;
+	std::string name;
+	if (aname != nullptr) {
+		name = aname;
+		/* X logical font description (XLFD) does not permit dashes */
+		std::replace(name.begin(), name.end(), '-', ' ');
+	} else {
+		name = "vfontas output";
+	}
 	fprintf(fp, "STARTFONT 2.1\n");
-	fprintf(fp, "FONT %s\n", name);
+	fprintf(fp, "FONT -misc-%s-medium-r-normal--%u-%u-75-75-c-%u-iso10646-1\n", name.c_str(), sz0.y, 10 * sz0.y, 10 * sz0.x);
 	fprintf(fp, "SIZE %u 75 75\n", sz0.y);
 	fprintf(fp, "FONTBOUNDINGBOX %u %u 0 -%u\n", sz0.x, sz0.y, sz0.y / 4);
-	fprintf(fp, "STARTPROPERTIES 17\n");
+	fprintf(fp, "STARTPROPERTIES 24\n");
+	fprintf(fp, "FONT_TYPE \"Bitmap\"\n");
+	fprintf(fp, "FONTNAME_REGISTRY \"\"\n");
+	fprintf(fp, "FOUNDRY \"misc\"\n");
+	fprintf(fp, "FAMILY_NAME \"%s\"\n", name.c_str());
+	fprintf(fp, "WEIGHT_NAME \"medium\"\n");
+	fprintf(fp, "SLANT \"r\"\n");
+	fprintf(fp, "SETWIDTH_NAME \"normal\"\n");
 	fprintf(fp, "PIXEL_SIZE %u\n", sz0.y);
 	fprintf(fp, "POINT_SIZE %u\n", 10 * sz0.y);
 	fprintf(fp, "SPACING \"C\"\n");
 	fprintf(fp, "AVERAGE_WIDTH %u\n", 10 * sz0.x);
-	fprintf(fp, "FONT \"%s\"\n", name);
+	fprintf(fp, "FONT \"%s\"\n", name.c_str());
 	fprintf(fp, "WEIGHT 10\n");
 	fprintf(fp, "RESOLUTION 75\n");
 	fprintf(fp, "RESOLUTION_X 75\n");
