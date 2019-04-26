@@ -276,6 +276,7 @@ ssize_t font::load_psf(const char *file)
 		return -EINVAL;
 
 	std::unique_ptr<char[]> buf(new char[hdr.charsize]);
+	size_t glyph_start = m_glyph.size();
 	for (size_t idx = 0; idx < hdr.length; ++idx) {
 		if (fread(buf.get(), hdr.charsize, 1, fp.get()) != 1)
 			break;
@@ -292,12 +293,11 @@ ssize_t font::load_psf(const char *file)
 	}
 	auto cdclean = make_scope_success([&]() { iconv_close(cd); });
 	for (unsigned int idx = 0; idx < hdr.length; ++idx) {
-		auto &set = m_unicode_map->m_i2u.emplace(idx, decltype(m_unicode_map->m_i2u)::mapped_type{}).first->second;
 		do {
 			auto uc = nextutf8(fp.get());
 			if (uc == ~0U)
 				break;
-			set.emplace(uc);
+			m_unicode_map->add_i2u(glyph_start + idx, uc);
 		} while (true);
 	}
 	return 0;
