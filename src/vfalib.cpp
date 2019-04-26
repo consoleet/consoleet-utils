@@ -62,6 +62,19 @@ struct psf2_header {
 
 static const char vfhex[] = "0123456789abcdef";
 
+static FILE *fopen(const char *name, const char *mode)
+{
+	if (strcmp(name, "-") != 0)
+		return ::fopen(name, mode);
+	if (strchr(mode, '+') != nullptr)
+		return nullptr;
+	if (strpbrk(mode, "wa") != nullptr)
+		return stdout;
+	if (strchr(mode, 'r') != nullptr)
+		return stdin;
+	return nullptr;
+}
+
 static unsigned int bytes_per_glyph(const vfsize &size)
 {
 	/* A 9x16 glyph occupy 18 chars in our internal representation */
