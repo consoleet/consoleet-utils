@@ -48,6 +48,12 @@ struct vfsize {
 	unsigned int w = 0, h = 0;
 };
 
+struct vfrect : public vfpos, public vfsize {
+	vfrect() = default;
+	vfrect(int a, int b, unsigned int c, unsigned int d) :
+		vfpos(a, b), vfsize(c, d) {}
+};
+
 struct unicode_map {
 	std::map<unsigned int, std::set<char32_t>> m_i2u;
 	std::map<char32_t, unsigned int> m_u2i;
@@ -65,7 +71,7 @@ struct glyph {
 	static glyph create_from_rpad(const vfsize &size, const char *buf, size_t z);
 	std::string as_pclt() const;
 	std::string as_rowpad() const;
-	glyph blit(const vfsize &sel, const vfpos &sof, const vfsize &cvs, const vfpos &pof) const;
+	glyph blit(const vfrect &src, const vfrect &dst) const;
 	glyph flip(bool x, bool y) const;
 	void invert();
 	glyph upscale(const vfsize &factor) const;
@@ -87,8 +93,8 @@ struct font {
 	ssize_t save_psf(const char *file);
 	ssize_t save_clt(const char *dir);
 	ssize_t save_clt_glyph(const char *dir, size_t n, char32_t cp);
-	void blit(const vfsize &sel, const vfpos &sof, const vfsize &cvs, const vfpos &pof)
-		{ for (auto &g : m_glyph) g = g.blit(sel, sof, cvs, pof); }
+	void blit(const vfrect &src, const vfrect &dst)
+		{ for (auto &g : m_glyph) g = g.blit(src, dst); }
 	void flip(bool x, bool y)
 		{ for (auto &g : m_glyph) g = g.flip(x, y); }
 	void invert()
@@ -126,6 +132,11 @@ template<typename F> class scope_success {
 template<typename F> scope_success<F> make_scope_success(F &&f)
 {
 	return scope_success<F>(std::move(f));
+}
+
+inline vfrect operator|(const vfpos &p, const vfsize &s)
+{
+	return vfrect(p.x, p.y, s.w, s.h);
 }
 
 } /* namespace vfalib */

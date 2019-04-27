@@ -76,7 +76,7 @@ static bool vf_canvas(font &f, char **args)
 		return false;
 	}
 	if (f.m_glyph.size() > 0)
-		f.blit(f.m_glyph[0].m_size, {0, 0}, vfsize(x, y), {0, 0});
+		f.blit(vfpos() | f.m_glyph[0].m_size, vfpos() | vfsize(x, y));
 	return true;
 }
 
@@ -317,7 +317,7 @@ static bool vf_xlat(font &f, char **args)
 	auto x = strtol(args[0], nullptr, 0);
 	auto y = strtol(args[1], nullptr, 0);
 	if (f.m_glyph.size() > 0)
-		f.blit(f.m_glyph[0].m_size, vfpos(0, 0), f.m_glyph[0].m_size, vfpos(x, y));
+		f.blit(vfpos() | f.m_glyph[0].m_size, vfpos(x, y) | f.m_glyph[0].m_size);
 	return true;
 }
 

@@ -538,16 +538,16 @@ glyph glyph::create_from_rpad(const vfsize &size, const char *buf, size_t z)
 	return ng;
 }
 
-glyph glyph::blit(const vfsize &sel, const vfpos &sof, const vfsize &cvs, const vfpos &pof) const
+glyph glyph::blit(const vfrect &sof, const vfrect &pof) const
 {
-	glyph ng(cvs);
+	glyph ng(pof);
 
-	for (unsigned int y = sof.y; y < sof.y + sel.h && y < m_size.h; ++y) {
-		for (unsigned int x = sof.x; x < sof.x + sel.w && x < m_size.w; ++x) {
+	for (unsigned int y = sof.y; y < sof.y + sof.h && y < m_size.h; ++y) {
+		for (unsigned int x = sof.x; x < sof.x + sof.w && x < m_size.w; ++x) {
 			int ox = pof.x + x - sof.x;
 			int oy = pof.y + y - sof.y;
-			if (ox < 0 || oy < 0 || static_cast<unsigned int>(ox) > cvs.w ||
-			    static_cast<unsigned int>(oy) > cvs.h)
+			if (ox < 0 || oy < 0 || static_cast<unsigned int>(ox) > pof.w ||
+			    static_cast<unsigned int>(oy) > pof.h)
 				continue;
 			bitpos ipos = y * m_size.w + x;
 			bitpos opos = oy * ng.m_size.w + ox;
