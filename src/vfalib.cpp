@@ -78,13 +78,13 @@ static FILE *fopen(const char *name, const char *mode)
 static unsigned int bytes_per_glyph(const vfsize &size)
 {
 	/* A 9x16 glyph occupy 18 chars in our internal representation */
-	return (size.x * size.y + CHAR_BIT - 1) / CHAR_BIT;
+	return (size.w * size.h + CHAR_BIT - 1) / CHAR_BIT;
 }
 
 static unsigned int bytes_per_glyph_rpad(const vfsize &size)
 {
 	/* A 9x16 glyph occupies 32 chars in PSF2 */
-	return size.y * ((size.x + 7) / 8);
+	return size.h * ((size.w + 7) / 8);
 }
 
 void unicode_map::add_i2u(unsigned int idx, char32_t uc)
@@ -334,9 +334,10 @@ ssize_t font::save_bdf(const char *file, const char *aname)
 		name = "vfontas output";
 	}
 	fprintf(fp, "STARTFONT 2.1\n");
-	fprintf(fp, "FONT -misc-%s-medium-r-normal--%u-%u-75-75-c-%u-iso10646-1\n", name.c_str(), sz0.y, 10 * sz0.y, 10 * sz0.x);
-	fprintf(fp, "SIZE %u 75 75\n", sz0.y);
-	fprintf(fp, "FONTBOUNDINGBOX %u %u 0 -%u\n", sz0.x, sz0.y, sz0.y / 4);
+	fprintf(fp, "FONT -misc-%s-medium-r-normal--%u-%u-75-75-c-%u-iso10646-1\n",
+		name.c_str(), sz0.h, 10 * sz0.h, 10 * sz0.w);
+	fprintf(fp, "SIZE %u 75 75\n", sz0.h);
+	fprintf(fp, "FONTBOUNDINGBOX %u %u 0 -%u\n", sz0.w, sz0.h, sz0.h / 4);
 	fprintf(fp, "STARTPROPERTIES 24\n");
 	fprintf(fp, "FONT_TYPE \"Bitmap\"\n");
 	fprintf(fp, "FONTNAME_REGISTRY \"\"\n");
@@ -345,10 +346,10 @@ ssize_t font::save_bdf(const char *file, const char *aname)
 	fprintf(fp, "WEIGHT_NAME \"medium\"\n");
 	fprintf(fp, "SLANT \"r\"\n");
 	fprintf(fp, "SETWIDTH_NAME \"normal\"\n");
-	fprintf(fp, "PIXEL_SIZE %u\n", sz0.y);
-	fprintf(fp, "POINT_SIZE %u\n", 10 * sz0.y);
+	fprintf(fp, "PIXEL_SIZE %u\n", sz0.h);
+	fprintf(fp, "POINT_SIZE %u\n", 10 * sz0.h);
 	fprintf(fp, "SPACING \"C\"\n");
-	fprintf(fp, "AVERAGE_WIDTH %u\n", 10 * sz0.x);
+	fprintf(fp, "AVERAGE_WIDTH %u\n", 10 * sz0.w);
 	fprintf(fp, "FONT \"%s\"\n", name.c_str());
 	fprintf(fp, "WEIGHT 10\n");
 	fprintf(fp, "RESOLUTION 75\n");
@@ -356,15 +357,15 @@ ssize_t font::save_bdf(const char *file, const char *aname)
 	fprintf(fp, "RESOLUTION_Y 75\n");
 	fprintf(fp, "CHARSET_REGISTRY \"ISO10646\"\n");
 	fprintf(fp, "CHARSET_ENCODING \"1\"\n");
-	fprintf(fp, "QUAD_WIDTH %u\n", sz0.x);
+	fprintf(fp, "QUAD_WIDTH %u\n", sz0.w);
 	if (m_unicode_map != nullptr && m_unicode_map->m_u2i.find(65533) != m_unicode_map->m_u2i.cend())
 		fprintf(fp, "DEFAULT_CHAR 65533\n");
 	else
 		fprintf(fp, "DEFAULT_CHAR 0\n");
-	fprintf(fp, "FONT_ASCENT %u\n", sz0.y * 12 / 16);
-	fprintf(fp, "FONT_DESCENT %u\n", sz0.y * 4 / 16);
-	fprintf(fp, "CAP_HEIGHT %u\n", sz0.y);
-	fprintf(fp, "X_HEIGHT %u\n", sz0.y * 7 / 16);
+	fprintf(fp, "FONT_ASCENT %u\n", sz0.h * 12 / 16);
+	fprintf(fp, "FONT_DESCENT %u\n", sz0.h * 4 / 16);
+	fprintf(fp, "CAP_HEIGHT %u\n", sz0.h);
+	fprintf(fp, "X_HEIGHT %u\n", sz0.h * 7 / 16);
 	fprintf(fp, "ENDPROPERTIES\n");
 
 	if (m_unicode_map == nullptr) {
@@ -386,11 +387,11 @@ void font::save_bdf_glyph(FILE *fp, size_t idx, char32_t cp)
 	fprintf(fp, "STARTCHAR U+%04x\n" "ENCODING %u\n",
 		static_cast<unsigned int>(cp), static_cast<unsigned int>(cp));
 	fprintf(fp, "SWIDTH 1000 0\n");
-	fprintf(fp, "DWIDTH %u 0\n", sz.x);
-	fprintf(fp, "BBX %u %u 0 -%u\n", sz.x, sz.y, sz.y / 4);
+	fprintf(fp, "DWIDTH %u 0\n", sz.w);
+	fprintf(fp, "BBX %u %u 0 -%u\n", sz.w, sz.h, sz.h / 4);
 	fprintf(fp, "BITMAP\n");
 
-	auto byteperline = (sz.x + 7) / 8;
+	auto byteperline = (sz.w + 7) / 8;
 	unsigned int ctr = 0;
 	for (auto c : m_glyph[idx].as_rowpad()) {
 		fputc(vfhex[(c&0xF0)>>4], fp);
@@ -487,8 +488,8 @@ ssize_t font::save_psf(const char *file)
 	hdr.length     = cpu_to_le32(m_glyph.size());
 	if (m_glyph.size() > 0) {
 		hdr.charsize = cpu_to_le32(bytes_per_glyph_rpad(m_glyph[0].m_size));
-		hdr.height   = cpu_to_le32(m_glyph[0].m_size.y);
-		hdr.width    = cpu_to_le32(m_glyph[0].m_size.x);
+		hdr.height   = cpu_to_le32(m_glyph[0].m_size.h);
+		hdr.width    = cpu_to_le32(m_glyph[0].m_size.w);
 	}
 	fwrite(&hdr, sizeof(hdr), 1, fp.get());
 	for (size_t idx = 0; idx < m_glyph.size(); ++idx) {
@@ -525,11 +526,11 @@ glyph::glyph(const vfsize &size) :
 glyph glyph::create_from_rpad(const vfsize &size, const char *buf, size_t z)
 {
 	glyph ng(size);
-	auto byteperline = (size.x + 7) / 8;
-	for (unsigned int y = 0; y < size.y; ++y) {
-		for (unsigned int x = 0; x < size.x; ++x) {
+	auto byteperline = (size.w + 7) / 8;
+	for (unsigned int y = 0; y < size.h; ++y) {
+		for (unsigned int x = 0; x < size.w; ++x) {
 			bitpos qpos = x;
-			bitpos opos = y * size.x + x;
+			bitpos opos = y * size.w + x;
 			if (buf[y*byteperline+qpos.byte] & qpos.mask)
 				ng.m_data[opos.byte] |= opos.mask;
 		}
@@ -541,15 +542,15 @@ glyph glyph::blit(const vfsize &sel, const vfpos &sof, const vfsize &cvs, const 
 {
 	glyph ng(cvs);
 
-	for (unsigned int y = sof.y; y < sof.y + sel.y && y < m_size.y; ++y) {
-		for (unsigned int x = sof.x; x < sof.x + sel.x && x < m_size.x; ++x) {
+	for (unsigned int y = sof.y; y < sof.y + sel.h && y < m_size.h; ++y) {
+		for (unsigned int x = sof.x; x < sof.x + sel.w && x < m_size.w; ++x) {
 			int ox = pof.x + x - sof.x;
 			int oy = pof.y + y - sof.y;
-			if (ox < 0 || oy < 0 || static_cast<unsigned int>(ox) > cvs.x ||
-			    static_cast<unsigned int>(oy) > cvs.y)
+			if (ox < 0 || oy < 0 || static_cast<unsigned int>(ox) > cvs.w ||
+			    static_cast<unsigned int>(oy) > cvs.h)
 				continue;
-			bitpos ipos = y * m_size.x + x;
-			bitpos opos = oy * ng.m_size.x + ox;
+			bitpos ipos = y * m_size.w + x;
+			bitpos opos = oy * ng.m_size.w + ox;
 			if (m_data[ipos.byte] & ipos.mask)
 				ng.m_data[opos.byte] |= opos.mask;
 		}
@@ -562,10 +563,10 @@ glyph glyph::flip(bool flipx, bool flipy) const
 	glyph ng(m_size);
 	ng.m_data.resize(m_data.size());
 
-	for (unsigned int y = 0; y < m_size.y; ++y) {
-		for (unsigned int x = 0; x < m_size.x; ++x) {
-			bitpos ipos = y * m_size.x + x;
-			bitpos opos = (flipy ? m_size.y - y - 1 : y) * m_size.x + (flipx ? m_size.x - x - 1 : x);
+	for (unsigned int y = 0; y < m_size.h; ++y) {
+		for (unsigned int x = 0; x < m_size.w; ++x) {
+			bitpos ipos = y * m_size.w + x;
+			bitpos opos = (flipy ? m_size.h - y - 1 : y) * m_size.w + (flipx ? m_size.w - x - 1 : x);
 			if (m_data[ipos.byte] & ipos.mask)
 				ng.m_data[opos.byte] |= opos.mask;
 		}
@@ -575,13 +576,13 @@ glyph glyph::flip(bool flipx, bool flipy) const
 
 glyph glyph::upscale(const vfsize &factor) const
 {
-	glyph ng(vfsize(m_size.x * factor.x, m_size.y * factor.y));
+	glyph ng(vfsize(m_size.w * factor.w, m_size.h * factor.h));
 	ng.m_data.resize(bytes_per_glyph(ng.m_size));
 
-	for (unsigned int y = 0; y < ng.m_size.y; ++y) {
-		for (unsigned int x = 0; x < ng.m_size.x; ++x) {
-			bitpos opos = y * ng.m_size.x + x;
-			bitpos ipos = y / factor.y * m_size.x + x / factor.x;
+	for (unsigned int y = 0; y < ng.m_size.h; ++y) {
+		for (unsigned int x = 0; x < ng.m_size.w; ++x) {
+			bitpos opos = y * ng.m_size.w + x;
+			bitpos ipos = y / factor.h * m_size.w + x / factor.w;
 			if (m_data[ipos.byte] & ipos.mask)
 				ng.m_data[opos.byte] |= opos.mask;
 		}
@@ -596,11 +597,11 @@ void glyph::invert()
 
 void glyph::lge()
 {
-	if (m_size.x < 2)
+	if (m_size.w < 2)
 		return;
-	for (unsigned int y = 0; y < m_size.y; ++y) {
-		bitpos ipos = (y + 1) * m_size.x - 2;
-		bitpos opos = (y + 1) * m_size.x - 1;
+	for (unsigned int y = 0; y < m_size.h; ++y) {
+		bitpos ipos = (y + 1) * m_size.w - 2;
+		bitpos opos = (y + 1) * m_size.w - 1;
 		if (m_data[ipos.byte] & ipos.mask)
 			m_data[opos.byte] |= opos.mask;
 		else
@@ -615,10 +616,10 @@ std::string glyph::as_pclt() const
 		return {};
 
 	std::stringstream ss;
-	ss << "PCLT\n" << m_size.x << " " << m_size.y << "\n";
-	for (unsigned int y = 0; y < m_size.y; ++y) {
-		for (unsigned int x = 0; x < m_size.x; ++x) {
-			bitpos pos = y * m_size.x + x;
+	ss << "PCLT\n" << m_size.w << " " << m_size.h << "\n";
+	for (unsigned int y = 0; y < m_size.h; ++y) {
+		for (unsigned int x = 0; x < m_size.w; ++x) {
+			bitpos pos = y * m_size.w + x;
 			ss << ((m_data[pos.byte] & pos.mask) ? "##" : "..");
 		}
 		ss << "\n";
@@ -629,11 +630,11 @@ std::string glyph::as_pclt() const
 std::string glyph::as_rowpad() const
 {
 	std::string ret;
-	auto byteperline = (m_size.x + 7) / 8;
+	auto byteperline = (m_size.w + 7) / 8;
 	ret.resize(bytes_per_glyph_rpad(m_size));
-	for (unsigned int y = 0; y < m_size.y; ++y) {
-		for (unsigned int x = 0; x < m_size.x; ++x) {
-			bitpos ipos = y * m_size.x + x;
+	for (unsigned int y = 0; y < m_size.h; ++y) {
+		for (unsigned int x = 0; x < m_size.w; ++x) {
+			bitpos ipos = y * m_size.w + x;
 			bitpos qpos = x;
 			if (m_data[ipos.byte] & ipos.mask)
 				ret[y*byteperline+qpos.byte] |= qpos.mask;

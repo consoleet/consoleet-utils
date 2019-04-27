@@ -44,8 +44,8 @@ struct vfpos {
 struct vfsize {
 	vfsize() = default;
 	vfsize(const vfsize &) = default;
-	vfsize(unsigned int a, unsigned int b) : x(a), y(b) {}
-	unsigned int x = 0, y = 0;
+	vfsize(unsigned int a, unsigned int b) : w(a), h(b) {}
+	unsigned int w = 0, h = 0;
 };
 
 struct unicode_map {
