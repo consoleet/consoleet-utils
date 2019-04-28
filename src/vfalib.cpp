@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include "vfalib.hpp"
 
@@ -53,6 +54,7 @@ struct bitpos {
 
 struct deleter {
 	void operator()(FILE *f) { fclose(f); }
+	void operator()(HXdir *d) { HXdir_close(d); }
 };
 
 struct psf2_header {
@@ -167,6 +169,72 @@ void font::lge()
 			break;
 		m_glyph[k].lge();
 	}
+}
+
+int font::load_clt(const char *dirname)
+{
+	std::unique_ptr<HXdir, deleter> dh(HXdir_open(dirname));
+	if (dh == nullptr)
+		return -errno;
+	if (m_unicode_map == nullptr)
+		m_unicode_map = std::make_shared<unicode_map>();
+
+	const char *de;
+	glyph ng;
+	while ((de = HXdir_read(dh.get())) != nullptr) {
+		if (*de == '.')
+			continue;
+		char *end;
+		char32_t uc = strtoul(de, &end, 16);
+		if (*end != '.' || end == de)
+			continue;
+		auto fn = dirname + std::string("/") + de;
+		std::unique_ptr<FILE, deleter> fp(::fopen(fn.c_str(), "r"));
+		if (fp == nullptr) {
+			fprintf(stderr, "Error opening %s: %s\n", fn.c_str(), strerror(errno));
+			return -errno;
+		}
+		auto ret = load_clt_glyph(fp.get(), ng);
+		if (ret == -EINVAL) {
+			fprintf(stderr, "%s not recognized as a CLT file\n", fn.c_str());
+			continue;
+		}
+		if (ret < 0)
+			return ret;
+		m_unicode_map->add_i2u(m_glyph.size(), uc);
+		m_glyph.emplace_back(std::move(ng));
+	}
+	return 0;
+}
+
+int font::load_clt_glyph(FILE *fp, glyph &ng)
+{
+	hxmc_t *line = nullptr;
+	auto lineclean = make_scope_success([&]() { HXmc_free(line); });
+
+	if (HX_getl(&line, fp) == nullptr)
+		return -EINVAL;
+	HX_chomp(line);
+	if (strcmp(line, "PCLT") != 0)
+		return -EINVAL;
+	if (HX_getl(&line, fp) == nullptr)
+		return -EINVAL;
+	unsigned int width = 0, height = 0, y = 0;
+	if (sscanf(line, "%u %u", &width, &height) != 2)
+		return -EINVAL;
+
+	for (ng = glyph(vfsize(width, height)); HX_getl(&line, fp) != nullptr; ++y) {
+		unsigned int x = 0;
+		for (auto p = line; *p != '\0'; ++x) {
+			bitpos opos = y * width + x;
+			if (*p == '#')
+				ng.m_data[opos.byte] |= opos.mask;
+			++p;
+			if (*p != '\0')
+				++p;
+		}
+	}
+	return 0;
 }
 
 int font::load_fnt(const char *file, unsigned int height)

@@ -23,6 +23,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-lge\fP
 .PP
+\fB\-loadclt\fP \fIdirectory/\fP
+.PP
 \fB\-loadfnt\fP \fImu.fnt\fP
 .PP
 \fB\-loadhex\fP \fIunicode.hex\fP
@@ -70,6 +72,10 @@ Mirrors/flips glyphs.
 Applies a "Line Graphics Enable" transformation on glyphs. It copies the pixels
 in the second rightmost column to the rightmost column, and does this for glyph
 indices 0xC0 to 0xDF.
+.SS loadclt
+.PP
+Reads a directory full of CLT files containing glyphs. CLT is a textgraphical
+format to facilitate visual editing with a text console editor.
 .SS loadfnt
 .PP
 Reads a headerless bitmap font file, as typically used for CGA/EGA/VGA/MDA
@@ -95,8 +101,8 @@ for example, turn them into Portable Compiled Format (PCF) or TrueType/OpenType
 .SS saveclt
 .PP
 Saves the current in-memory glyphs as multiple CLT files to the given
-directory. CLT is a textual representation to facililtate manipulation on the
-glyph image.
+directory. CLT is a textgraphical format to facilitate visual editing with a
+text console editor.
 .SS savefnt
 .PP
 Saves the current in-memory glyphs to the given file, using the headerless

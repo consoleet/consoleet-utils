@@ -82,6 +82,7 @@ struct glyph {
 class font {
 	public:
 	void init_256_blanks();
+	int load_clt(const char *dir);
 	int load_fnt(const char *file, unsigned int height_hint = -1);
 	int load_hex(const char *file);
 	int load_psf(const char *file);
@@ -101,6 +102,7 @@ class font {
 	void lge();
 
 	private:
+	int load_clt_glyph(FILE *, glyph &);
 	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
 	int save_clt_glyph(const char *dir, size_t n, char32_t cp);
 
