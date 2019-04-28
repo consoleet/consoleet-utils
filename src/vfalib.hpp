@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <cstdint>
 #include <cstdio>
 #include <endian.h>
 #if (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || \
@@ -63,7 +64,8 @@ struct unicode_map {
 	ssize_t to_index(char32_t uc) const;
 };
 
-struct glyph {
+class glyph {
+	public:
 	glyph() = default;
 	glyph(const vfsize &size);
 	static glyph create_from_rpad(const vfsize &size, const char *buf, size_t z);
@@ -74,8 +76,13 @@ struct glyph {
 	glyph flip(bool x, bool y) const;
 	void invert();
 	glyph upscale(const vfsize &factor) const;
+	glyph xbrz(unsigned int factor, unsigned int mode) const;
 	void lge();
 
+	private:
+	std::vector<uint32_t> as_rgba() const;
+
+	public:
 	vfsize m_size;
 	std::string m_data;
 };
@@ -101,6 +108,7 @@ class font {
 		{ for (auto &g : m_glyph) g.invert(); }
 	void upscale(const vfsize &factor)
 		{ for (auto &g : m_glyph) g = g.upscale(factor); }
+	void xbrz(unsigned int factor, unsigned int mode);
 	void lge();
 
 	private:

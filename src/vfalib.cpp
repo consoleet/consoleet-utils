@@ -8,6 +8,7 @@
  *	3 of the License, or (at your option) any later version.
  *	For details, see the file named "LICENSE.GPL3".
  */
+#include "config.h"
 #include <algorithm>
 #include <iomanip>
 #include <map>
@@ -32,6 +33,9 @@
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
+#ifdef HAVE_XBRZ_H
+#	include <xbrz.h>
+#endif
 #include "vfalib.hpp"
 
 namespace vfalib {
@@ -167,6 +171,12 @@ void font::lge()
 			break;
 		m_glyph[k].lge();
 	}
+}
+
+void font::xbrz(unsigned int factor, unsigned int mode)
+{
+	for (auto &g : m_glyph)
+		g = g.xbrz(factor, mode);
 }
 
 int font::load_clt(const char *dirname)
@@ -701,6 +711,35 @@ void glyph::lge()
 	}
 }
 
+glyph glyph::xbrz(unsigned int factor, unsigned int mode) const
+{
+#ifndef HAVE_XBRZ_H
+	return {};
+#else
+	auto ng = blit(vfpos() | m_size, vfpos(1, 1) | vfsize(m_size.w + 2, m_size.h + 2));
+	auto src = ng.as_rgba();
+	vfsize xs(ng.m_size.w * factor, ng.m_size.h * factor);
+	std::vector<uint32_t> dst(xs.w * xs.h);
+	if (mode == 0)
+		xbrz::scale(factor, &src[0], &dst[0], ng.m_size.w, ng.m_size.h, xbrz::ColorFormat::RGB);
+	else if (mode == 1)
+		xbrz::nearestNeighborScale(&src[0], ng.m_size.w, ng.m_size.h, &dst[0], xs.w, xs.h);
+	else
+		return {};
+
+	src.clear();
+	ng = glyph(vfsize(m_size.w * factor, m_size.h * factor));
+	for (unsigned int y = 0; y < ng.m_size.h; ++y)
+		for (unsigned int x = 0; x < ng.m_size.w; ++x) {
+			size_t ipos = (y + factor) * xs.w + x + factor;
+			bitpos opos = y * ng.m_size.w + x;
+			if (dst[ipos] & 0xFF000000)
+				ng.m_data[opos.byte] |= opos.mask;
+		}
+	return ng;
+#endif
+}
+
 std::string glyph::as_pbm() const
 {
 	auto bpg = bytes_per_glyph(m_size);
@@ -735,6 +774,18 @@ std::string glyph::as_pclt() const
 		ss << "\n";
 	}
 	return ss.str();
+}
+
+std::vector<uint32_t> glyph::as_rgba() const
+{
+	std::vector<uint32_t> vec(m_size.w * m_size.h);
+	for (unsigned int y = 0; y < m_size.h; ++y)
+		for (unsigned int x = 0; x < m_size.w; ++x) {
+			size_t rpos = y * m_size.w + x;
+			bitpos ipos = rpos;
+			vec[rpos] = (m_data[ipos.byte] & ipos.mask) ? 0xFFFFFFFF : 0;
+		}
+	return vec;
 }
 
 std::string glyph::as_rowpad() const

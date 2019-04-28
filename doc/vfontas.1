@@ -45,6 +45,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-upscale\fP \fIxscale\fP \fIyscale\fP
 .PP
+\fB\-xbrz\fP \fIfactor\fP
+.PP
 \fB\-xcpi\fP \fIega437.cpi\fP \fIoutdir/\fP
 .PP
 \fB\-xlat\fP \fIxoffset\fP \fIyoffset\fP
@@ -120,6 +122,9 @@ then be loaded into a Linux text console with setfont(1).
 .PP
 Performs a linear upscale by an integral factor in both dimensions for all
 glyphs.
+.SS xbrz
+.PP
+Performs a xBRZ upscale by an integral factor.
 .SS xcpi
 .PP
 Extracts a multi-font .cpi file (as was typically used on DOS) as separate .fnt

@@ -8,6 +8,7 @@
  *	3 of the License, or (at your option) any later version.
  *	For details, see the file named "LICENSE.GPL3".
  */
+#include "config.h"
 #include <memory>
 #include <string>
 #include <utility>
@@ -321,6 +322,22 @@ static int vf_extract_cpi2(const char *vdata, const char *directory)
 	return true;
 }
 
+static bool vf_xbrz(font &f, char **args)
+{
+#ifndef HAVE_XBRZ_H
+	fprintf(stderr, "Error: vfontas was not compiled with xBRZ support\n");
+	return false;
+#else
+	auto sf = strtol(args[0], nullptr, 0);
+	if (sf <= 0) {
+		fprintf(stderr, "Error: scaling factor must be positive and not zero.\n");
+		return false;
+	}
+	f.xbrz(sf, 0);
+	return true;
+#endif
+}
+
 static bool vf_xcpi(font &f, char **args)
 {
 	auto in_fd = open(args[0], O_RDONLY);
@@ -383,6 +400,7 @@ static const struct vf_command {
 	{"savepbm", 1, vf_savepbm},
 	{"savepsf", 1, vf_savepsf},
 	{"upscale", 2, vf_upscale},
+	{"xbrz", 1, vf_xbrz},
 	{"xcpi", 2, vf_xcpi},
 	{"xlat", 2, vf_xlat},
 };
