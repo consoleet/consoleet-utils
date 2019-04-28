@@ -231,6 +231,15 @@ static bool vf_savepsf(font &f, char **args)
 	return false;
 }
 
+static bool vf_savesfd(font &f, char **args)
+{
+	auto ret = f.save_sfd(args[0]);
+	if (ret >= 0)
+		return true;
+	fprintf(stderr, "Error saving %s: %s\n", args[0], strerror(-ret));
+	return false;
+}
+
 static bool vf_upscale(font &f, char **args)
 {
 	auto xf = strtol(args[0], nullptr, 0);
@@ -399,6 +408,7 @@ static const struct vf_command {
 	{"savemap", 1, vf_savemap},
 	{"savepbm", 1, vf_savepbm},
 	{"savepsf", 1, vf_savepsf},
+	{"savesfd", 1, vf_savesfd},
 	{"upscale", 2, vf_upscale},
 	{"xbrz", 1, vf_xbrz},
 	{"xcpi", 2, vf_xcpi},

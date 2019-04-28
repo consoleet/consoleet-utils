@@ -623,6 +623,101 @@ int font::save_psf(const char *file)
 	return 0;
 }
 
+int font::save_sfd(const char *file, const char *aname)
+{
+	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
+	if (filep == nullptr)
+		return -errno;
+	auto fp = filep.get();
+	vfsize sz0;
+	if (m_glyph.size() > 0)
+		sz0 = m_glyph[0].m_size;
+	std::string name;
+	if (aname != nullptr) {
+		name = aname;
+		/* X logical font description (XLFD) does not permit dashes */
+		std::replace(name.begin(), name.end(), '-', ' ');
+	} else {
+		name = "vfontas output";
+	}
+	int ascent = sz0.h, descent = 0;
+	fprintf(fp, "SplineFontDB: 3.0\n");
+	fprintf(fp, "FontName: %s\n", name.c_str());
+	fprintf(fp, "FullName: %s\n", name.c_str());
+	fprintf(fp, "FamilyName: %s\n", name.c_str());
+	fprintf(fp, "Weight: medium\n");
+	fprintf(fp, "Version: 001.000\n");
+	fprintf(fp, "ItalicAngle: 0\n");
+	fprintf(fp, "UnderlinePosition: -100\n");
+	fprintf(fp, "UnderlineWidth: 40\n");
+	fprintf(fp, "Ascent: %u\n", ascent);
+	fprintf(fp, "Descent: %u\n", descent);
+	fprintf(fp, "NeedsXUIDChange: 1\n");
+	fprintf(fp, "FSType: 0\n");
+	fprintf(fp, "PfmFamily: 33\n");
+	fprintf(fp, "TTFWeight: 500\n");
+	fprintf(fp, "TTFWidth: 5\n");
+	fprintf(fp, "Panose: 2 0 6 4 0 0 0 0 0 0\n");
+	fprintf(fp, "LineGap: 72\n");
+	fprintf(fp, "VLineGap: 0\n");
+	fprintf(fp, "OS2WinAscent: 0\n");
+	fprintf(fp, "OS2WinAOffset: 1\n");
+	fprintf(fp, "OS2WinDescent: 0\n");
+	fprintf(fp, "OS2WinDOffset: 1\n");
+	fprintf(fp, "HheadAscent: 0\n");
+	fprintf(fp, "HheadAOffset: 1\n");
+	fprintf(fp, "HheadDescent: 0\n");
+	fprintf(fp, "HheadDOffset: 1\n");
+	fprintf(fp, "Encoding: UnicodeBmp\n");
+	fprintf(fp, "UnicodeInterp: none\n");
+	fprintf(fp, "DisplaySize: -24\n");
+	fprintf(fp, "AntiAlias: 1\n");
+	fprintf(fp, "FitToEm: 1\n");
+	fprintf(fp, "WinInfo: 0 50 22\n");
+	fprintf(fp, "TeXData: 1 0 0 346030 173015 115343 0 1048576 115343 783286 444596 497025 792723 393216 433062 380633 303038 157286 324010 404750 52429 2506097 1059062 262144\n");
+	fprintf(fp, "BeginChars: 65536 %zu\n\n", m_glyph.size());
+
+	if (m_unicode_map == nullptr) {
+		for (size_t idx = 0; idx < m_glyph.size(); ++idx)
+			save_sfd_glyph(fp, idx, idx, ascent, descent);
+	} else {
+		for (const auto &pair : m_unicode_map->m_u2i)
+			save_sfd_glyph(fp, pair.second, pair.first, ascent, descent);
+	}
+	fprintf(fp, "EndChars\n");
+	fprintf(fp, "EndSplineFont\n");
+	return 0;
+}
+
+void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
+{
+	unsigned int cpx = cp;
+	const auto &g = m_glyph[idx];
+	const auto &sz = g.m_size;
+	fprintf(fp, "StartChar: %04x\n", cpx);
+	fprintf(fp, "Encoding: %u %u %u\n", cpx, cpx, cpx);
+	fprintf(fp, "Width: %u\n", sz.w);
+	fprintf(fp, "TeX: 0 0 0 0\n");
+	fprintf(fp, "Flags: W\n");
+	fprintf(fp, "Fore\n");
+
+	for (unsigned int y = 0; y < sz.h; ++y) {
+		for (unsigned int x = 0; x < sz.w; ++x) {
+			bitpos ipos = y * sz.w + x;
+			if (!(g.m_data[ipos.byte] & ipos.mask))
+				continue;
+			int yy = sz.h - 1 - y - desc;
+			fprintf(fp, "%d %d m 25\n", x, yy);
+			fprintf(fp, " %d %d l 25\n", x, yy + 1);
+			fprintf(fp, " %d %d l 25\n", x + 1, yy + 1);
+			fprintf(fp, " %d %d l 25\n", x + 1, yy);
+			fprintf(fp, " %d %d l 25\n", x, yy);
+		}
+	}
+	fprintf(fp, "EndSplineSet\n");
+	fprintf(fp, "EndChar\n");
+}
+
 glyph::glyph(const vfsize &size) :
 	m_size(size)
 {
