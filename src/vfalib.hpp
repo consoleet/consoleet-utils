@@ -79,18 +79,17 @@ struct glyph {
 	std::string m_data;
 };
 
-struct font {
+class font {
+	public:
 	void init_256_blanks();
 	int load_fnt(const char *file, unsigned int height_hint = -1);
 	int load_hex(const char *file);
 	int load_psf(const char *file);
 	int save_bdf(const char *file, const char *name = "vfontasout");
-	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
 	int save_fnt(const char *file);
 	int save_map(const char *file);
 	int save_psf(const char *file);
 	int save_clt(const char *dir);
-	int save_clt_glyph(const char *dir, size_t n, char32_t cp);
 	void blit(const vfrect &src, const vfrect &dst)
 		{ for (auto &g : m_glyph) g = g.blit(src, dst); }
 	void flip(bool x, bool y)
@@ -101,6 +100,11 @@ struct font {
 		{ for (auto &g : m_glyph) g = g.upscale(factor); }
 	void lge();
 
+	private:
+	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
+	int save_clt_glyph(const char *dir, size_t n, char32_t cp);
+
+	public:
 	std::vector<glyph> m_glyph;
 	std::shared_ptr<unicode_map> m_unicode_map;
 };
