@@ -39,6 +39,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-savefnt\fP \fIx.fnt\fP
 .PP
+\fB\-savepbm\fP \fIoutdir/\fP
+.PP
 \fB\-savepsf\fP \fInew.psfu\fP
 .PP
 \fB\-upscale\fP \fIxscale\fP \fIyscale\fP
@@ -128,6 +130,26 @@ Moves all glyphs around within their canvases by the specified amount.
 .SH Known limits
 .PP
 The Linux kernel accepts console font glyphs of at most 32x32 in size.
+.SH The Consoleet bitmap format
+.PP
+The Consoleet text bitmap format is very similar to PBM itself. Instead of "P1"
+as in PBM, a CLT file begins with "PCLT" on the first line. In the second line,
+width and height of the bitmap in pixels is given. What follow is the bitmap
+data: Each "off" pixel is represented by the 2-character string ".." Each "on"
+pixel is represented by the 2-character "##". Each row of pixels is terminated
+by a newline, like in PBM.
+.PP
+.nf
+	PCLT
+	9 7
+	..................
+	....##....##..##..
+	..##..##..##..##..
+	..##..##..####....
+	..##..##..##..##..
+	....##....##..##..
+	..................
+.fi
 .SH Examples
 .PP
 Decompose a classic file into editable pictograph text files (with the help

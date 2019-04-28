@@ -67,6 +67,7 @@ struct glyph {
 	glyph() = default;
 	glyph(const vfsize &size);
 	static glyph create_from_rpad(const vfsize &size, const char *buf, size_t z);
+	std::string as_pbm() const;
 	std::string as_pclt() const;
 	std::string as_rowpad() const;
 	glyph blit(const vfrect &src, const vfrect &dst) const;
@@ -89,6 +90,7 @@ class font {
 	int save_bdf(const char *file, const char *name = "vfontasout");
 	int save_fnt(const char *file);
 	int save_map(const char *file);
+	int save_pbm(const char *dir);
 	int save_psf(const char *file);
 	int save_clt(const char *dir);
 	void blit(const vfrect &src, const vfrect &dst)
@@ -105,6 +107,7 @@ class font {
 	int load_clt_glyph(FILE *, glyph &);
 	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
 	int save_clt_glyph(const char *dir, size_t n, char32_t cp);
+	int save_pbm_glyph(const char *dir, size_t n, char32_t cp);
 
 	public:
 	std::vector<glyph> m_glyph;

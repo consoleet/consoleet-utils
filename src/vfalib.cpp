@@ -535,6 +535,44 @@ int font::save_map(const char *file)
 	return 0;
 }
 
+int font::save_pbm(const char *dir)
+{
+	if (m_unicode_map == nullptr) {
+		for (size_t idx = 0; idx < m_glyph.size(); ++idx) {
+			auto ret = save_pbm_glyph(dir, idx, idx);
+			if (ret < 0)
+				return ret;
+		}
+		return 0;
+	}
+	for (size_t idx = 0; idx < m_glyph.size(); ++idx)
+		for (auto codepoint : m_unicode_map->to_unicode(idx)) {
+			auto ret = save_pbm_glyph(dir, idx, codepoint);
+			if (ret < 0)
+				return ret;
+		}
+	return 0;
+}
+
+int font::save_pbm_glyph(const char *dir, size_t idx, char32_t codepoint)
+{
+	std::stringstream ss;
+	ss << dir << "/" << std::setfill('0') << std::setw(4) << std::hex << codepoint << ".pbm";
+	auto outpath = ss.str();
+	std::unique_ptr<FILE, deleter> fp(::fopen(outpath.c_str(), "w"));
+	if (fp == nullptr) {
+		fprintf(stderr, "Could not open %s for writing: %s\n", outpath.c_str(), strerror(errno));
+		return -errno;
+	}
+	auto data = m_glyph[idx].as_pbm();
+	auto ret = fwrite(data.c_str(), data.size(), 1, fp.get());
+	if (ret < 0 || (data.size() > 0 && ret != 1)) {
+		fprintf(stderr, "fwrite %s: %s\n", outpath.c_str(), strerror(-errno));
+		return -errno;
+	}
+	return 0;
+}
+
 int font::save_psf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "wb"));
@@ -667,6 +705,24 @@ void glyph::lge()
 		else
 			m_data[opos.byte] &= ~opos.mask;
 	}
+}
+
+std::string glyph::as_pbm() const
+{
+	auto bpg = bytes_per_glyph(m_size);
+	if (m_data.size() < bpg)
+		return {};
+
+	std::stringstream ss;
+	ss << "P1\n" << m_size.w << " " << m_size.h << "\n";
+	for (unsigned int y = 0; y < m_size.h; ++y) {
+		for (unsigned int x = 0; x < m_size.w; ++x) {
+			bitpos pos = y * m_size.w + x;
+			ss << ((m_data[pos.byte] & pos.mask) ? "1" : "0");
+		}
+		ss << "\n";
+	}
+	return ss.str();
 }
 
 std::string glyph::as_pclt() const
