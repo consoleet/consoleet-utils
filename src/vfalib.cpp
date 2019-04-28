@@ -157,9 +157,7 @@ ssize_t unicode_map::to_index(char32_t uc) const
 
 void font::init_256_blanks()
 {
-	char buf[16]{};
-	m_glyph.clear();
-	m_glyph.resize(256, glyph::create_from_rpad(vfsize(8, 16), buf, sizeof(buf)));
+	m_glyph = std::vector<glyph>(256, glyph(vfsize(8, 16)));
 }
 
 void font::lge()
@@ -659,8 +657,6 @@ glyph glyph::blit(const vfrect &sof, const vfrect &pof) const
 glyph glyph::flip(bool flipx, bool flipy) const
 {
 	glyph ng(m_size);
-	ng.m_data.resize(m_data.size());
-
 	for (unsigned int y = 0; y < m_size.h; ++y) {
 		for (unsigned int x = 0; x < m_size.w; ++x) {
 			bitpos ipos = y * m_size.w + x;
@@ -675,8 +671,6 @@ glyph glyph::flip(bool flipx, bool flipy) const
 glyph glyph::upscale(const vfsize &factor) const
 {
 	glyph ng(vfsize(m_size.w * factor.w, m_size.h * factor.h));
-	ng.m_data.resize(bytes_per_glyph(ng.m_size));
-
 	for (unsigned int y = 0; y < ng.m_size.h; ++y) {
 		for (unsigned int x = 0; x < ng.m_size.w; ++x) {
 			bitpos opos = y * ng.m_size.w + x;
