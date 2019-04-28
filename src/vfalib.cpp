@@ -169,7 +169,7 @@ void font::lge()
 	}
 }
 
-ssize_t font::load_fnt(const char *file, unsigned int height)
+int font::load_fnt(const char *file, unsigned int height)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
 	if (fp == nullptr)
@@ -188,18 +188,16 @@ ssize_t font::load_fnt(const char *file, unsigned int height)
 	}
 	auto bpc = bytes_per_glyph(vfsize(width, height));
 	std::unique_ptr<char[]> buf(new char[bpc]);
-	size_t count = 0;
 	do {
 		auto ret = fread(buf.get(), bpc, 1, fp.get());
 		if (ret < 1)
 			break;
 		m_glyph.emplace_back(glyph::create_from_rpad(vfsize(width, height), buf.get(), bpc));
-		++count;
 	} while (true);
-	return count;
+	return 0;
 }
 
-ssize_t font::load_hex(const char *file)
+int font::load_hex(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "r"));
 	if (fp == nullptr)
@@ -268,7 +266,7 @@ static char32_t nextutf8(FILE *fp)
 	return uc;
 }
 
-ssize_t font::load_psf(const char *file)
+int font::load_psf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
 	if (fp == nullptr)
@@ -316,7 +314,7 @@ ssize_t font::load_psf(const char *file)
 	return 0;
 }
 
-ssize_t font::save_bdf(const char *file, const char *aname)
+int font::save_bdf(const char *file, const char *aname)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
 	if (filep == nullptr)
@@ -378,7 +376,7 @@ ssize_t font::save_bdf(const char *file, const char *aname)
 			save_bdf_glyph(fp, pair.second, pair.first);
 	}
 	fprintf(fp, "ENDFONT\n");
-	return m_glyph.size();
+	return 0;
 }
 
 void font::save_bdf_glyph(FILE *fp, size_t idx, char32_t cp)
@@ -402,28 +400,26 @@ void font::save_bdf_glyph(FILE *fp, size_t idx, char32_t cp)
 	fprintf(fp, "ENDCHAR\n");
 }
 
-ssize_t font::save_clt(const char *dir)
+int font::save_clt(const char *dir)
 {
-	size_t count = 0;
 	if (m_unicode_map == nullptr) {
-		for (size_t idx = 0; idx < m_glyph.size(); ++idx, ++count) {
+		for (size_t idx = 0; idx < m_glyph.size(); ++idx) {
 			auto ret = save_clt_glyph(dir, idx, idx);
 			if (ret < 0)
 				return ret;
 		}
-		return count;
+		return 0;
 	}
 	for (size_t idx = 0; idx < m_glyph.size(); ++idx)
 		for (auto codepoint : m_unicode_map->to_unicode(idx)) {
 			auto ret = save_clt_glyph(dir, idx, codepoint);
 			if (ret < 0)
 				return ret;
-			++count;
 		}
-	return count;
+	return 0;
 }
 
-ssize_t font::save_clt_glyph(const char *dir, size_t idx, char32_t codepoint)
+int font::save_clt_glyph(const char *dir, size_t idx, char32_t codepoint)
 {
 	std::stringstream ss;
 	ss << dir << "/" << std::setfill('0') << std::setw(4) << std::hex << codepoint << ".txt";
@@ -442,40 +438,36 @@ ssize_t font::save_clt_glyph(const char *dir, size_t idx, char32_t codepoint)
 	return 0;
 }
 
-ssize_t font::save_fnt(const char *file)
+int font::save_fnt(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "wb"));
 	if (fp == nullptr)
 		return -errno;
-	size_t count = 0;
 	for (const auto &glyph : m_glyph) {
 		auto ret = fwrite(glyph.m_data.c_str(), glyph.m_data.size(), 1, fp.get());
 		if (ret < 1)
 			break;
 	}
-	return count;
+	return 0;
 }
 
-ssize_t font::save_map(const char *file)
+int font::save_map(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "w"));
 	if (fp == nullptr)
 		return -errno;
 	if (m_unicode_map == nullptr)
 		return 0;
-	size_t count = 0;
 	for (const auto &e : m_unicode_map->m_i2u) {
 		fprintf(fp.get(), "0x%02x\t", e.first);
-		for (auto uc : e.second) {
+		for (auto uc : e.second)
 			fprintf(fp.get(), "U+%04x ", uc);
-			++count;
-		}
 		fprintf(fp.get(), "\n");
 	}
-	return count;
+	return 0;
 }
 
-ssize_t font::save_psf(const char *file)
+int font::save_psf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "wb"));
 	if (fp == nullptr)

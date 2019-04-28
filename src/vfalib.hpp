@@ -81,16 +81,16 @@ struct glyph {
 
 struct font {
 	void init_256_blanks();
-	ssize_t load_fnt(const char *file, unsigned int height_hint = -1);
-	ssize_t load_hex(const char *file);
-	ssize_t load_psf(const char *file);
-	ssize_t save_bdf(const char *file, const char *name = "vfontasout");
+	int load_fnt(const char *file, unsigned int height_hint = -1);
+	int load_hex(const char *file);
+	int load_psf(const char *file);
+	int save_bdf(const char *file, const char *name = "vfontasout");
 	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
-	ssize_t save_fnt(const char *file);
-	ssize_t save_map(const char *file);
-	ssize_t save_psf(const char *file);
-	ssize_t save_clt(const char *dir);
-	ssize_t save_clt_glyph(const char *dir, size_t n, char32_t cp);
+	int save_fnt(const char *file);
+	int save_map(const char *file);
+	int save_psf(const char *file);
+	int save_clt(const char *dir);
+	int save_clt_glyph(const char *dir, size_t n, char32_t cp);
 	void blit(const vfrect &src, const vfrect &dst)
 		{ for (auto &g : m_glyph) g = g.blit(src, dst); }
 	void flip(bool x, bool y)
