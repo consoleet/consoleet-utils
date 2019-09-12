@@ -188,7 +188,7 @@ To convert a .fnt for use under X11 and XTerm (generates sizes 12, 24 and 36):
 .RS 4
 .nf
 for i in 1 2 3; do vfontas \-loadfnt mux.fnt \-loadmap cp437AB.uni \-upscale $i
->$i \-savebdf \- Mux | bdftopcf | gzip >~/.fonts/mux$i.pcf.gz;
+$i \-savebdf \- Mux | bdftopcf | gzip >~/.fonts/mux$i.pcf.gz;
 done; xterm -fa "misc Mux:size=24"
 .fi
 .RE
