@@ -655,7 +655,7 @@ int font::save_sfd(const char *file, const char *aname)
 	fprintf(fp, "Descent: %u\n", descent);
 	fprintf(fp, "NeedsXUIDChange: 1\n");
 	fprintf(fp, "FSType: 0\n");
-	fprintf(fp, "PfmFamily: 33\n");
+	fprintf(fp, "PfmFamily: 32\n");
 	fprintf(fp, "TTFWeight: 500\n");
 	fprintf(fp, "TTFWidth: 5\n");
 	fprintf(fp, "Panose: 2 0 6 4 0 0 0 0 0 0\n");
