@@ -702,17 +702,32 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	fprintf(fp, "Fore\n");
 
 	for (unsigned int y = 0; y < sz.h; ++y) {
+		int yy = sz.h - 1 - y - desc;
+		unsigned int poly_startx = -1, poly_endx = -1;
 		for (unsigned int x = 0; x < sz.w; ++x) {
 			bitpos ipos = y * sz.w + x;
 			if (!(g.m_data[ipos.byte] & ipos.mask))
 				continue;
-			int yy = sz.h - 1 - y - desc;
-			fprintf(fp, "%d %d m 25\n", x, yy);
-			fprintf(fp, " %d %d l 25\n", x, yy + 1);
-			fprintf(fp, " %d %d l 25\n", x + 1, yy + 1);
-			fprintf(fp, " %d %d l 25\n", x + 1, yy);
-			fprintf(fp, " %d %d l 25\n", x, yy);
+			if (poly_endx != -1U && poly_endx != x) {
+				/* there was a gap, flush previous block */
+				fprintf(fp, "%d %d m 25\n", poly_startx, yy);
+				fprintf(fp, " %d %d l 25\n", poly_startx, yy + 1);
+				fprintf(fp, " %d %d l 25\n", poly_endx, yy + 1);
+				fprintf(fp, " %d %d l 25\n", poly_endx, yy);
+				fprintf(fp, " %d %d l 25\n", poly_startx, yy);
+				poly_startx = -1;
+			}
+			if (poly_startx == -1U)
+				poly_startx = x;
+			poly_endx = x + 1;
 		}
+		if (poly_startx == -1U)
+			continue;
+		fprintf(fp, "%d %d m 25\n", poly_startx, yy);
+		fprintf(fp, " %d %d l 25\n", poly_startx, yy + 1);
+		fprintf(fp, " %d %d l 25\n", poly_endx, yy + 1);
+		fprintf(fp, " %d %d l 25\n", poly_endx, yy);
+		fprintf(fp, " %d %d l 25\n", poly_startx, yy);
 	}
 	fprintf(fp, "EndSplineSet\n");
 	fprintf(fp, "EndChar\n");
