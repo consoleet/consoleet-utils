@@ -14,6 +14,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -689,6 +690,91 @@ int font::save_sfd(const char *file, const char *aname)
 	return 0;
 }
 
+class vectorizer final {
+	public:
+	using vertex = std::pair<unsigned int, unsigned int>;
+	using edge = std::pair<vertex, vertex>;
+	void set(unsigned int, unsigned int);
+	void finalize();
+	std::vector<edge> pop_poly();
+
+	private:
+	void add_edge(edge &&e) { emap.insert(std::move(e)); }
+	std::set<edge> emap;
+};
+
+void vectorizer::set(unsigned int x, unsigned int y)
+{
+	/* TTF/OTF spec wants CCW orientation */
+	add_edge({{x, y}, {x, y + 1}});
+	add_edge({{x, y + 1}, {x + 1, y + 1}});
+	add_edge({{x + 1, y + 1}, {x + 1, y}});
+	add_edge({{x + 1, y}, {x, y}});
+}
+
+void vectorizer::finalize()
+{
+	/*
+	 * Remove overlaps: As enforced by set(), all the polygons are added
+	 * with the same orientation. Polygons at most touch, and never
+	 * overlap. Joining polygons therefore simply requires removing shared
+	 * contradirectional edges. The remaining set of edges then forms a new
+	 * set of polygons, and, as the edges themselves were never reoriented,
+	 * these polygons have the correct orientation.
+	 */
+	for (auto i = emap.begin(); i != emap.end(); ) {
+		auto j = emap.find({i->second, i->first});
+		if (j == emap.cend()) {
+			++i;
+			continue;
+		}
+		emap.erase(j);
+		i = emap.erase(i);
+	}
+}
+
+static inline unsigned int dir(const vectorizer::edge &e)
+{
+	/* We have no diagonal lines, so this is fine */
+	const auto &v1 = e.first, &v2 = e.second;
+	if (v2.first == v1.first)
+		return v2.second < v1.second ? 180 : 0;
+	return v2.first < v1.first ? 270 : 90;
+}
+
+std::vector<vectorizer::edge> vectorizer::pop_poly()
+{
+	std::vector<edge> poly;
+	if (emap.size() == 0)
+		return poly;
+	poly.push_back(*emap.begin());
+	emap.erase(emap.begin());
+	auto prev_dir = dir(poly[0]);
+
+	while (true) {
+		if (emap.size() == 0)
+			break;
+		auto &tail_vtx = poly.rbegin()->second;
+		if (tail_vtx == poly.cbegin()->first)
+			break;
+		auto next = emap.lower_bound({tail_vtx, {}});
+		if (next == emap.cend()) {
+			fprintf(stderr, "unclosed poly wtf?!\n");
+			break;
+		}
+
+		/* Squash redundant vertices along the way */
+		auto next_dir = dir(*next);
+		if (next_dir == prev_dir)
+			tail_vtx = next->second;
+		else
+			poly.push_back(*next);
+		emap.erase(next);
+		prev_dir = next_dir;
+	}
+	return poly;
+}
+
 void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 {
 	unsigned int cpx = cp;
@@ -700,34 +786,25 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	fprintf(fp, "TeX: 0 0 0 0\n");
 	fprintf(fp, "Flags: MW\n");
 	fprintf(fp, "Fore\n");
+	vectorizer vk;
 
 	for (unsigned int y = 0; y < sz.h; ++y) {
-		int yy = sz.h - 1 - y - desc;
-		unsigned int poly_startx = -1, poly_endx = -1;
+		unsigned int yy = sz.h - 1 - y - desc;
 		for (unsigned int x = 0; x < sz.w; ++x) {
 			bitpos ipos = y * sz.w + x;
-			if (!(g.m_data[ipos.byte] & ipos.mask))
-				continue;
-			if (poly_endx != -1U && poly_endx != x) {
-				/* there was a gap, flush previous block */
-				fprintf(fp, "%d %d m 25\n", poly_startx, yy);
-				fprintf(fp, " %d %d l 25\n", poly_startx, yy + 1);
-				fprintf(fp, " %d %d l 25\n", poly_endx, yy + 1);
-				fprintf(fp, " %d %d l 25\n", poly_endx, yy);
-				fprintf(fp, " %d %d l 25\n", poly_startx, yy);
-				poly_startx = -1;
-			}
-			if (poly_startx == -1U)
-				poly_startx = x;
-			poly_endx = x + 1;
+			if (g.m_data[ipos.byte] & ipos.mask)
+				vk.set(x, yy);
 		}
-		if (poly_startx == -1U)
-			continue;
-		fprintf(fp, "%d %d m 25\n", poly_startx, yy);
-		fprintf(fp, " %d %d l 25\n", poly_startx, yy + 1);
-		fprintf(fp, " %d %d l 25\n", poly_endx, yy + 1);
-		fprintf(fp, " %d %d l 25\n", poly_endx, yy);
-		fprintf(fp, " %d %d l 25\n", poly_startx, yy);
+	}
+	vk.finalize();
+	while (true) {
+		auto poly = vk.pop_poly();
+		if (poly.size() == 0)
+			break;
+		const auto &v1 = poly.cbegin()->first;
+		fprintf(fp, "%d %d m 25\n", v1.first, v1.second);
+		for (const auto &edge : poly)
+			fprintf(fp, " %d %d l 25\n", edge.second.first, edge.second.second);
 	}
 	fprintf(fp, "EndSplineSet\n");
 	fprintf(fp, "EndChar\n");
