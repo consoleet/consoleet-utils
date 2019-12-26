@@ -839,8 +839,8 @@ glyph glyph::blit(const vfrect &sof, const vfrect &pof) const
 		for (unsigned int x = sof.x; x < sof.x + sof.w && x < m_size.w; ++x) {
 			int ox = pof.x + x - sof.x;
 			int oy = pof.y + y - sof.y;
-			if (ox < 0 || oy < 0 || static_cast<unsigned int>(ox) > pof.w ||
-			    static_cast<unsigned int>(oy) > pof.h)
+			if (ox < 0 || oy < 0 || static_cast<unsigned int>(ox) >= pof.w ||
+			    static_cast<unsigned int>(oy) >= pof.h)
 				continue;
 			bitpos ipos = y * m_size.w + x;
 			bitpos opos = oy * ng.m_size.w + ox;
