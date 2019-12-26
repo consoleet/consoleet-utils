@@ -698,7 +698,7 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	fprintf(fp, "Encoding: %u %u %u\n", cpx, cpx, cpx);
 	fprintf(fp, "Width: %u\n", sz.w);
 	fprintf(fp, "TeX: 0 0 0 0\n");
-	fprintf(fp, "Flags: W\n");
+	fprintf(fp, "Flags: MW\n");
 	fprintf(fp, "Fore\n");
 
 	for (unsigned int y = 0; y < sz.h; ++y) {
