@@ -148,6 +148,15 @@ static bool vf_loadfnt(font &f, char **args)
 	return false;
 }
 
+static bool vf_loadfnth(font &f, char **args)
+{
+	auto ret = f.load_fnt(args[0], atoi(args[1]));
+	if (ret >= 0)
+		return true;
+	fprintf(stderr, "Error loading %s: %s\n", args[0], strerror(-ret));
+	return false;
+}
+
 static bool vf_loadhex(font &f, char **args)
 {
 	auto ret = f.load_hex(args[0]);
@@ -399,6 +408,7 @@ static const struct vf_command {
 	{"lge", 0, vf_lge},
 	{"loadclt", 1, vf_loadclt},
 	{"loadfnt", 1, vf_loadfnt},
+	{"loadfnth", 2, vf_loadfnth},
 	{"loadhex", 1, vf_loadhex},
 	{"loadmap", 1, vf_loadmap},
 	{"loadpsf", 1, vf_loadpsf},

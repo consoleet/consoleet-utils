@@ -88,6 +88,10 @@ format to facilitate visual editing with a text console editor.
 Reads a headerless bitmap font file, as typically used for CGA/EGA/VGA/MDA
 hardware, from the specified file into memory. 8x8x256 (width/height/glyphs),
 8x12x256, 8x14x256, 8x16x256 and 8x16x512 are supported.
+.SS loadfnth
+.PP
+Reads a headerless bitmap font file, using the specified height N and width 8.
+The number of characters is then autoderived from the filesize.
 .SS loadhex
 .PP
 Reads a Unifont .hex encoded file.
