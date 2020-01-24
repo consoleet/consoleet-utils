@@ -1,4 +1,11 @@
 
+rel-20200124
+============
+* vfontas: add full vectorizer for SFD glyphs
+* vfontas: improved ascent/descent values for vector output
+* vfontas: hex format misreading was fixed
+
+
 rel-20190428
 ============
 * vfontas: new implementation. Replaces clt2bdf, clt2pbm, cltxscale, fnt2bdf.
