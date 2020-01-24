@@ -167,11 +167,9 @@ void font::init_256_blanks()
 
 void font::lge()
 {
-	for (unsigned int k = 0xC0; k <= 0xDF; ++k) {
-		if (m_glyph.size() < k)
-			break;
+	unsigned int max = std::min(0xE0, m_glyph.size());
+	for (unsigned int k = 0xC0; k < max; ++k)
 		m_glyph[k].lge();
-	}
 }
 
 void font::xbrz(unsigned int factor, unsigned int mode)
