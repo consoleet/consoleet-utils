@@ -668,13 +668,13 @@ int font::save_sfd(const char *file, const char *aname)
 	fprintf(fp, "Panose: 2 0 6 4 0 0 0 0 0 0\n");
 	fprintf(fp, "LineGap: 72\n");
 	fprintf(fp, "VLineGap: 0\n");
-	fprintf(fp, "OS2WinAscent: 0\n");
+	fprintf(fp, "OS2WinAscent: %u\n", ascent);
 	fprintf(fp, "OS2WinAOffset: 1\n");
-	fprintf(fp, "OS2WinDescent: 0\n");
+	fprintf(fp, "OS2WinDescent: %u\n", descent);
 	fprintf(fp, "OS2WinDOffset: 1\n");
-	fprintf(fp, "HheadAscent: 0\n");
+	fprintf(fp, "HheadAscent: %u\n", ascent);
 	fprintf(fp, "HheadAOffset: 1\n");
-	fprintf(fp, "HheadDescent: 0\n");
+	fprintf(fp, "HheadDescent: %u\n", descent);
 	fprintf(fp, "HheadDOffset: 1\n");
 	fprintf(fp, "Encoding: UnicodeBmp\n");
 	fprintf(fp, "UnicodeInterp: none\n");
