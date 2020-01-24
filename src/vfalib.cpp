@@ -654,16 +654,16 @@ int font::save_sfd(const char *file, const char *aname)
 	fprintf(fp, "Weight: medium\n");
 	fprintf(fp, "Version: 001.000\n");
 	fprintf(fp, "ItalicAngle: 0\n");
-	fprintf(fp, "UnderlinePosition: -100\n");
-	fprintf(fp, "UnderlineWidth: 40\n");
+	fprintf(fp, "UnderlinePosition: -3\n");
+	fprintf(fp, "UnderlineWidth: 1\n");
 	fprintf(fp, "Ascent: %u\n", ascent);
 	fprintf(fp, "Descent: %u\n", descent);
 	fprintf(fp, "NeedsXUIDChange: 1\n");
 	fprintf(fp, "FSType: 0\n");
-	fprintf(fp, "PfmFamily: 32\n");
+	fprintf(fp, "PfmFamily: 49\n");
 	fprintf(fp, "TTFWeight: 500\n");
 	fprintf(fp, "TTFWidth: 5\n");
-	fprintf(fp, "Panose: 2 0 6 4 0 0 0 0 0 0\n");
+	fprintf(fp, "Panose: 2 0 6 9 9 0 0 0 0 0\n");
 	fprintf(fp, "LineGap: 72\n");
 	fprintf(fp, "VLineGap: 0\n");
 	fprintf(fp, "OS2WinAscent: %u\n", ascent);
@@ -788,9 +788,9 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	fprintf(fp, "StartChar: %04x\n", cpx);
 	fprintf(fp, "Encoding: %u %u %u\n", cpx, cpx, cpx);
 	fprintf(fp, "Width: %u\n", sz.w);
-	fprintf(fp, "TeX: 0 0 0 0\n");
 	fprintf(fp, "Flags: MW\n");
 	fprintf(fp, "Fore\n");
+	fprintf(fp, "SplineSet\n");
 	vectorizer vk;
 
 	for (unsigned int y = 0; y < sz.h; ++y) {
