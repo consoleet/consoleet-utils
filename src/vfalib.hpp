@@ -73,6 +73,7 @@ class glyph {
 	std::string as_pclt() const;
 	std::string as_rowpad() const;
 	glyph blit(const vfrect &src, const vfrect &dst) const;
+	int find_baseline() const;
 	glyph flip(bool x, bool y) const;
 	void invert();
 	glyph upscale(const vfsize &factor) const;
@@ -113,6 +114,7 @@ class font {
 	void lge();
 
 	private:
+	std::pair<int, int> find_ascent_descent() const;
 	int load_clt_glyph(FILE *, glyph &);
 	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
 	int save_clt_glyph(const char *dir, size_t n, char32_t cp);

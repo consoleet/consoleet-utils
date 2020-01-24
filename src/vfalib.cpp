@@ -167,7 +167,7 @@ void font::init_256_blanks()
 
 void font::lge()
 {
-	unsigned int max = std::min(0xE0, m_glyph.size());
+	auto max = std::min(0xE0U, static_cast<unsigned int>(m_glyph.size()));
 	for (unsigned int k = 0xC0; k < max; ++k)
 		m_glyph[k].lge();
 }
@@ -629,15 +629,39 @@ int font::save_psf(const char *file)
 	return 0;
 }
 
+std::pair<int, int> font::find_ascent_descent() const
+{
+	std::pair<int, int> asds{0, 0};
+	if (m_glyph.size() == 0)
+		return asds;
+	int base = -1;
+	if (m_unicode_map->m_u2i.size() == 0) {
+		for (unsigned int c : {'M', 'X', 'x'})
+			if (m_glyph.size() >= c)
+				base = std::max(base, m_glyph[c].find_baseline());
+	} else {
+		for (unsigned int c : {'M', 'X', 'x'}) {
+			auto i = m_unicode_map->m_u2i.find(c);
+			if (i == m_unicode_map->m_u2i.cend())
+				continue;
+			base = std::max(base, m_glyph[i->second].find_baseline());
+		}
+	}
+	if (base < 0) {
+		asds.first = m_glyph[0].m_size.h;
+		return asds;
+	}
+	asds.first = base;
+	asds.second = m_glyph[0].m_size.h - base;
+	return asds;
+}
+
 int font::save_sfd(const char *file, const char *aname)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
 	if (filep == nullptr)
 		return -errno;
 	auto fp = filep.get();
-	vfsize sz0;
-	if (m_glyph.size() > 0)
-		sz0 = m_glyph[0].m_size;
 	std::string name;
 	if (aname != nullptr) {
 		name = aname;
@@ -646,7 +670,7 @@ int font::save_sfd(const char *file, const char *aname)
 	} else {
 		name = "vfontas output";
 	}
-	int ascent = sz0.h, descent = 0;
+	auto asds = find_ascent_descent();
 	fprintf(fp, "SplineFontDB: 3.0\n");
 	fprintf(fp, "FontName: %s\n", name.c_str());
 	fprintf(fp, "FullName: %s\n", name.c_str());
@@ -656,24 +680,29 @@ int font::save_sfd(const char *file, const char *aname)
 	fprintf(fp, "ItalicAngle: 0\n");
 	fprintf(fp, "UnderlinePosition: -3\n");
 	fprintf(fp, "UnderlineWidth: 1\n");
-	fprintf(fp, "Ascent: %u\n", ascent);
-	fprintf(fp, "Descent: %u\n", descent);
+	fprintf(fp, "Ascent: %d\n", asds.first);
+	fprintf(fp, "Descent: %d\n", asds.second);
 	fprintf(fp, "NeedsXUIDChange: 1\n");
 	fprintf(fp, "FSType: 0\n");
 	fprintf(fp, "PfmFamily: 49\n");
 	fprintf(fp, "TTFWeight: 500\n");
 	fprintf(fp, "TTFWidth: 5\n");
 	fprintf(fp, "Panose: 2 0 6 9 9 0 0 0 0 0\n");
-	fprintf(fp, "LineGap: 72\n");
+	fprintf(fp, "LineGap: 0\n");
 	fprintf(fp, "VLineGap: 0\n");
-	fprintf(fp, "OS2WinAscent: %u\n", ascent);
-	fprintf(fp, "OS2WinAOffset: 1\n");
-	fprintf(fp, "OS2WinDescent: %u\n", descent);
-	fprintf(fp, "OS2WinDOffset: 1\n");
-	fprintf(fp, "HheadAscent: %u\n", ascent);
-	fprintf(fp, "HheadAOffset: 1\n");
-	fprintf(fp, "HheadDescent: %u\n", descent);
-	fprintf(fp, "HheadDOffset: 1\n");
+	fprintf(fp, "OS2TypoAscent: %d\n", asds.first);
+	fprintf(fp, "OS2TypoAOffset: 0\n");
+	fprintf(fp, "OS2TypoDescent: %d\n", -asds.second);
+	fprintf(fp, "OS2TypoDOffset: 0\n");
+	fprintf(fp, "OS2TypoLinegap: 0\n");
+	fprintf(fp, "OS2WinAscent: %d\n", asds.first);
+	fprintf(fp, "OS2WinAOffset: 0\n");
+	fprintf(fp, "OS2WinDescent: %d\n", asds.second);
+	fprintf(fp, "OS2WinDOffset: 0\n");
+	fprintf(fp, "HheadAscent: %d\n", asds.first);
+	fprintf(fp, "HheadAOffset: 0\n");
+	fprintf(fp, "HheadDescent: %d\n", -asds.second);
+	fprintf(fp, "HheadDOffset: 0\n");
 	fprintf(fp, "Encoding: UnicodeBmp\n");
 	fprintf(fp, "UnicodeInterp: none\n");
 	fprintf(fp, "DisplaySize: -24\n");
@@ -685,10 +714,10 @@ int font::save_sfd(const char *file, const char *aname)
 
 	if (m_unicode_map == nullptr) {
 		for (size_t idx = 0; idx < m_glyph.size(); ++idx)
-			save_sfd_glyph(fp, idx, idx, ascent, descent);
+			save_sfd_glyph(fp, idx, idx, asds.first, asds.second);
 	} else {
 		for (const auto &pair : m_unicode_map->m_u2i)
-			save_sfd_glyph(fp, pair.second, pair.first, ascent, descent);
+			save_sfd_glyph(fp, pair.second, pair.first, asds.first, asds.second);
 	}
 	fprintf(fp, "EndChars\n");
 	fprintf(fp, "EndSplineFont\n");
@@ -854,6 +883,18 @@ glyph glyph::blit(const vfrect &sof, const vfrect &pof) const
 		}
 	}
 	return ng;
+}
+
+int glyph::find_baseline() const
+{
+	for (int y = m_size.h - 1; y >= 0; --y) {
+		for (unsigned int x = 0; x < m_size.w; ++x) {
+			bitpos ipos = y * m_size.w + x;
+			if (m_data[ipos.byte] & ipos.mask)
+				return y + 1;
+		}
+	}
+	return -1;
 }
 
 glyph glyph::flip(bool flipx, bool flipy) const
