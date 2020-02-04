@@ -33,7 +33,7 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-loadpsf\fP \fIter-v32b.psfu\fP
 .PP
-\fB\-savebdf\fP \fIout.bdf\fP \fIfontname\fP
+\fB\-savebdf\fP \fIout.bdf\fP
 .PP
 \fB\-saveclt\fP \fIoutdir/\fP
 .PP
@@ -44,6 +44,8 @@ vfontas \(em a bitmap font file transformation utility
 \fB\-savepsf\fP \fInew.psfu\fP
 .PP
 \fB\-savesfd\fP \fInew.sfd\fP
+.PP
+\fB\-setname\fP \fIname\fP
 .PP
 \fB\-upscale\fP \fIxscale\fP \fIyscale\fP
 .PP
@@ -134,6 +136,11 @@ mapping table is added to the PSF.
 .PP
 Saves the font to a Spline Font Database file (SFD). This type of file
 can be processed further by fontforge(1).
+.SS setname
+.PP
+Sets a name for the font, which gets emitted for BDF/SFD output. (The other
+file formats have no metadata field for a name, so the filename is all you
+get.)
 .SS upscale
 .PP
 Performs a linear upscale by an integral factor for all glyphs.
@@ -212,7 +219,7 @@ To convert a .fnt for use under X11 and XTerm (generates sizes 12, 24 and 36,
 .RS 4
 .nf
 for i in 1 2 3; do vfontas \-loadfnt mux.fnt \-loadmap cp437AB.uni \-canvas 9
-16 \-lge \-upscale $i $i \-savebdf \- Mux | bdftopcf | gzip
+16 \-lge \-upscale $i $i \-setname Mux \-savebdf | bdftopcf | gzip
 >~/.fonts/mux$i.pcf.gz; done; xterm \-fa "misc Mux:size=24"
 .fi
 .RE

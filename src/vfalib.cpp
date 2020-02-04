@@ -396,7 +396,7 @@ int font::load_psf(const char *file)
 	return 0;
 }
 
-int font::save_bdf(const char *file, const char *aname)
+int font::save_bdf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
 	if (filep == nullptr)
@@ -405,14 +405,9 @@ int font::save_bdf(const char *file, const char *aname)
 	vfsize sz0;
 	if (m_glyph.size() > 0)
 		sz0 = m_glyph[0].m_size;
-	std::string name;
-	if (aname != nullptr) {
-		name = aname;
-		/* X logical font description (XLFD) does not permit dashes */
-		std::replace(name.begin(), name.end(), '-', ' ');
-	} else {
-		name = "vfontas output";
-	}
+	std::string bfd_name = name;
+	/* X logical font description (XLFD) does not permit dashes */
+	std::replace(bfd_name.begin(), bfd_name.end(), '-', ' ');
 	fprintf(fp, "STARTFONT 2.1\n");
 	fprintf(fp, "FONT -misc-%s-medium-r-normal--%u-%u-75-75-c-%u-iso10646-1\n",
 		name.c_str(), sz0.h, 10 * sz0.h, 10 * sz0.w);
@@ -656,23 +651,18 @@ std::pair<int, int> font::find_ascent_descent() const
 	return asds;
 }
 
-int font::save_sfd(const char *file, const char *aname)
+int font::save_sfd(const char *file)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
 	if (filep == nullptr)
 		return -errno;
 	auto fp = filep.get();
-	std::string name;
-	if (aname != nullptr) {
-		name = aname;
-		/* X logical font description (XLFD) does not permit dashes */
-		std::replace(name.begin(), name.end(), '-', ' ');
-	} else {
-		name = "vfontas output";
-	}
+	std::string ps_name = name;
+	/* PostScript name does not allow spaces */
+	std::replace(ps_name.begin(), ps_name.end(), ' ', '-');
 	auto asds = find_ascent_descent();
 	fprintf(fp, "SplineFontDB: 3.0\n");
-	fprintf(fp, "FontName: %s\n", name.c_str());
+	fprintf(fp, "FontName: %s\n", ps_name.c_str());
 	fprintf(fp, "FullName: %s\n", name.c_str());
 	fprintf(fp, "FamilyName: %s\n", name.c_str());
 	fprintf(fp, "Weight: medium\n");
