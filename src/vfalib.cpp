@@ -787,7 +787,12 @@ std::vector<vectorizer::edge> vectorizer::pop_poly()
 			break;
 		}
 
-		/* Squash redundant vertices along the way */
+		/*
+		 * Skip redundant vertices along the way to the next
+		 * directional change of the outline. (Vertices are not
+		 * deleted, and they are also duplicated, in case another
+		 * polygon has a vertex in the same location.)
+		 */
 		auto next_dir = dir(*next);
 		if (next_dir == prev_dir)
 			tail_vtx = next->second;
