@@ -630,7 +630,7 @@ std::pair<int, int> font::find_ascent_descent() const
 	if (m_glyph.size() == 0)
 		return asds;
 	int base = -1;
-	if (m_unicode_map->m_u2i.size() == 0) {
+	if (m_unicode_map == nullptr || m_unicode_map->m_u2i.size() == 0) {
 		for (unsigned int c : {'M', 'X', 'x'})
 			if (m_glyph.size() >= c)
 				base = std::max(base, m_glyph[c].find_baseline());
