@@ -716,8 +716,6 @@ int font::save_sfd(const char *file)
 
 class vectorizer final {
 	public:
-	using vertex = std::pair<unsigned int, unsigned int>;
-	using edge = std::pair<vertex, vertex>;
 	void set(unsigned int, unsigned int);
 	void finalize();
 	std::vector<edge> pop_poly();
@@ -746,40 +744,31 @@ void vectorizer::finalize()
 	 * set of polygons, and, as the edges themselves were never reoriented,
 	 * these polygons have the correct orientation.
 	 */
-	for (auto i = emap.begin(); i != emap.end(); ) {
-		auto j = emap.find({i->second, i->first});
-		if (j == emap.cend()) {
-			++i;
+	for (auto edge = emap.begin(); edge != emap.end(); ) {
+		auto twin = emap.find({edge->end_vtx, edge->start_vtx});
+		if (twin == emap.cend()) {
+			++edge;
 			continue;
 		}
-		emap.erase(j);
-		i = emap.erase(i);
+		emap.erase(twin);
+		edge = emap.erase(edge);
 	}
 }
 
-static inline unsigned int dir(const vectorizer::edge &e)
-{
-	/* We have no diagonal lines, so this is fine */
-	const auto &v1 = e.first, &v2 = e.second;
-	if (v2.first == v1.first)
-		return v2.second < v1.second ? 180 : 0;
-	return v2.first < v1.first ? 270 : 90;
-}
-
-std::vector<vectorizer::edge> vectorizer::pop_poly()
+std::vector<edge> vectorizer::pop_poly()
 {
 	std::vector<edge> poly;
 	if (emap.size() == 0)
 		return poly;
 	poly.push_back(*emap.begin());
 	emap.erase(emap.begin());
-	auto prev_dir = dir(poly[0]);
+	auto prev_dir = poly[0].trivial_dir();
 
 	while (true) {
 		if (emap.size() == 0)
 			break;
-		auto &tail_vtx = poly.rbegin()->second;
-		if (tail_vtx == poly.cbegin()->first)
+		auto &tail_vtx = poly.rbegin()->end_vtx;
+		if (tail_vtx == poly.cbegin()->start_vtx)
 			break;
 		auto next = emap.lower_bound({tail_vtx, {}});
 		if (next == emap.cend()) {
@@ -793,9 +782,9 @@ std::vector<vectorizer::edge> vectorizer::pop_poly()
 		 * deleted, and they are also duplicated, in case another
 		 * polygon has a vertex in the same location.)
 		 */
-		auto next_dir = dir(*next);
+		auto next_dir = next->trivial_dir();
 		if (next_dir == prev_dir)
-			tail_vtx = next->second;
+			tail_vtx = next->end_vtx;
 		else
 			poly.push_back(*next);
 		emap.erase(next);
@@ -830,10 +819,10 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 		auto poly = vk.pop_poly();
 		if (poly.size() == 0)
 			break;
-		const auto &v1 = poly.cbegin()->first;
-		fprintf(fp, "%d %d m 25\n", v1.first, v1.second);
+		const auto &v1 = poly.cbegin()->start_vtx;
+		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
 		for (const auto &edge : poly)
-			fprintf(fp, " %d %d l 25\n", edge.second.first, edge.second.second);
+			fprintf(fp, " %d %d l 25\n", edge.end_vtx.x, edge.end_vtx.y);
 	}
 	fprintf(fp, "EndSplineSet\n");
 	fprintf(fp, "EndChar\n");
@@ -1030,6 +1019,33 @@ std::string glyph::as_rowpad() const
 		}
 	}
 	return ret;
+}
+
+bool vertex::operator<(const struct vertex &o) const
+{
+	return std::tie(x, y) < std::tie(o.x, o.y);
+}
+
+bool vertex::operator==(const struct vertex &o) const
+{
+	return std::tie(x, y) == std::tie(o.x, o.y);
+}
+
+bool edge::operator<(const struct edge &o) const
+{
+	return std::tie(start_vtx, end_vtx) < std::tie(o.start_vtx, o.end_vtx);
+}
+
+bool edge::operator==(const struct edge &o) const
+{
+	return std::tie(start_vtx, end_vtx) == std::tie(o.start_vtx, o.end_vtx);
+}
+
+unsigned int edge::trivial_dir() const
+{
+	if (end_vtx.x == start_vtx.x)
+		return end_vtx.y < start_vtx.y ? 180 : 0;
+	return end_vtx.y < start_vtx.y ? 270 : 90;
 }
 
 } /* namespace vfalib */

@@ -64,6 +64,19 @@ struct unicode_map {
 	ssize_t to_index(char32_t uc) const;
 };
 
+struct vertex {
+	bool operator<(const struct vertex &) const;
+	bool operator==(const struct vertex &) const;
+	unsigned int x, y;
+};
+
+struct edge {
+	bool operator<(const struct edge &) const;
+	bool operator==(const struct edge &) const;
+	unsigned int trivial_dir() const;
+	struct vertex start_vtx, end_vtx;
+};
+
 class glyph {
 	public:
 	glyph() = default;
