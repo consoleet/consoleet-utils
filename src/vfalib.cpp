@@ -716,12 +716,14 @@ int font::save_sfd(const char *file)
 
 class vectorizer final {
 	public:
-	void set(int, int);
-	void finalize();
-	std::vector<edge> pop_poly();
+	std::vector<std::vector<edge>> simple(const glyph &, int descent = 0);
 
 	private:
 	void add_edge(edge &&e) { emap.insert(std::move(e)); }
+	void finalize();
+	std::vector<edge> pop_poly();
+	void set(int, int);
+
 	std::set<edge> emap;
 };
 
@@ -793,6 +795,28 @@ std::vector<edge> vectorizer::pop_poly()
 	return poly;
 }
 
+std::vector<std::vector<edge>> vectorizer::simple(const glyph &g, int desc)
+{
+	const auto &sz = g.m_size;
+	for (unsigned int y = 0; y < sz.h; ++y) {
+		int yy = sz.h - 1 - static_cast<int>(y) - desc;
+		for (unsigned int x = 0; x < sz.w; ++x) {
+			bitpos ipos = y * sz.w + x;
+			if (g.m_data[ipos.byte] & ipos.mask)
+				set(x, yy);
+		}
+	}
+	finalize();
+	std::vector<std::vector<edge>> pmap;
+	while (true) {
+		auto poly = pop_poly();
+		if (poly.size() == 0)
+			break;
+		pmap.push_back(std::move(poly));
+	}
+	return pmap;
+}
+
 void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 {
 	unsigned int cpx = cp;
@@ -804,21 +828,8 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	fprintf(fp, "Flags: MW\n");
 	fprintf(fp, "Fore\n");
 	fprintf(fp, "SplineSet\n");
-	vectorizer vk;
 
-	for (unsigned int y = 0; y < sz.h; ++y) {
-		int yy = sz.h - 1 - static_cast<int>(y) - desc;
-		for (unsigned int x = 0; x < sz.w; ++x) {
-			bitpos ipos = y * sz.w + x;
-			if (g.m_data[ipos.byte] & ipos.mask)
-				vk.set(x, yy);
-		}
-	}
-	vk.finalize();
-	while (true) {
-		auto poly = vk.pop_poly();
-		if (poly.size() == 0)
-			break;
+	for (const auto &poly : vectorizer().simple(m_glyph[idx], desc)) {
 		const auto &v1 = poly.cbegin()->start_vtx;
 		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
 		for (const auto &edge : poly)
