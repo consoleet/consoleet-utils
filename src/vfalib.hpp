@@ -67,7 +67,7 @@ struct unicode_map {
 struct vertex {
 	bool operator<(const struct vertex &) const;
 	bool operator==(const struct vertex &) const;
-	unsigned int x, y;
+	int x, y;
 };
 
 struct edge {

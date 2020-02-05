@@ -716,7 +716,7 @@ int font::save_sfd(const char *file)
 
 class vectorizer final {
 	public:
-	void set(unsigned int, unsigned int);
+	void set(int, int);
 	void finalize();
 	std::vector<edge> pop_poly();
 
@@ -725,7 +725,7 @@ class vectorizer final {
 	std::set<edge> emap;
 };
 
-void vectorizer::set(unsigned int x, unsigned int y)
+void vectorizer::set(int x, int y)
 {
 	/* TTF/OTF spec wants CCW orientation */
 	add_edge({{x, y}, {x, y + 1}});
@@ -770,7 +770,7 @@ std::vector<edge> vectorizer::pop_poly()
 		auto &tail_vtx = poly.rbegin()->end_vtx;
 		if (tail_vtx == poly.cbegin()->start_vtx)
 			break;
-		auto next = emap.lower_bound({tail_vtx, {}});
+		auto next = emap.lower_bound({tail_vtx, {INT_MIN, INT_MIN}});
 		if (next == emap.cend()) {
 			fprintf(stderr, "unclosed poly wtf?!\n");
 			break;
@@ -807,7 +807,7 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	vectorizer vk;
 
 	for (unsigned int y = 0; y < sz.h; ++y) {
-		unsigned int yy = sz.h - 1 - y - desc;
+		int yy = sz.h - 1 - static_cast<int>(y) - desc;
 		for (unsigned int x = 0; x < sz.w; ++x) {
 			bitpos ipos = y * sz.w + x;
 			if (g.m_data[ipos.byte] & ipos.mask)
