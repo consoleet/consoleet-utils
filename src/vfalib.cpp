@@ -779,6 +779,36 @@ std::vector<edge> vectorizer::pop_poly()
 		}
 
 		/*
+		 * If there are two edges from a given start vertex, prefer the
+		 * edge which makes an inward curving. This makes a shape like
+		 *
+		 *   ######
+		 *   ##  ##
+		 *     ####
+		 *
+		 * be emitted a single polygon, rather than two (outer &
+		 * enclave). The tradeoff is that fully-enclosed enclaves, e.g.
+		 *
+		 * ########
+		 * ##  ####
+		 * ####  ##
+		 * ########
+		 *
+		 * will favor making a single polygon with self-intersection.
+		 * The enclave of the number '4', when a 1-px stroke thickness
+		 * is used, also ceases to be an enclave.
+		 *
+		 * (None of all this has an effect on rendering, just the way
+		 * font editors see the outline.)
+		 */
+		if (prev_dir == 0 || prev_dir == 270) {
+			/* (Exploiting the sortedness of emap here.) */
+			auto cand2 = std::next(next);
+			if (cand2 != emap.cend() && cand2->start_vtx == tail_vtx)
+				next = cand2;
+		}
+
+		/*
 		 * Skip redundant vertices along the way to the next
 		 * directional change of the outline. (Vertices are not
 		 * deleted, and they are also duplicated, in case another
