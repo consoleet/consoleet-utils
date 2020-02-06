@@ -67,6 +67,19 @@ struct psf2_header {
 	uint32_t version, headersize, flags, length, charsize, height, width;
 };
 
+class vectorizer final {
+	public:
+	std::vector<std::vector<edge>> simple(const glyph &, int descent = 0);
+	static constexpr const unsigned int scale_factor = 2;
+
+	private:
+	void finalize();
+	std::vector<edge> pop_poly();
+	void set(int, int);
+
+	std::set<edge> emap;
+};
+
 static const char vfhex[] = "0123456789abcdef";
 
 static FILE *fopen(const char *name, const char *mode)
@@ -670,8 +683,8 @@ int font::save_sfd(const char *file)
 	fprintf(fp, "ItalicAngle: 0\n");
 	fprintf(fp, "UnderlinePosition: -3\n");
 	fprintf(fp, "UnderlineWidth: 1\n");
-	fprintf(fp, "Ascent: %d\n", asds.first);
-	fprintf(fp, "Descent: %d\n", asds.second);
+	fprintf(fp, "Ascent: %d\n", asds.first * vectorizer::scale_factor);
+	fprintf(fp, "Descent: %d\n", asds.second * vectorizer::scale_factor);
 	fprintf(fp, "NeedsXUIDChange: 1\n");
 	fprintf(fp, "FSType: 0\n");
 	fprintf(fp, "PfmFamily: 49\n");
@@ -680,18 +693,18 @@ int font::save_sfd(const char *file)
 	fprintf(fp, "Panose: 2 0 6 9 9 0 0 0 0 0\n");
 	fprintf(fp, "LineGap: 0\n");
 	fprintf(fp, "VLineGap: 0\n");
-	fprintf(fp, "OS2TypoAscent: %d\n", asds.first);
+	fprintf(fp, "OS2TypoAscent: %d\n", asds.first * vectorizer::scale_factor);
 	fprintf(fp, "OS2TypoAOffset: 0\n");
-	fprintf(fp, "OS2TypoDescent: %d\n", -asds.second);
+	fprintf(fp, "OS2TypoDescent: %d\n", -asds.second * vectorizer::scale_factor);
 	fprintf(fp, "OS2TypoDOffset: 0\n");
 	fprintf(fp, "OS2TypoLinegap: 0\n");
-	fprintf(fp, "OS2WinAscent: %d\n", asds.first);
+	fprintf(fp, "OS2WinAscent: %d\n", asds.first * vectorizer::scale_factor);
 	fprintf(fp, "OS2WinAOffset: 0\n");
-	fprintf(fp, "OS2WinDescent: %d\n", asds.second);
+	fprintf(fp, "OS2WinDescent: %d\n", asds.second * vectorizer::scale_factor);
 	fprintf(fp, "OS2WinDOffset: 0\n");
-	fprintf(fp, "HheadAscent: %d\n", asds.first);
+	fprintf(fp, "HheadAscent: %d\n", asds.first * vectorizer::scale_factor);
 	fprintf(fp, "HheadAOffset: 0\n");
-	fprintf(fp, "HheadDescent: %d\n", -asds.second);
+	fprintf(fp, "HheadDescent: %d\n", -asds.second * vectorizer::scale_factor);
 	fprintf(fp, "HheadDOffset: 0\n");
 	fprintf(fp, "Encoding: UnicodeBmp\n");
 	fprintf(fp, "UnicodeInterp: none\n");
@@ -714,25 +727,16 @@ int font::save_sfd(const char *file)
 	return 0;
 }
 
-class vectorizer final {
-	public:
-	std::vector<std::vector<edge>> simple(const glyph &, int descent = 0);
-
-	private:
-	void finalize();
-	std::vector<edge> pop_poly();
-	void set(int, int);
-
-	std::set<edge> emap;
-};
-
 void vectorizer::set(int x, int y)
 {
 	/* TTF/OTF spec wants CCW orientation */
-	emap.insert(edge{{x, y}, {x, y + 1}});
-	emap.insert(edge{{x, y + 1}, {x + 1, y + 1}});
-	emap.insert(edge{{x + 1, y + 1}, {x + 1, y}});
-	emap.insert(edge{{x + 1, y}, {x, y}});
+	int s = scale_factor;
+	x *= s;
+	y *= s;
+	emap.insert(edge{{x, y}, {x, y + s}});
+	emap.insert(edge{{x, y + s}, {x + s, y + s}});
+	emap.insert(edge{{x + s, y + s}, {x + s, y}});
+	emap.insert(edge{{x + s, y}, {x, y}});
 }
 
 void vectorizer::finalize()
@@ -853,7 +857,7 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	const auto &sz = g.m_size;
 	fprintf(fp, "StartChar: %04x\n", cpx);
 	fprintf(fp, "Encoding: %u %u %u\n", cpx, cpx, cpx);
-	fprintf(fp, "Width: %u\n", sz.w);
+	fprintf(fp, "Width: %u\n", sz.w * vectorizer::scale_factor);
 	fprintf(fp, "Flags: MW\n");
 	fprintf(fp, "Fore\n");
 	fprintf(fp, "SplineSet\n");
