@@ -1056,7 +1056,7 @@ unsigned int edge::trivial_dir() const
 {
 	if (end_vtx.x == start_vtx.x)
 		return end_vtx.y < start_vtx.y ? 180 : 0;
-	return end_vtx.y < start_vtx.y ? 270 : 90;
+	return end_vtx.x < start_vtx.x ? 270 : 90;
 }
 
 } /* namespace vfalib */
