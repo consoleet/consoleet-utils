@@ -719,7 +719,6 @@ class vectorizer final {
 	std::vector<std::vector<edge>> simple(const glyph &, int descent = 0);
 
 	private:
-	void add_edge(edge &&e) { emap.insert(std::move(e)); }
 	void finalize();
 	std::vector<edge> pop_poly();
 	void set(int, int);
@@ -730,10 +729,10 @@ class vectorizer final {
 void vectorizer::set(int x, int y)
 {
 	/* TTF/OTF spec wants CCW orientation */
-	add_edge({{x, y}, {x, y + 1}});
-	add_edge({{x, y + 1}, {x + 1, y + 1}});
-	add_edge({{x + 1, y + 1}, {x + 1, y}});
-	add_edge({{x + 1, y}, {x, y}});
+	emap.insert(edge{{x, y}, {x, y + 1}});
+	emap.insert(edge{{x, y + 1}, {x + 1, y + 1}});
+	emap.insert(edge{{x + 1, y + 1}, {x + 1, y}});
+	emap.insert(edge{{x + 1, y}, {x, y}});
 }
 
 void vectorizer::finalize()
