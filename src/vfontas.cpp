@@ -242,7 +242,16 @@ static bool vf_savepsf(font &f, char **args)
 
 static bool vf_savesfd(font &f, char **args)
 {
-	auto ret = f.save_sfd(args[0]);
+	auto ret = f.save_sfd(args[0], vectoalg::V_SIMPLE);
+	if (ret >= 0)
+		return true;
+	fprintf(stderr, "Error saving %s: %s\n", args[0], strerror(-ret));
+	return false;
+}
+
+static bool vf_saven1(font &f, char **args)
+{
+	auto ret = f.save_sfd(args[0], vectoalg::V_N1);
 	if (ret >= 0)
 		return true;
 	fprintf(stderr, "Error saving %s: %s\n", args[0], strerror(-ret));
@@ -422,6 +431,7 @@ static const struct vf_command {
 	{"saveclt", 1, vf_saveclt},
 	{"savefnt", 1, vf_savefnt},
 	{"savemap", 1, vf_savemap},
+	{"saven1", 1, vf_saven1},
 	{"savepbm", 1, vf_savepbm},
 	{"savepsf", 1, vf_savepsf},
 	{"savesfd", 1, vf_savesfd},

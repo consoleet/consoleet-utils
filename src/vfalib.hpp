@@ -77,6 +77,11 @@ struct edge {
 	struct vertex start_vtx, end_vtx;
 };
 
+enum vectoalg {
+	V_SIMPLE = 0,
+	V_N1,
+};
+
 class glyph {
 	public:
 	glyph() = default;
@@ -113,7 +118,7 @@ class font {
 	int save_map(const char *file);
 	int save_pbm(const char *dir);
 	int save_psf(const char *file);
-	int save_sfd(const char *file);
+	int save_sfd(const char *file, enum vectoalg);
 	int save_clt(const char *dir);
 	void blit(const vfrect &src, const vfrect &dst)
 		{ for (auto &g : m_glyph) g = g.blit(src, dst); }
@@ -134,7 +139,7 @@ class font {
 	void save_bdf_glyph(FILE *, size_t idx, char32_t cp);
 	int save_clt_glyph(const char *dir, size_t n, char32_t cp);
 	int save_pbm_glyph(const char *dir, size_t n, char32_t cp);
-	void save_sfd_glyph(FILE *, size_t idx, char32_t cp, int, int);
+	void save_sfd_glyph(FILE *, size_t idx, char32_t cp, int, int, enum vectoalg);
 
 	public:
 	std::vector<glyph> m_glyph;

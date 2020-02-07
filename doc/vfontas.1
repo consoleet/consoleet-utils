@@ -39,6 +39,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-savefnt\fP \fIx.fnt\fP
 .PP
+\fB\-saven1\fP \fInew.sfd\fP
+.PP
 \fB\-savepbm\fP \fIoutdir/\fP
 .PP
 \fB\-savepsf\fP \fInew.psfu\fP
@@ -127,6 +129,43 @@ format.
 .SS savemap
 .PP
 Saves the current in-memory Unicode mapping table to the given file.
+.SS saven1
+.PP
+Similar to \fB\-savesfd\fP, this produces an SFD file, but uses an alternate
+vectorizer (aptly named "N1"), which smoothens the jagged edges of a bitmap
+font.
+.PP
+The N1 vectorizer is able to recognize logical 45-degree angles in bitmap
+glyphs. Each 90 degree corner followed by a 270 degree corner is replaced by a
+diagonal segment. This diagonalization was originally employed by Arto Hatanpää
+(possibly in a long session of manual work) for the "Nouveau IBM" and "Nouveau
+IBM Stretch" vector font versions of the IBM VGA 9x16 ROM font.
+.PP
+In a twist, N1 does not look at the angles of the corners of the glyph
+outlines, but rather inspects source pixel patterns in a 3x3 window and emits
+triangles accordingly that implement the replacement rule.
+.PP
+In comparison to other scalers,
+.IP \(bu 4
+xBRZ erroneously round the ends of strokes (e.g. the '-' dash).
+.IP \(bu 4
+N1 adds diagonals on single-pixel protrusions (e.g. the left end of the
+horizontal bar in an 'f'). This is definitely not fixable with a 3x3 window,
+and is probably not solvable for the general case either.
+.IP \(bu 4
+N1 adds links between pixels that do not necessarily belong there (such as in
+spirals like U+0040 or jampacked glyphs like U+20A7). This is probably not
+fixable for the general case without making the vectorizer aware of expected
+shapes.
+.IP \(bu 4
+While xBRZ is a bitmap-to-bitmap procedure (also limited to 6x magnification
+as of writing), N1 converts to vector.
+.IP \(bu 4
+Autotrace/Potrace just is not targeted for low resolution sources (as 8x16
+bitmap fonts are). Either it will convert the bitmap 1:1 with jagged edges,
+or turn it into three or so beziers, which is not nearly enough for '&'.
+.IP \(bu 4
+N1 is only specified for monochrome input.
 .SS savepsf
 .PP
 Saves the current in-memory glyphs as a PC Screen Font PSF2.0 file, which can
@@ -134,8 +173,10 @@ then be loaded into a Linux text console with setfont(1). The in-memory Unicode
 mapping table is added to the PSF.
 .SS savesfd
 .PP
-Saves the font to a Spline Font Database file (SFD). This type of file
-can be processed further by fontforge(1).
+Saves the font to a Spline Font Database file (SFD). This type of file can be
+processed further by fontforge(1). A fairly trivial vectorizer is used that
+maps each pixels to a square and then collapses shared edges between those to
+reduce the number of polygons fontforge has to process.
 .SS setname
 .PP
 Sets a name for the font, which gets emitted for BDF/SFD output. (The other

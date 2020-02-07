@@ -70,6 +70,7 @@ struct psf2_header {
 class vectorizer final {
 	public:
 	std::vector<std::vector<edge>> simple(const glyph &, int descent = 0);
+	std::vector<std::vector<edge>> n1(const glyph &, int descent = 0);
 	static constexpr const unsigned int scale_factor = 2;
 
 	private:
@@ -664,7 +665,7 @@ std::pair<int, int> font::find_ascent_descent() const
 	return asds;
 }
 
-int font::save_sfd(const char *file)
+int font::save_sfd(const char *file, enum vectoalg vt)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
 	if (filep == nullptr)
@@ -717,10 +718,10 @@ int font::save_sfd(const char *file)
 
 	if (m_unicode_map == nullptr) {
 		for (size_t idx = 0; idx < m_glyph.size(); ++idx)
-			save_sfd_glyph(fp, idx, idx, asds.first, asds.second);
+			save_sfd_glyph(fp, idx, idx, asds.first, asds.second, vt);
 	} else {
 		for (const auto &pair : m_unicode_map->m_u2i)
-			save_sfd_glyph(fp, pair.second, pair.first, asds.first, asds.second);
+			save_sfd_glyph(fp, pair.second, pair.first, asds.first, asds.second, vt);
 	}
 	fprintf(fp, "EndChars\n");
 	fprintf(fp, "EndSplineFont\n");
@@ -855,7 +856,87 @@ std::vector<std::vector<edge>> vectorizer::simple(const glyph &g, int desc)
 	return pmap;
 }
 
-void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
+static inline bool testbit_c(const glyph &g, int x, int y)
+{
+	if (x < 0 || y < 0 || x >= static_cast<int>(g.m_size.w) || y >= static_cast<int>(g.m_size.h))
+		return false;
+	bitpos bp = y * g.m_size.w + x;
+	return g.m_data[bp.byte] & bp.mask;
+}
+
+static inline bool testbit_u(const glyph &g, int x, int y)
+{
+	bitpos bp = y * g.m_size.w + x;
+	return g.m_data[bp.byte] & bp.mask;
+}
+
+std::vector<std::vector<edge>> vectorizer::n1(const glyph &g, int desc)
+{
+	const auto &sz = g.m_size;
+	for (unsigned int uy = 0; uy < sz.h; ++uy) {
+		int y = sz.h - 1 - static_cast<int>(uy) - desc;
+		for (unsigned int ux = 0; ux < sz.w; ++ux) {
+			bitpos ipos = uy * sz.w + ux;
+			int x = ux;
+
+			bool c1 = testbit_c(g, ux - 1, uy + 1);
+			bool c2 = testbit_c(g, ux,     uy + 1);
+			bool c3 = testbit_c(g, ux + 1, uy + 1);
+			bool c4 = testbit_c(g, ux - 1, uy);
+			bool c5 = testbit_u(g, ux,     uy);
+			bool c6 = testbit_c(g, ux + 1, uy);
+			bool c7 = testbit_c(g, ux - 1, uy - 1);
+			bool c8 = testbit_c(g, ux,     uy - 1);
+			bool c9 = testbit_c(g, ux + 1, uy - 1);
+
+			bool di = c5;
+			bool tl = (c4 && ((c8 && ((!c7 && (c1 || c3 || c9)) || (!c1 && !c2) || (!c6 && !c9))) || c5)) || (c5 && ((!c1 && !c9) || c7 || c8));
+			bool tr = (((!c7 && !c3) || c9 || c8 || c6) && c5) || (((!c9 && (c1 || c3 || c7)) || (!c2 && !c3) || (!c4 && !c7)) && c8 && c6);
+			bool bl = (c5 && (c1 || c2 || (!c3 && !c7) || c4)) || (c2 && c4 && ((!c1 && (c3 || c7 || c9)) || (!c3 && !c6) || (!c7 && !c8)));
+			bool br = (c2 && ((c6 && ((!c3 && (c1 || c7 || c9)) || (!c1 && !c4) || (!c8 && !c9))) || c5)) || (c5 && ((!c1 && !c9) || c3 || c6));
+
+			if (tl) {
+				emap.insert(edge{{2*x,   2*y+1}, {2*x,   2*y+2}});
+				emap.insert(edge{{2*x,   2*y+2}, {2*x+1, 2*y+2}});
+				emap.insert(edge{{2*x+1, 2*y+2}, {2*x,   2*y+1}});
+			}
+			if (tr) {
+				emap.insert(edge{{2*x+1, 2*y+2}, {2*x+2, 2*y+2}});
+				emap.insert(edge{{2*x+2, 2*y+2}, {2*x+2, 2*y+1}});
+				emap.insert(edge{{2*x+2, 2*y+1}, {2*x+1, 2*y+2}});
+			}
+			if (bl) {
+				emap.insert(edge{{2*x,   2*y},   {2*x,   2*y+1}});
+				emap.insert(edge{{2*x,   2*y+1}, {2*x+1, 2*y}});
+				emap.insert(edge{{2*x+1, 2*y},   {2*x,   2*y}});
+			}
+			if (br) {
+				emap.insert(edge{{2*x+1, 2*y},   {2*x+2, 2*y+1}});
+				emap.insert(edge{{2*x+2, 2*y+1}, {2*x+2, 2*y}});
+				emap.insert(edge{{2*x+2, 2*y},   {2*x+1, 2*y}});
+			}
+			if (di) {
+				emap.insert(edge{{2*x,   2*y+1}, {2*x+1, 2*y+2}});
+				emap.insert(edge{{2*x+1, 2*y+2}, {2*x+2, 2*y+1}});
+				emap.insert(edge{{2*x+2, 2*y+1}, {2*x+1, 2*y  }});
+				emap.insert(edge{{2*x+1, 2*y  }, {2*x,   2*y+1}});
+			}
+		}
+	}
+
+	finalize();
+	std::vector<std::vector<edge>> pmap;
+	while (true) {
+		auto poly = pop_poly();
+		if (poly.size() == 0)
+			break;
+		pmap.push_back(std::move(poly));
+	}
+	return pmap;
+}
+
+void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
+    enum vectoalg vt)
 {
 	unsigned int cpx = cp;
 	const auto &g = m_glyph[idx];
@@ -867,7 +948,12 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc)
 	fprintf(fp, "Fore\n");
 	fprintf(fp, "SplineSet\n");
 
-	for (const auto &poly : vectorizer().simple(m_glyph[idx], desc)) {
+	std::vector<std::vector<edge>> pmap;
+	if (vt == V_SIMPLE)
+		pmap = vectorizer().simple(m_glyph[idx], desc);
+	else if (vt == V_N1)
+		pmap = vectorizer().n1(m_glyph[idx], desc);
+	for (const auto &poly : pmap) {
 		const auto &v1 = poly.cbegin()->start_vtx;
 		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
 		for (const auto &edge : poly)
@@ -1092,8 +1178,16 @@ bool edge::operator==(const struct edge &o) const
 
 unsigned int edge::trivial_dir() const
 {
-	if (end_vtx.x == start_vtx.x)
-		return end_vtx.y < start_vtx.y ? 180 : 0;
+	/*
+	 * If the glyph has anything but straight lines and diagonals,
+	 * you need to switch to atan().
+	 */
+	if (end_vtx.y > start_vtx.y)
+		return end_vtx.x == start_vtx.x ? 0 :
+		       end_vtx.x < start_vtx.x ? 315 : 45;
+	if (end_vtx.y < start_vtx.y)
+		return end_vtx.x == start_vtx.x ? 180 :
+		       end_vtx.x < start_vtx.x ? 225 : 135;
 	return end_vtx.x < start_vtx.x ? 270 : 90;
 }
 
