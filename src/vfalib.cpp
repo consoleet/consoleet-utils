@@ -34,9 +34,6 @@
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
-#ifdef HAVE_XBRZ_H
-#	include <xbrz.h>
-#endif
 #include "vfalib.hpp"
 
 namespace vfalib {
@@ -184,12 +181,6 @@ void font::lge()
 	auto max = std::min(0xE0U, static_cast<unsigned int>(m_glyph.size()));
 	for (unsigned int k = 0xC0; k < max; ++k)
 		m_glyph[k].lge();
-}
-
-void font::xbrz(unsigned int factor, unsigned int mode)
-{
-	for (auto &g : m_glyph)
-		g = g.xbrz(factor, mode);
 }
 
 int font::load_clt(const char *dirname)
@@ -1061,35 +1052,6 @@ void glyph::lge()
 		else
 			m_data[opos.byte] &= ~opos.mask;
 	}
-}
-
-glyph glyph::xbrz(unsigned int factor, unsigned int mode) const
-{
-#ifndef HAVE_XBRZ_H
-	return {};
-#else
-	auto ng = blit(vfpos() | m_size, vfpos(1, 1) | vfsize(m_size.w + 2, m_size.h + 2));
-	auto src = ng.as_rgba();
-	vfsize xs(ng.m_size.w * factor, ng.m_size.h * factor);
-	std::vector<uint32_t> dst(xs.w * xs.h);
-	if (mode == 0)
-		xbrz::scale(factor, &src[0], &dst[0], ng.m_size.w, ng.m_size.h, xbrz::ColorFormat::RGB);
-	else if (mode == 1)
-		xbrz::nearestNeighborScale(&src[0], ng.m_size.w, ng.m_size.h, &dst[0], xs.w, xs.h);
-	else
-		return {};
-
-	src.clear();
-	ng = glyph(vfsize(m_size.w * factor, m_size.h * factor));
-	for (unsigned int y = 0; y < ng.m_size.h; ++y)
-		for (unsigned int x = 0; x < ng.m_size.w; ++x) {
-			size_t ipos = (y + factor) * xs.w + x + factor;
-			bitpos opos = y * ng.m_size.w + x;
-			if (dst[ipos] & 0xFF000000)
-				ng.m_data[opos.byte] |= opos.mask;
-		}
-	return ng;
-#endif
 }
 
 std::string glyph::as_pbm() const

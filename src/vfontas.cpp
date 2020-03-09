@@ -355,22 +355,6 @@ static int vf_extract_cpi2(const char *vdata, const char *directory)
 	return true;
 }
 
-static bool vf_xbrz(font &f, char **args)
-{
-#ifndef HAVE_XBRZ_H
-	fprintf(stderr, "Error: vfontas was not compiled with xBRZ support\n");
-	return false;
-#else
-	auto sf = strtol(args[0], nullptr, 0);
-	if (sf <= 0) {
-		fprintf(stderr, "Error: scaling factor must be positive and not zero.\n");
-		return false;
-	}
-	f.xbrz(sf, 0);
-	return true;
-#endif
-}
-
 static bool vf_xcpi(font &f, char **args)
 {
 	auto in_fd = open(args[0], O_RDONLY);
@@ -437,7 +421,6 @@ static const struct vf_command {
 	{"savesfd", 1, vf_savesfd},
 	{"setname", 1, vf_setname},
 	{"upscale", 2, vf_upscale},
-	{"xbrz", 1, vf_xbrz},
 	{"xcpi", 2, vf_xcpi},
 	{"xlat", 2, vf_xlat},
 };

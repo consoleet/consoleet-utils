@@ -95,7 +95,6 @@ class glyph {
 	glyph flip(bool x, bool y) const;
 	void invert();
 	glyph upscale(const vfsize &factor) const;
-	glyph xbrz(unsigned int factor, unsigned int mode) const;
 	void lge();
 
 	private:
@@ -128,7 +127,6 @@ class font {
 		{ for (auto &g : m_glyph) g.invert(); }
 	void upscale(const vfsize &factor)
 		{ for (auto &g : m_glyph) g = g.upscale(factor); }
-	void xbrz(unsigned int factor, unsigned int mode);
 	void lge();
 
 	std::string name = "vfontas output";
