@@ -1,4 +1,14 @@
 
+rel-20200309
+============
+* vfontas: add new N1 vectorizer
+* vfontas: new -saven1 command to use N1
+* vfontas: remove -xbrz
+
+The N1 vectorizer is able to recognize logical 45-degree angles in
+bitmap glyphs and will output the outlines as such.
+
+
 rel-20200124
 ============
 * vfontas: add full vectorizer for SFD glyphs
