@@ -72,10 +72,11 @@ class vectorizer final {
 
 	private:
 	void finalize();
-	std::vector<edge> pop_poly();
+	std::vector<edge> pop_poly(unsigned int flags);
 	void set(int, int);
 
 	std::set<edge> emap;
+	static const unsigned int P_SIMPLIFY_LINES = 1 << 0;
 };
 
 static const char vfhex[] = "0123456789abcdef";
@@ -757,7 +758,7 @@ void vectorizer::finalize()
 	}
 }
 
-std::vector<edge> vectorizer::pop_poly()
+std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 {
 	std::vector<edge> poly;
 	if (emap.size() == 0)
@@ -815,7 +816,7 @@ std::vector<edge> vectorizer::pop_poly()
 		 * polygon has a vertex in the same location.)
 		 */
 		auto next_dir = next->trivial_dir();
-		if (next_dir == prev_dir)
+		if ((flags & P_SIMPLIFY_LINES) && next_dir == prev_dir)
 			tail_vtx = next->end_vtx;
 		else
 			poly.push_back(*next);
@@ -839,7 +840,7 @@ std::vector<std::vector<edge>> vectorizer::simple(const glyph &g, int desc)
 	finalize();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
-		auto poly = pop_poly();
+		auto poly = pop_poly(P_SIMPLIFY_LINES);
 		if (poly.size() == 0)
 			break;
 		pmap.push_back(std::move(poly));
@@ -918,7 +919,7 @@ std::vector<std::vector<edge>> vectorizer::n1(const glyph &g, int desc)
 	finalize();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
-		auto poly = pop_poly();
+		auto poly = pop_poly(P_SIMPLIFY_LINES);
 		if (poly.size() == 0)
 			break;
 		pmap.push_back(std::move(poly));
