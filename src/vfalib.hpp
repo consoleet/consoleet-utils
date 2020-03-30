@@ -80,6 +80,7 @@ struct edge {
 enum vectoalg {
 	V_SIMPLE = 0,
 	V_N1,
+	V_N2,
 };
 
 class glyph {

@@ -41,6 +41,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-saven1\fP \fInew.sfd\fP
 .PP
+\fB\-saven2\fP \fInew.sfd\fP
+.PP
 \fB\-savepbm\fP \fIoutdir/\fP
 .PP
 \fB\-savepsf\fP \fInew.psfu\fP
@@ -129,41 +131,48 @@ format.
 Saves the current in-memory Unicode mapping table to the given file.
 .SS saven1
 .PP
+N1 was an experiment to try and model the "diagonalization idea" (cf. \-saven2)
+by analyzing the original glyph \fIbitmap\fP. Its defining characteristic is a
+lookaround window of 3x3 pixels, whose contents are mapped to a set of
+triangles. N1 has some drawbacks over the newer N2:
+.IP \(bu 4
+N1 adds diagonals on single-pixel protrusions (e.g. the left end of the
+horizontal bar in an 'f' in certain fonts). This is definitely not fixable with
+a 3x3 window and would require using 5x5.
+.IP \(bu 4
+N1 adds triangles between pixels that do not necessarily belong together, such
+as in spirals like U+0040 or jampacked glyphs like U+20A7. N2 operates on edges
+and knows their direction, and avoids making connections to "pixel islands" at
+certain angles.
+.SS saven2
+.PP
 Similar to \fB\-savesfd\fP, this produces an SFD file, but uses an alternate
-vectorizer (aptly named "N1"), which smoothens the jagged edges of a bitmap
+vectorizer (aptly named "N2"), which smoothens the jagged edges of a bitmap
 font.
 .PP
-The N1 vectorizer is able to recognize logical 45-degree angles in bitmap
-glyphs. Each 90 degree corner followed by a 270 degree corner is replaced by a
-diagonal segment. This diagonalization was originally employed by Arto Hatanpää
-(possibly in a long session of manual work) for the "Nouveau IBM" and "Nouveau
-IBM Stretch" vector font versions of the IBM VGA 9x16 ROM font.
+The N2 vectorizer is able to recognize the "stair" pattern of pixels and
+transform these sections to 45-degree angles. This diagonalization was
+originally employed by Arto Hatanpää (possibly in a long session of manual
+work) for the "Nouveau IBM" and "Nouveau IBM Stretch" vector font versions of
+the IBM VGA 9x16 ROM font.
 .PP
-In a twist, N1 does not look at the angles of the corners of the glyph
-outlines, but rather inspects source pixel patterns in a 3x3 window and emits
-triangles accordingly that implement the replacement rule.
+The defining characteristic of N2 is that it analyzes glyph edges (similar to
+those produced by \-savesfd) using a lookaround window of 7 edge segments,
+which is used to work on areas of effectively 5x5 pixels. When a 90/270 corner
+is found, it will be transformed by adding diagonal edges.
 .PP
 In comparison to other scalers,
 .IP \(bu 4
-xBRZ erroneously round the ends of strokes (e.g. the '-' dash).
-.IP \(bu 4
-N1 adds diagonals on single-pixel protrusions (e.g. the left end of the
-horizontal bar in an 'f'). This is definitely not fixable with a 3x3 window,
-and is probably not solvable for the general case either.
-.IP \(bu 4
-N1 adds links between pixels that do not necessarily belong there (such as in
-spirals like U+0040 or jampacked glyphs like U+20A7). This is probably not
-fixable for the general case without making the vectorizer aware of expected
-shapes.
+xBRZ erroneously round the ends of strokes (e.g. the '-' dash), N1/N2 does not.
 .IP \(bu 4
 While xBRZ is a bitmap-to-bitmap procedure (also limited to 6x magnification
-as of writing), N1 converts to vector.
+as of writing), N1/N2 converts to vector.
 .IP \(bu 4
 Autotrace/Potrace just is not targeted for low resolution sources (as 8x16
 bitmap fonts are). Either it will convert the bitmap 1:1 with jagged edges,
 or turn it into three or so beziers, which is not nearly enough for '&'.
 .IP \(bu 4
-N1 is only specified for monochrome input.
+N1/N2 is only specified for monochrome input.
 .SS savepsf
 .PP
 Saves the current in-memory glyphs as a PC Screen Font PSF2.0 file, which can

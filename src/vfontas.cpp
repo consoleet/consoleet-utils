@@ -258,6 +258,15 @@ static bool vf_saven1(font &f, char **args)
 	return false;
 }
 
+static bool vf_saven2(font &f, char **args)
+{
+	auto ret = f.save_sfd(args[0], vectoalg::V_N2);
+	if (ret >= 0)
+		return true;
+	fprintf(stderr, "Error saving %s: %s\n", args[0], strerror(-ret));
+	return false;
+}
+
 static bool vf_setname(font &f, char **args)
 {
 	f.name = args[0];
@@ -416,6 +425,7 @@ static const struct vf_command {
 	{"savefnt", 1, vf_savefnt},
 	{"savemap", 1, vf_savemap},
 	{"saven1", 1, vf_saven1},
+	{"saven2", 1, vf_saven2},
 	{"savepbm", 1, vf_savepbm},
 	{"savepsf", 1, vf_savepsf},
 	{"savesfd", 1, vf_savesfd},

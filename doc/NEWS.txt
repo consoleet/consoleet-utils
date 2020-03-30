@@ -1,12 +1,39 @@
 
+rel-20200331
+============
+* vfontas: add new N2 vectorizer
+* vfontas: new -saven2 command to use N2
+
+The N2 vectorizer is able to recognize logical 45-degree angles in
+bitmap glyphs and will output the outlines as such. Unlike N1,
+it analyzes glyph outlines rather than pixel patterns, and produces
+higher quality output due to a larger working radius.
+
+N2 can reproduce the "Nouveau IBM" font quite closely now (e.g. from
+Fontraption's VGA9.F16 file). A few differences have just become apparent (one
+can inspect in e.g. Inkscape by overlaying both fontfaces) that may be
+addressed in a later release.
+
+N2:
+* Serifs are subject to diagonalization (but maybe should become exempt).
+* Isthmuses tend to get washed out, noticable in glyphs like 'G'.
+* Sumps in the 'K', 'M', 'N' glyphs could be improved.
+  This is noticable in glyphs like 'G'.
+
+Nouveau IBM:
+* Kerning is not original: too closely spaced.
+* Node points are not at pixel or half-pixel locations.
+  'B' has a 30.78 diagonal for no apparent reason. This is bad for integral
+  scaling. Other values can be observed in 'W'.
+* Glyph 'C' is asymmetric.
+
+
 rel-20200309
 ============
-* vfontas: add new N1 vectorizer
+* vfontas: add N1 vectorizer
 * vfontas: new -saven1 command to use N1
 * vfontas: remove -xbrz
 
-The N1 vectorizer is able to recognize logical 45-degree angles in
-bitmap glyphs and will output the outlines as such.
 
 
 rel-20200124

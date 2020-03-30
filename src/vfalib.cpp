@@ -68,6 +68,7 @@ class vectorizer final {
 	public:
 	std::vector<std::vector<edge>> simple(const glyph &, int descent = 0);
 	std::vector<std::vector<edge>> n1(const glyph &, int descent = 0);
+	std::vector<std::vector<edge>> n2(const glyph &, int descent = 0);
 	static constexpr const unsigned int scale_factor = 2;
 
 	private:
@@ -927,6 +928,160 @@ std::vector<std::vector<edge>> vectorizer::n1(const glyph &g, int desc)
 	return pmap;
 }
 
+static void n2_angle(std::vector<edge> &poly)
+{
+	static const unsigned int M_HEAD = 0x20, M_TAIL = 0x02;
+	std::vector<unsigned int> flags(poly.size());
+
+	for (size_t xm3 = 0; xm3 < poly.size(); ++xm3) {
+		auto xm2 = (xm3 + 1) % poly.size();
+		auto xm1 = (xm3 + 2) % poly.size();
+		auto x00 = (xm3 + 3) % poly.size();
+		auto xp1 = (xm3 + 4) % poly.size();
+		auto xp2 = (xm3 + 5) % poly.size();
+		auto xp3 = (xm3 + 6) % poly.size();
+		auto dm3 = poly[xm3].trivial_dir(), dm2 = poly[xm2].trivial_dir();
+		auto dm1 = poly[xm1].trivial_dir(), d00 = poly[x00].trivial_dir();
+		auto dp1 = poly[xp1].trivial_dir(), dp2 = poly[xp2].trivial_dir();
+		auto dp3 = poly[xp3].trivial_dir();
+
+#if 0
+		printf("I%zu dm3:\e[32m%d\e[0m,dm2:\e[32m%d\e[0m,"
+			"dm1:\e[32m%d\e[0m,d:\e[32m%d\e[0m,dp1:\e[32m%d\e[0m,"
+			"dp2:\e[32m%d\e[0m,dp3:\e[32m%d\e[0m\n",
+			x00, dm3, dm2, dm1, d00, dp1, dp2, dp3);
+#endif
+
+		if (d00 == dm2 && d00 == dp2) {
+			/* _|~|_ or ~|_|~ pattern seen */
+			if ((dm3 == d00 || dm3 == dp1) &&
+			    (dp3 == d00 || dp3 == dm1) &&
+			    dm1 == (dm2 + 270) % 360 && dp1 == (dm2 + 90) % 360)
+				/* pimple __|~|__ ('f', '4'), retain */
+				continue;
+
+			if (dm1 == (dm2 + 90) % 360 && dp1 == (dm2 + 270) % 360) {
+				/* dimple ~~|_|~~ ('8'), sink it */
+				if (dm3 == dm2) {
+					/* with left-side flat zone */
+					flags[xm2] |= M_TAIL;
+					flags[xm1]  = M_HEAD | M_TAIL;
+					flags[x00] |= M_HEAD;
+				}
+				if (dp3 == dp2) {
+					/* with right-side flat zone */
+					flags[x00] |= M_TAIL;
+					flags[xp1]  = M_HEAD | M_TAIL;
+					flags[xp2] |= M_HEAD;
+				}
+				continue;
+			}
+		}
+
+		/* Test for chicane */
+		if (dm1 != dp1)
+			continue;
+		if ((d00 + 270) % 360 != dp1 && (d00 + 90) % 360 != dp1)
+			continue;
+
+		/*
+		 * #1: single step, with or without sump,
+		 * #2: bottom of stairs, with or without sump,
+		 * #3: stairs midpart,
+		 * #4: top of stairs (implies no sump)
+		 */
+		flags[xm1] |= M_TAIL;
+		flags[x00]  = M_HEAD | M_TAIL;
+		flags[xp1] |= M_HEAD;
+
+		if (dp2 == d00) {
+			flags[xp1] |= M_TAIL;
+			flags[xp2] |= M_HEAD;
+		}
+		if (dm2 == d00) {
+			flags[xm2] |= M_TAIL;
+			flags[xm1] |= M_HEAD;
+		}
+	}
+
+	auto p_iter = poly.begin();
+	auto f_iter = flags.begin();
+	for (size_t ia = 0; ia < poly.size(); ++ia, ++p_iter, ++f_iter) {
+		auto ix = ia + 1;
+		auto ib = ix % poly.size();
+		if (!(flags[ia] & M_TAIL && flags[ib] & M_HEAD))
+			continue;
+
+		flags[ia] &= ~M_TAIL;
+		flags[ib] &= ~M_HEAD;
+		p_iter = poly.insert(std::next(p_iter), edge{{-64, -64}, {-64, -64}});
+		f_iter = flags.insert(std::next(f_iter), 0);
+		ib = (ia + 2) % poly.size();
+
+		auto da = poly[ia].trivial_dir(), db = poly[ib].trivial_dir();
+		if (da == 0)
+			--poly[ia].end_vtx.y;
+		else if (da == 90)
+			--poly[ia].end_vtx.x;
+		else if (da == 180)
+			++poly[ia].end_vtx.y;
+		else if (da == 270)
+			++poly[ia].end_vtx.x;
+		if (db == 0)
+			++poly[ib].start_vtx.y;
+		else if (db == 90)
+			++poly[ib].start_vtx.x;
+		else if (db == 180)
+			--poly[ib].start_vtx.y;
+		else if (db == 270)
+			--poly[ib].start_vtx.x;
+		poly[ix].start_vtx = poly[ia].end_vtx;
+		poly[ix].end_vtx   = poly[ib].start_vtx;
+		++ia;
+	}
+	poly.erase(std::remove_if(poly.begin(), poly.end(), [](const edge &e) {
+		return e.start_vtx == e.end_vtx;
+	}), poly.end());
+
+	p_iter = poly.begin();
+	while (p_iter != poly.cend()) {
+		auto next = std::next(p_iter);
+		if (next == poly.end())
+			break;
+		auto d1 = p_iter->trivial_dir(), d2 = next->trivial_dir();
+		if (d1 != d2) {
+			++p_iter;
+			continue;
+		}
+		p_iter->end_vtx = next->end_vtx;
+		poly.erase(next);
+	}
+}
+
+std::vector<std::vector<edge>> vectorizer::n2(const glyph &g, int desc)
+{
+	const auto &sz = g.m_size;
+	for (unsigned int y = 0; y < sz.h; ++y) {
+		int yy = sz.h - 1 - static_cast<int>(y) - desc;
+		for (unsigned int x = 0; x < sz.w; ++x) {
+			bitpos ipos = y * sz.w + x;
+			if (g.m_data[ipos.byte] & ipos.mask)
+				set(x, yy);
+		}
+	}
+	finalize();
+	std::vector<std::vector<edge>> pmap;
+	while (true) {
+		/* Have all edges retian length 1 */
+		auto poly = pop_poly(0);
+		if (poly.size() == 0)
+			break;
+		n2_angle(poly);
+		pmap.push_back(std::move(poly));
+	}
+	return pmap;
+}
+
 void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
     enum vectoalg vt)
 {
@@ -945,6 +1100,8 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
 		pmap = vectorizer().simple(m_glyph[idx], desc);
 	else if (vt == V_N1)
 		pmap = vectorizer().n1(m_glyph[idx], desc);
+	else if (vt == V_N2)
+		pmap = vectorizer().n2(m_glyph[idx], desc);
 	for (const auto &poly : pmap) {
 		const auto &v1 = poly.cbegin()->start_vtx;
 		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
