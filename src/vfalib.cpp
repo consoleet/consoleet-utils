@@ -930,7 +930,8 @@ std::vector<std::vector<edge>> vectorizer::n1(const glyph &g, int desc)
 
 static void n2_angle(std::vector<edge> &poly)
 {
-	static const unsigned int M_HEAD = 0x20, M_TAIL = 0x02;
+	static const unsigned int M_HEAD = 0x20, M_TAIL = 0x02,
+		M_XHEAD = 0x10, M_XTAIL = 0x01;
 	std::vector<unsigned int> flags(poly.size());
 
 	for (size_t xm3 = 0; xm3 < poly.size(); ++xm3) {
@@ -956,9 +957,15 @@ static void n2_angle(std::vector<edge> &poly)
 			/* _|~|_ or ~|_|~ pattern seen */
 			if ((dm3 == d00 || dm3 == dp1) &&
 			    (dp3 == d00 || dp3 == dm1) &&
-			    dm1 == (dm2 + 270) % 360 && dp1 == (dm2 + 90) % 360)
+			    dm1 == (dm2 + 270) % 360 && dp1 == (dm2 + 90) % 360) {
 				/* pimple __|~|__ ('f', '4'), retain */
+				flags[xm2] |= M_XTAIL;
+				flags[xm1]  = M_XHEAD | M_XTAIL;
+				flags[x00]  = M_XHEAD | M_XTAIL;
+				flags[xp1]  = M_XHEAD | M_XTAIL;
+				flags[xp2] |= M_XHEAD;
 				continue;
+			}
 
 			if (dm1 == (dm2 + 90) % 360 && dp1 == (dm2 + 270) % 360) {
 				/* dimple ~~|_|~~ ('8'), sink it */
@@ -1010,6 +1017,8 @@ static void n2_angle(std::vector<edge> &poly)
 		auto ix = ia + 1;
 		auto ib = ix % poly.size();
 		if (!(flags[ia] & M_TAIL && flags[ib] & M_HEAD))
+			continue;
+		if ((flags[ia] & M_XTAIL) || (flags[ib] & M_XHEAD))
 			continue;
 
 		flags[ia] &= ~M_TAIL;
