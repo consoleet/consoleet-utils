@@ -991,6 +991,13 @@ static void n2_angle(std::vector<edge> &poly)
 		if ((d00 + 270) % 360 != dp1 && (d00 + 90) % 360 != dp1)
 			continue;
 
+		/* #5: serif (ramp), topleft of 'E' */
+		if (dm2 == dm1 && dp2 == (d00 + 180) % 360 && dp3 == dp2)
+			continue;
+		/* bottomleft 'E' */
+		if (dp2 == dp1 && dm2 == (d00 + 180) % 360 && dm3 == dm2)
+			continue;
+
 		/*
 		 * #1: single step, with or without sump,
 		 * #2: bottom of stairs, with or without sump,

@@ -15,7 +15,6 @@ can inspect in e.g. Inkscape by overlaying both fontfaces) that may be
 addressed in a later release.
 
 N2:
-* Serifs are subject to diagonalization (but maybe should become exempt).
 * Isthmuses tend to get washed out, noticable in glyphs like 'G'.
 * Sumps in the 'K', 'M', 'N' glyphs could be improved.
   This is noticable in glyphs like 'G'.
