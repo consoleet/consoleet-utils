@@ -66,19 +66,22 @@ struct psf2_header {
 
 class vectorizer final {
 	public:
-	std::vector<std::vector<edge>> simple(const glyph &, int descent = 0);
-	std::vector<std::vector<edge>> n1(const glyph &, int descent = 0);
-	std::vector<std::vector<edge>> n2(const glyph &, int descent = 0);
+	vectorizer(const glyph &, int descent = 0);
+	std::vector<std::vector<edge>> simple();
+	std::vector<std::vector<edge>> n1();
+	std::vector<std::vector<edge>> n2();
 	static constexpr const unsigned int scale_factor = 2;
 
 	private:
-	void make_squares(const glyph &, int descent = 0);
+	void make_squares();
 	void internal_edge_delete();
 	unsigned int neigh_edges(unsigned int dir, const vertex &, std::set<edge>::iterator &, std::set<edge>::iterator &) const;
 	std::set<edge>::iterator next_edge(unsigned int dir, const edge &) const;
 	std::vector<edge> pop_poly(unsigned int flags);
 	void set(int, int);
 
+	const glyph &m_glyph;
+	int m_descent = 0;
 	std::set<edge> emap;
 	static const unsigned int P_SIMPLIFY_LINES = 1 << 0;
 };
@@ -724,6 +727,10 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	return 0;
 }
 
+vectorizer::vectorizer(const glyph &g, int desc) :
+	m_glyph(g), m_descent(desc)
+{}
+
 void vectorizer::set(int x, int y)
 {
 	/* TTF/OTF spec wants CCW orientation */
@@ -736,14 +743,14 @@ void vectorizer::set(int x, int y)
 	emap.insert(edge{{x + s, y}, {x, y}});
 }
 
-void vectorizer::make_squares(const glyph &g, int desc)
+void vectorizer::make_squares()
 {
-	const auto &sz = g.m_size;
+	const auto &sz = m_glyph.m_size;
 	for (unsigned int y = 0; y < sz.h; ++y) {
-		int yy = sz.h - 1 - static_cast<int>(y) - desc;
+		int yy = sz.h - 1 - static_cast<int>(y) - m_descent;
 		for (unsigned int x = 0; x < sz.w; ++x) {
 			bitpos ipos = y * sz.w + x;
-			if (g.m_data[ipos.byte] & ipos.mask)
+			if (m_glyph.m_data[ipos.byte] & ipos.mask)
 				set(x, yy);
 		}
 	}
@@ -866,9 +873,9 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 	return poly;
 }
 
-std::vector<std::vector<edge>> vectorizer::simple(const glyph &g, int desc)
+std::vector<std::vector<edge>> vectorizer::simple()
 {
-	make_squares(g, desc);
+	make_squares();
 	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
@@ -894,11 +901,12 @@ static inline bool testbit_u(const glyph &g, int x, int y)
 	return g.m_data[bp.byte] & bp.mask;
 }
 
-std::vector<std::vector<edge>> vectorizer::n1(const glyph &g, int desc)
+std::vector<std::vector<edge>> vectorizer::n1()
 {
+	auto &g = m_glyph;
 	const auto &sz = g.m_size;
 	for (unsigned int uy = 0; uy < sz.h; ++uy) {
-		int y = sz.h - 1 - static_cast<int>(uy) - desc;
+		int y = sz.h - 1 - static_cast<int>(uy) - m_descent;
 		for (unsigned int ux = 0; ux < sz.w; ++ux) {
 			bitpos ipos = uy * sz.w + ux;
 			int x = ux;
@@ -1105,9 +1113,9 @@ static void n2_angle(std::vector<edge> &poly)
 	}
 }
 
-std::vector<std::vector<edge>> vectorizer::n2(const glyph &g, int desc)
+std::vector<std::vector<edge>> vectorizer::n2()
 {
-	make_squares(g, desc);
+	make_squares();
 	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
@@ -1136,11 +1144,11 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
 
 	std::vector<std::vector<edge>> pmap;
 	if (vt == V_SIMPLE)
-		pmap = vectorizer().simple(m_glyph[idx], desc);
+		pmap = vectorizer(m_glyph[idx], desc).simple();
 	else if (vt == V_N1)
-		pmap = vectorizer().n1(m_glyph[idx], desc);
+		pmap = vectorizer(m_glyph[idx], desc).n1();
 	else if (vt == V_N2)
-		pmap = vectorizer().n2(m_glyph[idx], desc);
+		pmap = vectorizer(m_glyph[idx], desc).n2();
 	for (const auto &poly : pmap) {
 		const auto &v1 = poly.cbegin()->start_vtx;
 		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
