@@ -75,14 +75,16 @@ class vectorizer final {
 	vectorizer(const glyph &, int descent = 0);
 	std::vector<std::vector<edge>> simple();
 	std::vector<std::vector<edge>> n1();
-	std::vector<std::vector<edge>> n2();
-	static constexpr const unsigned int scale_factor = 2;
+	std::vector<std::vector<edge>> n2(unsigned int flags = 0);
+
+	static constexpr const int scale_factor = 2;
+	static const unsigned int P_ISTHMUS = 1 << 1;
 
 	private:
 	void make_squares();
 	void internal_edge_delete();
 	unsigned int neigh_edges(unsigned int dir, const vertex &, std::set<edge>::iterator &, std::set<edge>::iterator &) const;
-	std::set<edge>::iterator next_edge(unsigned int dir, const edge &) const;
+	std::set<edge>::iterator next_edge(unsigned int dir, const edge &, unsigned int flags) const;
 	std::vector<edge> pop_poly(unsigned int flags);
 	void set(int, int);
 
@@ -862,35 +864,83 @@ unsigned int vectorizer::neigh_edges(unsigned int cur_dir, const vertex &tail,
 }
 
 std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
-    const edge &cur_edge) const
+    const edge &cur_edge, unsigned int flags) const
 {
 	const auto &tail = cur_edge.end_vtx;
 	std::set<edge>::iterator inward, outward;
-	neigh_edges(cur_dir, tail, inward, outward);
+	auto ret = neigh_edges(cur_dir, tail, inward, outward);
+	if (!(flags & P_ISTHMUS) || ret <= 1)
+		return inward;
 	/*
-	 * If there are two edges from a given start vertex, prefer the
-	 * edge which makes an inward curving. This makes a shape like
+	 * If there are two edges with the same vertex, we have
+	 * an intersection ahead (illustrative):
 	 *
-	 *   ######
-	 *   ##  ##
-	 *     ####
+	 *   ##..##..  ..##..##  ####....  ....####
+	 *   ..##....  ....##..  ####..##  ##..####
+	 *   ##..####  ####..##  ....##..  ..##....
+	 *   ....####  ####....  ..##..##  ##..##..
 	 *
-	 * be emitted a single polygon, rather than two (outer &
-	 * enclave). The tradeoff is that fully-enclosed enclaves, e.g.
+	 * n2_angle will work with the polygon edge we determine here, so the
+	 * choice of walking direction matters.
 	 *
-	 * ########
-	 * ##  ####
-	 * ####  ##
-	 * ########
+	 * We are working with lines rather than pixels, but every edge's right
+	 * side corresponds to a pixel, thereby the bitmap could be
+	 * reconstructed. But since we have a reference to the bitmap anyway,
+	 * it can just be checked directly.
 	 *
-	 * will favor making a single polygon with self-intersection.
-	 * The enclave of the number '4', when a 1-px stroke thickness
-	 * is used, also ceases to be an enclave.
+	 * Antijoinworthy patterns:
+	 *   (A1)      (A2)
+	 *   ....##..  ..##....
+	 *   ..##....  ####....
+	 *   ##..####  ....####
+	 *   ....####  ....####
+	 * Joinworthy:
+	 *   (J1)
+	 *   ..MM....
+	 *   ..MM....
+	 *   ....####
+	 *   ....####
 	 *
-	 * (None of all this has an effect on rendering, just the way
-	 * font editors see the outline.)
+	 * Right now, we are only testing for A1+A2. Might be enough...?
 	 */
-	return inward;
+	vertex bmp;
+	if (cur_dir == 0)
+		bmp = cur_edge.start_vtx;
+	else if (cur_dir == 90)
+		bmp = {cur_edge.start_vtx.x, cur_edge.start_vtx.y - scale_factor};
+	else if (cur_dir == 180)
+		bmp = {cur_edge.start_vtx.x - scale_factor, cur_edge.end_vtx.y};
+	else if (cur_dir == 270)
+		bmp = cur_edge.end_vtx;
+	bmp.x /= scale_factor;
+	bmp.y /= scale_factor;
+	bmp.y = m_glyph.m_size.h - bmp.y - m_descent - 1;
+
+	/* Test for pattern A1 */
+	bool up    = testbit_c(m_glyph, bmp.x, bmp.y - 2);
+	bool right = testbit_c(m_glyph, bmp.x + 2, bmp.y);
+	bool down  = testbit_c(m_glyph, bmp.x, bmp.y + 2);
+	bool left  = testbit_c(m_glyph, bmp.x - 2, bmp.y);
+	if (cur_dir == 0 && left && up)
+		return inward;
+	if (cur_dir == 90 && up && right)
+		return inward;
+	if (cur_dir == 180 && right && down)
+		return inward;
+	if (cur_dir == 270 && down && left)
+		return inward;
+
+	/* Test for pattern A2 */
+	if (cur_dir == 0 && testbit_c(m_glyph, bmp.x - 2, bmp.y - 1) && testbit_c(m_glyph, bmp.x - 1, bmp.y - 2))
+		return inward;
+	if (cur_dir == 90 && testbit_c(m_glyph, bmp.x + 1, bmp.y - 2) && testbit_c(m_glyph, bmp.x + 2, bmp.y - 1))
+		return inward;
+	if (cur_dir == 180 && testbit_c(m_glyph, bmp.x + 2, bmp.y + 1) && testbit_c(m_glyph, bmp.x + 1, bmp.y + 2))
+		return inward;
+	if (cur_dir == 270 && testbit_c(m_glyph, bmp.x - 2, bmp.y + 1) && testbit_c(m_glyph, bmp.x - 1, bmp.y + 2))
+		return inward;
+
+	return outward;
 }
 
 std::vector<edge> vectorizer::pop_poly(unsigned int flags)
@@ -908,7 +958,7 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 		auto &tail_vtx = poly.rbegin()->end_vtx;
 		if (tail_vtx == poly.cbegin()->start_vtx)
 			break;
-		auto next = next_edge(prev_dir, *poly.rbegin());
+		auto next = next_edge(prev_dir, *poly.rbegin(), flags);
 		if (next == emap.cend()) {
 			fprintf(stderr, "unclosed poly wtf?!\n");
 			break;
@@ -1159,14 +1209,15 @@ static void n2_angle(std::vector<edge> &poly)
 	}
 }
 
-std::vector<std::vector<edge>> vectorizer::n2()
+std::vector<std::vector<edge>> vectorizer::n2(unsigned int flags)
 {
+	flags &= P_ISTHMUS;
 	make_squares();
 	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
 		/* Have all edges retian length 1 */
-		auto poly = pop_poly(0);
+		auto poly = pop_poly(flags);
 		if (poly.size() == 0)
 			break;
 		n2_angle(poly);
@@ -1195,6 +1246,8 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
 		pmap = vectorizer(m_glyph[idx], desc).n1();
 	else if (vt == V_N2)
 		pmap = vectorizer(m_glyph[idx], desc).n2();
+	else if (vt == V_N2EV)
+		pmap = vectorizer(m_glyph[idx], desc).n2(vectorizer::P_ISTHMUS);
 	for (const auto &poly : pmap) {
 		const auto &v1 = poly.cbegin()->start_vtx;
 		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
