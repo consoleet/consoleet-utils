@@ -72,6 +72,7 @@ class vectorizer final {
 	static constexpr const unsigned int scale_factor = 2;
 
 	private:
+	void make_squares(const glyph &, int descent = 0);
 	void internal_edge_delete();
 	std::vector<edge> pop_poly(unsigned int flags);
 	void set(int, int);
@@ -733,6 +734,19 @@ void vectorizer::set(int x, int y)
 	emap.insert(edge{{x + s, y}, {x, y}});
 }
 
+void vectorizer::make_squares(const glyph &g, int desc)
+{
+	const auto &sz = g.m_size;
+	for (unsigned int y = 0; y < sz.h; ++y) {
+		int yy = sz.h - 1 - static_cast<int>(y) - desc;
+		for (unsigned int x = 0; x < sz.w; ++x) {
+			bitpos ipos = y * sz.w + x;
+			if (g.m_data[ipos.byte] & ipos.mask)
+				set(x, yy);
+		}
+	}
+}
+
 void vectorizer::internal_edge_delete()
 {
 	/*
@@ -829,15 +843,7 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 
 std::vector<std::vector<edge>> vectorizer::simple(const glyph &g, int desc)
 {
-	const auto &sz = g.m_size;
-	for (unsigned int y = 0; y < sz.h; ++y) {
-		int yy = sz.h - 1 - static_cast<int>(y) - desc;
-		for (unsigned int x = 0; x < sz.w; ++x) {
-			bitpos ipos = y * sz.w + x;
-			if (g.m_data[ipos.byte] & ipos.mask)
-				set(x, yy);
-		}
-	}
+	make_squares(g, desc);
 	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
@@ -1076,15 +1082,7 @@ static void n2_angle(std::vector<edge> &poly)
 
 std::vector<std::vector<edge>> vectorizer::n2(const glyph &g, int desc)
 {
-	const auto &sz = g.m_size;
-	for (unsigned int y = 0; y < sz.h; ++y) {
-		int yy = sz.h - 1 - static_cast<int>(y) - desc;
-		for (unsigned int x = 0; x < sz.w; ++x) {
-			bitpos ipos = y * sz.w + x;
-			if (g.m_data[ipos.byte] & ipos.mask)
-				set(x, yy);
-		}
-	}
+	make_squares(g, desc);
 	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
