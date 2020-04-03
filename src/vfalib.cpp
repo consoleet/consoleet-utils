@@ -75,6 +75,7 @@ class vectorizer final {
 	void make_squares(const glyph &, int descent = 0);
 	void internal_edge_delete();
 	unsigned int neigh_edges(unsigned int dir, const vertex &, std::set<edge>::iterator &, std::set<edge>::iterator &) const;
+	std::set<edge>::iterator next_edge(unsigned int dir, const edge &) const;
 	std::vector<edge> pop_poly(unsigned int flags);
 	void set(int, int);
 
@@ -795,6 +796,38 @@ unsigned int vectorizer::neigh_edges(unsigned int cur_dir, const vertex &tail,
 	return 2;
 }
 
+std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
+    const edge &cur_edge) const
+{
+	const auto &tail = cur_edge.end_vtx;
+	std::set<edge>::iterator inward, outward;
+	neigh_edges(cur_dir, tail, inward, outward);
+	/*
+	 * If there are two edges from a given start vertex, prefer the
+	 * edge which makes an inward curving. This makes a shape like
+	 *
+	 *   ######
+	 *   ##  ##
+	 *     ####
+	 *
+	 * be emitted a single polygon, rather than two (outer &
+	 * enclave). The tradeoff is that fully-enclosed enclaves, e.g.
+	 *
+	 * ########
+	 * ##  ####
+	 * ####  ##
+	 * ########
+	 *
+	 * will favor making a single polygon with self-intersection.
+	 * The enclave of the number '4', when a 1-px stroke thickness
+	 * is used, also ceases to be an enclave.
+	 *
+	 * (None of all this has an effect on rendering, just the way
+	 * font editors see the outline.)
+	 */
+	return inward;
+}
+
 std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 {
 	std::vector<edge> poly;
@@ -810,37 +843,11 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 		auto &tail_vtx = poly.rbegin()->end_vtx;
 		if (tail_vtx == poly.cbegin()->start_vtx)
 			break;
-		std::set<edge>::iterator inward, outward;
-		auto ret = neigh_edges(prev_dir, tail_vtx, inward, outward);
-		if (ret == 0) {
+		auto next = next_edge(prev_dir, *poly.rbegin());
+		if (next == emap.cend()) {
 			fprintf(stderr, "unclosed poly wtf?!\n");
 			break;
 		}
-
-		/*
-		 * If there are two edges from a given start vertex, prefer the
-		 * edge which makes an inward curving. This makes a shape like
-		 *
-		 *   ######
-		 *   ##  ##
-		 *     ####
-		 *
-		 * be emitted a single polygon, rather than two (outer &
-		 * enclave). The tradeoff is that fully-enclosed enclaves, e.g.
-		 *
-		 * ########
-		 * ##  ####
-		 * ####  ##
-		 * ########
-		 *
-		 * will favor making a single polygon with self-intersection.
-		 * The enclave of the number '4', when a 1-px stroke thickness
-		 * is used, also ceases to be an enclave.
-		 *
-		 * (None of all this has an effect on rendering, just the way
-		 * font editors see the outline.)
-		 */
-		auto next = inward;
 
 		/*
 		 * Skip redundant vertices along the way to the next
