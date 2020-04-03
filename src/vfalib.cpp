@@ -727,6 +727,20 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	return 0;
 }
 
+static inline bool testbit_c(const glyph &g, int x, int y)
+{
+	if (x < 0 || y < 0 || x >= static_cast<int>(g.m_size.w) || y >= static_cast<int>(g.m_size.h))
+		return false;
+	bitpos bp = y * g.m_size.w + x;
+	return g.m_data[bp.byte] & bp.mask;
+}
+
+static inline bool testbit_u(const glyph &g, int x, int y)
+{
+	bitpos bp = y * g.m_size.w + x;
+	return g.m_data[bp.byte] & bp.mask;
+}
+
 vectorizer::vectorizer(const glyph &g, int desc) :
 	m_glyph(g), m_descent(desc)
 {}
@@ -885,20 +899,6 @@ std::vector<std::vector<edge>> vectorizer::simple()
 		pmap.push_back(std::move(poly));
 	}
 	return pmap;
-}
-
-static inline bool testbit_c(const glyph &g, int x, int y)
-{
-	if (x < 0 || y < 0 || x >= static_cast<int>(g.m_size.w) || y >= static_cast<int>(g.m_size.h))
-		return false;
-	bitpos bp = y * g.m_size.w + x;
-	return g.m_data[bp.byte] & bp.mask;
-}
-
-static inline bool testbit_u(const glyph &g, int x, int y)
-{
-	bitpos bp = y * g.m_size.w + x;
-	return g.m_data[bp.byte] & bp.mask;
 }
 
 std::vector<std::vector<edge>> vectorizer::n1()
