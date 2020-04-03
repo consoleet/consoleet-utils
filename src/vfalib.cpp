@@ -72,7 +72,7 @@ class vectorizer final {
 	static constexpr const unsigned int scale_factor = 2;
 
 	private:
-	void finalize();
+	void internal_edge_delete();
 	std::vector<edge> pop_poly(unsigned int flags);
 	void set(int, int);
 
@@ -733,7 +733,7 @@ void vectorizer::set(int x, int y)
 	emap.insert(edge{{x + s, y}, {x, y}});
 }
 
-void vectorizer::finalize()
+void vectorizer::internal_edge_delete()
 {
 	/*
 	 * Remove overlaps: As enforced by set(), all the polygons are added
@@ -838,7 +838,7 @@ std::vector<std::vector<edge>> vectorizer::simple(const glyph &g, int desc)
 				set(x, yy);
 		}
 	}
-	finalize();
+	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
 		auto poly = pop_poly(P_SIMPLIFY_LINES);
@@ -917,7 +917,7 @@ std::vector<std::vector<edge>> vectorizer::n1(const glyph &g, int desc)
 		}
 	}
 
-	finalize();
+	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
 		auto poly = pop_poly(P_SIMPLIFY_LINES);
@@ -1085,7 +1085,7 @@ std::vector<std::vector<edge>> vectorizer::n2(const glyph &g, int desc)
 				set(x, yy);
 		}
 	}
-	finalize();
+	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
 		/* Have all edges retian length 1 */
