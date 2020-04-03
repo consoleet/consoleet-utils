@@ -67,12 +67,14 @@ struct unicode_map {
 struct vertex {
 	bool operator<(const struct vertex &) const;
 	bool operator==(const struct vertex &) const;
+	bool operator!=(const struct vertex &a) const { return !operator==(a); }
 	int x, y;
 };
 
 struct edge {
 	bool operator<(const struct edge &) const;
 	bool operator==(const struct edge &) const;
+	bool operator!=(const struct edge &a) const { return !operator==(a); }
 	unsigned int trivial_dir() const;
 	struct vertex start_vtx, end_vtx;
 };

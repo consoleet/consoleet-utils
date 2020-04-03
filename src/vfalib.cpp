@@ -74,6 +74,7 @@ class vectorizer final {
 	private:
 	void make_squares(const glyph &, int descent = 0);
 	void internal_edge_delete();
+	unsigned int neigh_edges(unsigned int dir, const vertex &, std::set<edge>::iterator &, std::set<edge>::iterator &) const;
 	std::vector<edge> pop_poly(unsigned int flags);
 	void set(int, int);
 
@@ -773,6 +774,27 @@ void vectorizer::internal_edge_delete()
 	}
 }
 
+/**
+ * Find the next edges (up to two) for @tail.
+ */
+unsigned int vectorizer::neigh_edges(unsigned int cur_dir, const vertex &tail,
+    std::set<edge>::iterator &inward, std::set<edge>::iterator &outward) const
+{
+	inward = emap.lower_bound({tail, {INT_MIN, INT_MIN}});
+	if (inward == emap.end() || inward->start_vtx != tail) {
+		outward = inward = emap.end();
+		return 0;
+	}
+	outward = std::next(inward); /* due to sortedness of @emap */
+	if (outward == emap.cend() || outward->start_vtx != tail) {
+		outward = emap.end();
+		return 1;
+	}
+	if (cur_dir == 0 || cur_dir == 270)
+		std::swap(inward, outward); /* order of @emap */
+	return 2;
+}
+
 std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 {
 	std::vector<edge> poly;
@@ -788,8 +810,9 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 		auto &tail_vtx = poly.rbegin()->end_vtx;
 		if (tail_vtx == poly.cbegin()->start_vtx)
 			break;
-		auto next = emap.lower_bound({tail_vtx, {INT_MIN, INT_MIN}});
-		if (next == emap.cend()) {
+		std::set<edge>::iterator inward, outward;
+		auto ret = neigh_edges(prev_dir, tail_vtx, inward, outward);
+		if (ret == 0) {
 			fprintf(stderr, "unclosed poly wtf?!\n");
 			break;
 		}
@@ -817,12 +840,7 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 		 * (None of all this has an effect on rendering, just the way
 		 * font editors see the outline.)
 		 */
-		if (prev_dir == 0 || prev_dir == 270) {
-			/* (Exploiting the sortedness of emap here.) */
-			auto cand2 = std::next(next);
-			if (cand2 != emap.cend() && cand2->start_vtx == tail_vtx)
-				next = cand2;
-		}
+		auto next = inward;
 
 		/*
 		 * Skip redundant vertices along the way to the next
