@@ -1031,10 +1031,12 @@ static void n2_angle(std::vector<edge> &poly)
 			continue;
 
 		/* #5: serif (ramp), topleft of 'E' */
-		if (dm2 == dm1 && dp2 == (d00 + 180) % 360 && dp3 == dp2)
+		if (dm2 == dm1 && d00 == (dm1 + 270) % 360 &&
+		    dp1 == dm1 && dp2 == (dm1 + 90) % 360 && dp3 == dp2)
 			continue;
 		/* bottomleft 'E' */
-		if (dp2 == dp1 && dm2 == (d00 + 180) % 360 && dm3 == dm2)
+		if (dm3 == dm2 && dm1 == (dm2 + 90) % 360 &&
+		    d00 == (dm2 + 180) % 360 && dp1 == dm1 && dp2 == dp1)
 			continue;
 
 		/*
