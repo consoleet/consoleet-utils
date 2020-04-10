@@ -199,6 +199,19 @@ void font::lge()
 		m_glyph[k].lge();
 }
 
+struct bdfglystate {
+	int uc = -1, w = 0, h = 0, of_left = 0, of_baseline = 0;
+	unsigned int dwidth = 0, lr = 0;
+	unsigned int font_ascent = 0, font_descent = 0, font_height = 0;
+	std::string buf;
+
+	void reset() {
+		w = h = of_left = of_baseline = dwidth = lr = 0;
+		uc = -1;
+		buf.clear();
+	}
+};
+
 static size_t hexrunparse(void *vdest, size_t destsize, const char *p)
 {
 	auto dest = static_cast<uint8_t *>(vdest);
@@ -222,6 +235,116 @@ static size_t hexrunparse(void *vdest, size_t destsize, const char *p)
 		++written;
 	}
 	return written;
+}
+
+static void bdfbitparse(bdfglystate &cchar, const char *line)
+{
+	auto offset = cchar.buf.size();
+	auto bpl = (cchar.w + 7) / 8;
+	cchar.buf.resize(offset + bpl);
+	auto z = hexrunparse(cchar.buf.data() + offset, bpl, line);
+	cchar.buf.resize(offset + z);
+}
+
+static glyph bdfcomplete(const bdfglystate &cchar)
+{
+	vfsize bbx_size(cchar.w, cchar.h);
+	auto g = glyph::create_from_rpad(bbx_size, cchar.buf.c_str(), bytes_per_glyph(bbx_size));
+	vfrect src_rect, dst_rect;
+	src_rect.x = cchar.of_left >= 0 ? 0 : -cchar.of_left;
+	src_rect.w = cchar.of_left >= 0 ? cchar.w : std::max(0, cchar.w + cchar.of_left);
+	src_rect.y = 0;
+	src_rect.h = cchar.h;
+	dst_rect.x = std::max(0, cchar.of_left);
+	dst_rect.y = std::max(0, static_cast<int>(cchar.font_ascent) - cchar.of_baseline - cchar.h);
+	dst_rect.w = cchar.dwidth;
+	dst_rect.h = cchar.font_height;
+	return g.blit(src_rect, dst_rect);
+}
+
+int font::load_bdf(const char *filename)
+{
+	enum { BDF_NONE, BDF_FONT, BDF_CHAR, BDF_BITMAP, BDF_PASTBITMAP, BDF_DONE };
+	std::unique_ptr<FILE, deleter> fp(fopen(filename, "r"));
+	if (fp == nullptr)
+		return -errno;
+	if (m_unicode_map == nullptr)
+		m_unicode_map = std::make_shared<unicode_map>();
+
+	hxmc_t *line = nullptr;
+	auto lineclean = make_scope_success([&]() { HXmc_free(line); });
+	unsigned int state = BDF_NONE;
+	bdfglystate cchar;
+
+	while (HX_getl(&line, fp.get()) != nullptr) {
+		if (state == BDF_NONE) {
+			if (strncmp(line, "STARTFONT 2.1\n", 14) == 0) {
+				state = BDF_FONT;
+				continue;
+			}
+		} else if (state == BDF_FONT) {
+			if (strcmp(line, "ENDFONT") == 0)
+				break;
+			if (strncmp(line, "STARTCHAR ", 10) == 0) {
+				cchar.reset();
+				cchar.font_height = cchar.font_ascent + cchar.font_descent;
+				state = BDF_CHAR;
+				continue;
+			}
+			auto fields = sscanf(line, "FONT_ASCENT %u", &cchar.font_ascent);
+			if (fields == 1)
+				continue;
+			fields = sscanf(line, "FONT_DESCENT %u", &cchar.font_descent);
+			if (fields == 1)
+				continue;
+		} else if (state == BDF_CHAR) {
+			int tmp = -1;
+			auto fields = sscanf(line, "ENCODING %d %d", &tmp, &cchar.uc);
+			if (fields == 2 && tmp == -1) {
+				continue;
+			} else if (fields == 1 && tmp == -1) {
+				state = BDF_PASTBITMAP;
+				continue;
+			} else if (fields == 1) {
+				cchar.uc = tmp;
+				continue;
+			}
+			fields = sscanf(line, "DWIDTH %d", &cchar.dwidth);
+			if (fields == 1)
+				continue;
+			/* only supporting Writing Mode 0 right now */
+			fields = sscanf(line, "BBX %d %d %d %d", &cchar.w, &cchar.h, &cchar.of_left, &cchar.of_baseline);
+			if (fields == 4) {
+				cchar.lr = cchar.h;
+				continue;
+			}
+			if (strcmp(line, "BITMAP\n") == 0) {
+				state = BDF_BITMAP;
+				continue;
+			}
+		} else if (state == BDF_BITMAP) {
+			if (cchar.lr == 0) {
+				state = BDF_PASTBITMAP;
+				continue;
+			}
+			if (cchar.lr-- > 0)
+				bdfbitparse(cchar, line);
+			if (cchar.lr == 0) {
+				state = BDF_PASTBITMAP;
+				continue;
+			}
+		} else if (state == BDF_PASTBITMAP) {
+			if (strcmp(line, "ENDCHAR\n") == 0) {
+				if (cchar.uc != -1) {
+					m_unicode_map->add_i2u(m_glyph.size(), cchar.uc);
+					m_glyph.push_back(bdfcomplete(std::move(cchar)));
+				}
+				state = BDF_FONT;
+				continue;
+			}
+		}
+	}
+	return 0;
 }
 
 int font::load_clt(const char *dirname)
@@ -530,6 +653,7 @@ void font::save_bdf_glyph(FILE *fp, size_t idx, char32_t cp)
 		static_cast<unsigned int>(cp), static_cast<unsigned int>(cp));
 	fprintf(fp, "SWIDTH 1000 0\n");
 	fprintf(fp, "DWIDTH %u 0\n", sz.w);
+	/* sz.h/4 is just a guess as to the descent of glyphs */
 	fprintf(fp, "BBX %u %u 0 -%u\n", sz.w, sz.h, sz.h / 4);
 	fprintf(fp, "BITMAP\n");
 
@@ -1271,6 +1395,10 @@ glyph::glyph(const vfsize &size) :
 	m_data.resize(bytes_per_glyph(m_size));
 }
 
+/*
+ * Create the in-memory representation (which is bitpacked) from a bytepacked
+ * ("right-padded") raw representation.
+ */
 glyph glyph::create_from_rpad(const vfsize &size, const char *buf, size_t z)
 {
 	glyph ng(size);
@@ -1413,6 +1541,9 @@ std::vector<uint32_t> glyph::as_rgba() const
 	return vec;
 }
 
+/**
+ * Convert from bit-packed representation to row-padded.
+ */
 std::string glyph::as_rowpad() const
 {
 	std::string ret;

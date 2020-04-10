@@ -111,6 +111,7 @@ class glyph {
 class font {
 	public:
 	void init_256_blanks();
+	int load_bdf(const char *file);
 	int load_clt(const char *dir);
 	int load_fnt(const char *file, unsigned int height_hint = -1);
 	int load_hex(const char *file);
