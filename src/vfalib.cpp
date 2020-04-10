@@ -392,12 +392,6 @@ int font::load_psf(const char *file)
 	if (!(hdr.flags & PSF2_HAS_UNICODE_TABLE))
 		return 0;
 	m_unicode_map = std::make_shared<unicode_map>();
-	auto cd = iconv_open("UTF-32", "UTF-8");
-	if (cd == nullptr) {
-		fprintf(stderr, "iconv_open: %s\n", strerror(errno));
-		return -errno;
-	}
-	auto cdclean = make_scope_success([&]() { iconv_close(cd); });
 	for (unsigned int idx = 0; idx < hdr.length; ++idx) {
 		do {
 			auto uc = nextutf8(fp.get());
