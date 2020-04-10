@@ -420,7 +420,7 @@ static const struct vf_command {
 	{"loadhex", 1, vf_loadhex},
 	{"loadmap", 1, vf_loadmap},
 	{"loadpsf", 1, vf_loadpsf},
-	{"savebdf", 2, vf_savebdf},
+	{"savebdf", 1, vf_savebdf},
 	{"saveclt", 1, vf_saveclt},
 	{"savefnt", 1, vf_savefnt},
 	{"savemap", 1, vf_savemap},
