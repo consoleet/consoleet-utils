@@ -39,11 +39,17 @@
 namespace vfalib {
 
 enum {
+	PSF1_MAGIC0 = 0x36,
+	PSF1_MAGIC1 = 0x04,
+	PSF1_MF_512 = 1 << 0,
+	PSF1_MF_TAB = 1 << 1,
+	PSF1_MF_SEQ = 1 << 2,
 	PSF2_MAGIC0 = 0x72,
 	PSF2_MAGIC1 = 0xB5,
 	PSF2_MAGIC2 = 0x4A,
 	PSF2_MAGIC3 = 0x86,
 	PSF2_HAS_UNICODE_TABLE = 0x01,
+	VFA_UCS2 = 0x8000,
 	PSF2_SEPARATOR = 0xFF,
 	PSF2_STARTSEQ = 0xFE,
 };
@@ -361,25 +367,69 @@ static char32_t nextutf8(FILE *fp)
 	return uc;
 }
 
+static char32_t nextucs2(FILE *fp)
+{
+	auto x = fgetc(fp);
+	if (x == EOF)
+		return ~0U;
+	auto y = fgetc(fp);
+	if (y == EOF)
+		return ~0U;
+	x |= y << 8;
+	return x < 0xffff ? x : ~0U;
+}
+
+static unsigned int psf_version(FILE *fp)
+{
+	uint8_t x = fgetc(fp), y = fgetc(fp);
+	if (x == PSF1_MAGIC0 && y == PSF1_MAGIC1)
+		return 1;
+	if (x != PSF2_MAGIC0 || y != PSF2_MAGIC1)
+		return 0;
+	x = fgetc(fp);
+	y = fgetc(fp);
+	return x == PSF2_MAGIC2 && y == PSF2_MAGIC3 ? 2 : 0;
+}
+
 int font::load_psf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
 	if (fp == nullptr)
 		return -errno;
-	struct psf2_header hdr;
-	if (fread(&hdr, sizeof(hdr), 1, fp.get()) != 1)
-		return -errno;
-	hdr.version    = le32_to_cpu(hdr.version);
-	hdr.headersize = le32_to_cpu(hdr.headersize);
-	hdr.flags      = le32_to_cpu(hdr.flags);
-	hdr.length     = le32_to_cpu(hdr.length);
-	hdr.charsize   = le32_to_cpu(hdr.charsize);
-	hdr.height     = le32_to_cpu(hdr.height);
-	hdr.width      = le32_to_cpu(hdr.width);
-	if (hdr.magic[0] != PSF2_MAGIC0 || hdr.magic[1] != PSF2_MAGIC1 ||
-	    hdr.magic[2] != PSF2_MAGIC2 || hdr.magic[3] != PSF2_MAGIC3 ||
-	    hdr.version != 0)
+
+	struct psf2_header hdr{};
+	switch (psf_version(fp.get())) {
+	case 0:
 		return -EINVAL;
+	case 1: {
+		auto mode = fgetc(fp.get()), charsize = fgetc(fp.get());
+		if (mode == EOF || charsize == EOF)
+			return -EINVAL;
+		hdr.length   = (mode & PSF1_MF_512) ? 512 : 256;
+		hdr.charsize = charsize;
+		hdr.height   = charsize;
+		hdr.width    = 8;
+		hdr.flags   |= VFA_UCS2;
+		if (mode & (PSF1_MF_TAB | PSF1_MF_SEQ))
+			hdr.flags |= PSF2_HAS_UNICODE_TABLE;
+		break;
+	}
+	case 2: {
+		if (fread(&hdr.version, sizeof(hdr) - offsetof(decltype(hdr), version), 1, fp.get()) != 1 ||
+		    le32_to_cpu(hdr.version) != 0)
+			return -EINVAL;
+		hdr.version    = le32_to_cpu(hdr.version);
+		if (hdr.version != 0)
+			return -EINVAL;
+		hdr.headersize = le32_to_cpu(hdr.headersize);
+		hdr.flags      = le32_to_cpu(hdr.flags);
+		hdr.length     = le32_to_cpu(hdr.length);
+		hdr.charsize   = le32_to_cpu(hdr.charsize);
+		hdr.height     = le32_to_cpu(hdr.height);
+		hdr.width      = le32_to_cpu(hdr.width);
+		break;
+	}
+	}
 
 	std::unique_ptr<char[]> buf(new char[hdr.charsize]);
 	size_t glyph_start = m_glyph.size();
@@ -394,7 +444,7 @@ int font::load_psf(const char *file)
 	m_unicode_map = std::make_shared<unicode_map>();
 	for (unsigned int idx = 0; idx < hdr.length; ++idx) {
 		do {
-			auto uc = nextutf8(fp.get());
+			auto uc = hdr.flags & VFA_UCS2 ? nextucs2(fp.get()) : nextutf8(fp.get());
 			if (uc == ~0U)
 				break;
 			m_unicode_map->add_i2u(glyph_start + idx, uc);
