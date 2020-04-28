@@ -1,4 +1,12 @@
 
+rel-20200428
+============
+* vfontas: N2 vectorizer: cease smoothing of stub serifs
+  (concerns the topleft corner of an 'E' in some fonts)
+* vfontas: N2 vectorizer: avoid diagonalizing "pimples" in font outlines
+  (concerns 1-pixel protrusions in the right vertical edge of the '4')
+
+
 rel-20200331
 ============
 * vfontas: add new N2 vectorizer
