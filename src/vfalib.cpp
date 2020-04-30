@@ -828,14 +828,13 @@ void vectorizer::internal_edge_delete()
 	 */
 	for (auto edge = emap.begin(); edge != emap.end(); ) {
 		auto twin = emap.find({edge->end_vtx, edge->start_vtx});
-		if (twin == edge) {
-			printf("Glyph outline description is faulty: edge with startvtx==endvtx (%d,%d)\n",
-				edge->start_vtx.x, edge->start_vtx.y);
-			break;
-		}
 		if (twin == emap.cend()) {
 			++edge;
 			continue;
+		} else if (twin == edge) {
+			printf("Glyph outline description is faulty: edge with startvtx==endvtx (%d,%d)\n",
+				edge->start_vtx.x, edge->start_vtx.y);
+			break;
 		}
 		emap.erase(twin);
 		edge = emap.erase(edge);
