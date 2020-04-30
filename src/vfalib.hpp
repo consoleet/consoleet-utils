@@ -68,7 +68,7 @@ struct vertex {
 	bool operator<(const struct vertex &) const;
 	bool operator==(const struct vertex &) const;
 	bool operator!=(const struct vertex &a) const { return !operator==(a); }
-	int x, y;
+	int y, x;
 };
 
 struct edge {

@@ -797,10 +797,10 @@ void vectorizer::set(int x, int y)
 	int s = scale_factor;
 	x *= s;
 	y *= s;
-	emap.insert(edge{{x, y}, {x, y + s}});
-	emap.insert(edge{{x, y + s}, {x + s, y + s}});
-	emap.insert(edge{{x + s, y + s}, {x + s, y}});
-	emap.insert(edge{{x + s, y}, {x, y}});
+	emap.insert(edge{{y, x}, {y + s, x}});
+	emap.insert(edge{{y + s, x}, {y + s, x + s}});
+	emap.insert(edge{{y + s, x + s}, {y, x + s}});
+	emap.insert(edge{{y, x + s}, {y, x}});
 }
 
 void vectorizer::make_squares()
@@ -1021,30 +1021,30 @@ std::vector<std::vector<edge>> vectorizer::n1()
 			bool br = (c2 && ((c6 && ((!c3 && (c1 || c7 || c9)) || (!c1 && !c4) || (!c8 && !c9))) || c5)) || (c5 && ((!c1 && !c9) || c3 || c6));
 
 			if (tl) {
-				emap.insert(edge{{2*x,   2*y+1}, {2*x,   2*y+2}});
-				emap.insert(edge{{2*x,   2*y+2}, {2*x+1, 2*y+2}});
-				emap.insert(edge{{2*x+1, 2*y+2}, {2*x,   2*y+1}});
+				emap.insert(edge{{2*y+1, 2*x},   {2*y+2, 2*x}});
+				emap.insert(edge{{2*y+2, 2*x},   {2*y+2, 2*x+1}});
+				emap.insert(edge{{2*y+2, 2*x+1}, {2*y+1, 2*x}});
 			}
 			if (tr) {
-				emap.insert(edge{{2*x+1, 2*y+2}, {2*x+2, 2*y+2}});
-				emap.insert(edge{{2*x+2, 2*y+2}, {2*x+2, 2*y+1}});
-				emap.insert(edge{{2*x+2, 2*y+1}, {2*x+1, 2*y+2}});
+				emap.insert(edge{{2*y+2, 2*x+1}, {2*y+2, 2*x+2}});
+				emap.insert(edge{{2*y+2, 2*x+2}, {2*y+1, 2*x+2}});
+				emap.insert(edge{{2*y+1, 2*x+2}, {2*y+2, 2*x+1}});
 			}
 			if (bl) {
-				emap.insert(edge{{2*x,   2*y},   {2*x,   2*y+1}});
-				emap.insert(edge{{2*x,   2*y+1}, {2*x+1, 2*y}});
-				emap.insert(edge{{2*x+1, 2*y},   {2*x,   2*y}});
+				emap.insert(edge{{2*y,   2*x},   {2*y+1, 2*x}});
+				emap.insert(edge{{2*y+1, 2*x},   {2*y,   2*x+1}});
+				emap.insert(edge{{2*y,   2*x+1}, {2*y,   2*x}});
 			}
 			if (br) {
-				emap.insert(edge{{2*x+1, 2*y},   {2*x+2, 2*y+1}});
-				emap.insert(edge{{2*x+2, 2*y+1}, {2*x+2, 2*y}});
-				emap.insert(edge{{2*x+2, 2*y},   {2*x+1, 2*y}});
+				emap.insert(edge{{2*y,   2*x+1}, {2*y+1, 2*x+2}});
+				emap.insert(edge{{2*y+1, 2*x+2}, {2*y,   2*x+2}});
+				emap.insert(edge{{2*y,   2*x+2}, {2*y,   2*x+1}});
 			}
 			if (di) {
-				emap.insert(edge{{2*x,   2*y+1}, {2*x+1, 2*y+2}});
-				emap.insert(edge{{2*x+1, 2*y+2}, {2*x+2, 2*y+1}});
-				emap.insert(edge{{2*x+2, 2*y+1}, {2*x+1, 2*y  }});
-				emap.insert(edge{{2*x+1, 2*y  }, {2*x,   2*y+1}});
+				emap.insert(edge{{2*y+1, 2*x},   {2*y+2, 2*x+1}});
+				emap.insert(edge{{2*y+2, 2*x+1}, {2*y+1, 2*x+2}});
+				emap.insert(edge{{2*y+1, 2*x+2}, {2*y,   2*x+1}});
+				emap.insert(edge{{2*y,   2*x+1}, {2*y+1, 2*x}});
 			}
 		}
 	}
@@ -1423,12 +1423,12 @@ std::string glyph::as_rowpad() const
 
 bool vertex::operator<(const struct vertex &o) const
 {
-	return std::tie(x, y) < std::tie(o.x, o.y);
+	return std::tie(y, x) < std::tie(o.y, o.x);
 }
 
 bool vertex::operator==(const struct vertex &o) const
 {
-	return std::tie(x, y) == std::tie(o.x, o.y);
+	return std::tie(y, x) == std::tie(o.y, o.x);
 }
 
 bool edge::operator<(const struct edge &o) const
