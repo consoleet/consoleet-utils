@@ -793,7 +793,7 @@ vectorizer::vectorizer(const glyph &g, int desc) :
 
 void vectorizer::set(int x, int y)
 {
-	/* TTF/OTF spec wants CCW orientation */
+	/* TTF/OTF spec: right side of line to be interior */
 	int s = scale_factor;
 	x *= s;
 	y *= s;
