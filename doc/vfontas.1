@@ -61,6 +61,120 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 vfontas (originally "VGA font file assembler") can transform raster font files
 in various ways.
+.SH Aspect ratio
+.PP
+CRT screens of the time commonly had an aspect ratio of 4:3, and whatever
+resolution was shown would be squeezed into that frame, potentially making the
+pixels non-square. This means that bitmap fonts of the time will need a
+corrective factor for modern display hardware to be reproduced faithfully. This
+correction can happen either during conversion (vfontas has no support for this
+at present), or at the time of rendering. The font can either be stretched in
+the vertical direction or compressed in the horizontal by using the reciprocal.
+.TS
+allbox tab(:);
+lB lB lB lB.
+T{
+Text res
+T}:T{
+Char size
+T}:T{
+Resolution
+T}:T{
+VStretch
+T}
+.T&
+l l l l.
+T{
+80x25
+T}:T{
+9x14
+T}:T{
+720x350
+T}:T{
+54/35 = 1.54
+T}
+.T&
+l l l l.
+T{
+40x25
+T}:T{
+8x8
+T}:T{
+320x200
+T}:T{
+6/5 = 1.2
+T}
+.T&
+l l l l.
+T{
+80x25
+T}:T{
+8x8
+T}:T{
+640x200
+T}:T{
+12/5 = 2.4
+T}
+.T&
+l l l l.
+T{
+80x25
+T}:T{
+8x14
+T}:T{
+640x350
+T}:T{
+48/35 = 1.37
+T}
+.T&
+l l l l.
+T{
+80x43
+T}:T{
+8x8
+T}:T{
+640x350
+T}:T{
+48/35 = 1.37
+T}
+.T&
+l l l l.
+T{
+80x25
+T}:T{
+9x16
+T}:T{
+720x400
+T}:T{
+27/20 = 1.35
+T}
+.T&
+l l l l.
+T{
+80x30
+T}:T{
+8x16
+T}:T{
+640x480
+T}:T{
+1.0
+T}
+.T&
+l l l l.
+T{
+80x50
+T}:T{
+9x8
+T}:T{
+720x400
+T}:T{
+27/20 = 1.35
+T}
+.T&
+l l l l.
+::x*y:x*y/3*4
+.TE
+.SH Commands
 .SS blankfnt
 .PP
 Initializes the memory buffer with 256 empty 8x16 glyphs. The primary purpose
