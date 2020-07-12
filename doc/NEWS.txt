@@ -1,4 +1,12 @@
 
+rel-20200712
+============
+* profile: add QUILT_COLORS
+* bsvplay: Pianoman MUS support
+* pcmmix: new utility for arpeggio/polyphonic mixing of
+  bsvplay/qplay outputs
+
+
 rel-20200428
 ============
 * vfontas: N2 vectorizer: cease smoothing of stub serifs
