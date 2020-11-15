@@ -1,3 +1,10 @@
+rel-20201116
+============
+* pegrep: cure uninitialized variable warnings
+* gpsh: change tmp location to /var/tmp
+  (avoid saving potentially large files to tmpfs)
+* sysinfo: fix null deref when /etc/os-release is absent
+
 
 rel-20200712
 ============
