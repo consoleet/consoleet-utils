@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Display the ANSI color table
 
-if ($ENV{TERM} eq "xterm") {
+if ($ENV{TERM} =~ /^(\w+\.)?xterm/) {
 	for (my $b = 0; $b < 256; $b += 32) {
 		for (my $g = 0; $g < 256; $g += 32) {
 			for (my $r = 0; $r < 256; $r += 16) {
