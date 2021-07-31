@@ -346,7 +346,6 @@ int font::load_hex(const char *file)
 		else
 			fprintf(stderr, "load_hex: unrecognized glyph size (%zu bytes) in line %zu\n", z, lnum);
 		m_unicode_map->add_i2u(m_glyph.size() - 1, cp);
-		m_unicode_map->add_u2i(cp, m_glyph.size() - 1);
 	}
 	HXmc_free(line);
 	return 0;

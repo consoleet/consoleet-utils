@@ -59,7 +59,6 @@ struct unicode_map {
 
 	int load(const char *file);
 	void add_i2u(unsigned int, char32_t);
-	void add_u2i(char32_t cp, unsigned int i) { add_i2u(i, cp); }
 	std::set<char32_t> to_unicode(unsigned int idx) const;
 	ssize_t to_index(char32_t uc) const;
 };
