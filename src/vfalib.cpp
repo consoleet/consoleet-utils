@@ -199,6 +199,31 @@ void font::lge()
 		m_glyph[k].lge();
 }
 
+static size_t hexrunparse(void *vdest, size_t destsize, const char *p)
+{
+	auto dest = static_cast<uint8_t *>(vdest);
+	size_t written = 0;
+	while (destsize > 0) {
+		auto c = HX_tolower(*p++);
+		if (c >= '0' && c <= '9')
+			c -= '0';
+		else if (c >= 'a' && c <= 'f')
+			c = c - 'a' + 10;
+		else
+			break;
+		auto d = HX_tolower(*p++);
+		if (d >= '0' && d <= '9')
+			d -= '0';
+		else if (d >= 'a' && d <= 'f')
+			d = d - 'a' + 10;
+		else
+			break;
+		*dest++ = (c << 4) | d;
+		++written;
+	}
+	return written;
+}
+
 int font::load_clt(const char *dirname)
 {
 	std::unique_ptr<HXdir, deleter> dh(HXdir_open(dirname));
@@ -311,31 +336,15 @@ int font::load_hex(const char *file)
 			continue;
 		++end;
 
-		unsigned int z;
 		char gbits[32]{};
 		HX_chomp(line);
-		for (z = 0; z < sizeof(gbits) && end[0] != '\0' && end[1] != '\0';
-		     ++z, end += 2) {
-			gbits[z] = 0;
-			auto c = HX_tolower(end[0]);
-			if (c >= '0' && c <= '9')
-				gbits[z] = c - '0';
-			else if (HX_tolower(end[0]) >= 'a' && HX_tolower(end[0]) <= 'f')
-				gbits[z] = c - 'a' + 10;
-			gbits[z] <<= 4;
-			c = HX_tolower(end[1]);
-			if (c >= '0' && c <= '9')
-				gbits[z] |= c - '0';
-			else if (HX_tolower(end[1]) >= 'a' && HX_tolower(end[1]) <= 'f')
-				gbits[z] |= c - 'a' + 10;
-		}
-
+		auto z = hexrunparse(gbits, ARRAY_SIZE(gbits), end);
 		if (z == 16)
 			m_glyph.emplace_back(glyph::create_from_rpad(vfsize(8, 16), gbits, z));
 		else if (z == 32)
 			m_glyph.emplace_back(glyph::create_from_rpad(vfsize(16, 16), gbits, z));
 		else
-			fprintf(stderr, "load_hex: unrecognized glyph size (%u bytes) in line %zu\n", z, lnum);
+			fprintf(stderr, "load_hex: unrecognized glyph size (%zu bytes) in line %zu\n", z, lnum);
 		m_unicode_map->add_i2u(m_glyph.size() - 1, cp);
 		m_unicode_map->add_u2i(cp, m_glyph.size() - 1);
 	}
