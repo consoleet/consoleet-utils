@@ -319,7 +319,7 @@ int font::load_bdf(const char *filename)
 				continue;
 			}
 			if (strcmp(line, "BITMAP\n") == 0) {
-				state = BDF_BITMAP;
+				state = cchar.lr == 0 ? BDF_PASTBITMAP : BDF_BITMAP;
 				continue;
 			}
 		} else if (state == BDF_BITMAP) {
