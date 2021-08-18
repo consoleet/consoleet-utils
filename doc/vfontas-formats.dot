@@ -1,0 +1,25 @@
+digraph {
+	bdf -> vfontas;
+	clt -> vfontas;
+	fntraw -> vfontas;
+	gnuhex -> vfontas;
+	psf1 -> vfontas;
+	psf2 -> vfontas;
+	unimap -> vfontas;
+	vfontas -> bdf;
+	vfontas -> clt;
+	vfontas -> fntraw;
+	vfontas -> pbm;
+	vfontas -> psf2;
+	vfontas -> sfd;
+	vfontas -> unimap;
+	bdf -> bdftopcf;
+	bdftopcf -> pcf;
+	bdf -> fontforge;
+	pcf -> fontforge;
+	sfd -> fontforge;
+	ttf -> fontforge;
+	fontforge -> bdf;
+	fontforge -> sfd;
+	fontforge -> ttf;
+}
