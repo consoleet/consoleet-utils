@@ -23,6 +23,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-lge\fP
 .PP
+\fB\-loadbdf\fP \fIff.bdf\fP
+.PP
 \fB\-loadclt\fP \fIdirectory/\fP
 .PP
 \fB\-loadfnt\fP \fImu.fnt\fP
@@ -206,6 +208,9 @@ Mirrors/flips glyphs.
 Applies a "Line Graphics Enable" transformation on glyphs. It copies the pixels
 in the second rightmost column to the rightmost column, and does this for glyph
 indices 0xC0 to 0xDF.
+.SS loadbdf
+.PP
+Reads a BDF (Adobe Glyph Bitmap Distribution Format) font file.
 .SS loadclt
 .PP
 Reads a directory full of CLT files containing glyphs. CLT is a textgraphical
