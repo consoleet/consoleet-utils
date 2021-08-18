@@ -59,8 +59,17 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 .SH Description
 .PP
-vfontas (originally "VGA font file assembler") can transform raster font files
-in various ways.
+vfontas (originally "VGA font file assembler") can read/write bitmap fonts
+from/to a number of formats and transform the glyphs in various ways. vfontas
+is able to generate a vector format.
+.PP
+vfontas does not have a direct integration of or with FontForge, but thanks to
+the BDF read/write support on both sides, fonts in formats like FNT and PSF can
+be made available to FontForge by vfontas, and, conversely, fonts in formats
+like FON and TTF can be made available to vfontas by FF.
+.PP
+With its own CLT format, vfontas makes glyphs in a textgraphical format to
+facilitate editing with plain-text screen editors such as vi, nano, etc.
 .SH Aspect ratio
 .PP
 CRT screens of the time commonly had an aspect ratio of 4:3, and whatever
