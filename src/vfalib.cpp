@@ -203,11 +203,12 @@ struct bdfglystate {
 	int uc = -1, w = 0, h = 0, of_left = 0, of_baseline = 0;
 	unsigned int dwidth = 0, lr = 0;
 	unsigned int font_ascent = 0, font_descent = 0, font_height = 0;
-	std::string buf;
+	std::string name, buf;
 
 	void reset() {
 		w = h = of_left = of_baseline = dwidth = lr = 0;
 		uc = -1;
+		name.clear();
 		buf.clear();
 	}
 };
@@ -288,6 +289,7 @@ int font::load_bdf(const char *filename)
 			if (strncmp(line, "STARTCHAR ", 10) == 0) {
 				cchar.reset();
 				cchar.font_height = cchar.font_ascent + cchar.font_descent;
+				cchar.name = line + 10;
 				state = BDF_CHAR;
 				continue;
 			}
@@ -301,6 +303,11 @@ int font::load_bdf(const char *filename)
 			int tmp = -1;
 			auto fields = sscanf(line, "ENCODING %d %d", &tmp, &cchar.uc);
 			if (fields == 2 && tmp == -1) {
+				continue;
+			} else if (fields == 1 && tmp == -1 && cchar.uc == -1 &&
+			    cchar.name.size() >= 2 && cchar.name[0] == 'C' &&
+			    HX_isdigit(cchar.name[1])) {
+				cchar.uc = strtoul(cchar.name.c_str() + 1, nullptr, 10);
 				continue;
 			} else if (fields == 1 && tmp == -1) {
 				state = BDF_PASTBITMAP;
