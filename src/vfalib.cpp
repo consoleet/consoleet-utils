@@ -140,32 +140,42 @@ int unicode_map::load(const char *file)
 	size_t lnum = 0;
 	hxmc_t *line = nullptr;
 	auto lineclean = make_scope_success([&]() { HXmc_free(line); });
+
 	while (HX_getl(&line, fp.get()) != nullptr) {
 		char *ptr = line, *end = nullptr;
 		while (HX_isspace(*ptr))
 			++ptr;
 		if (*ptr == '#')
 			continue;
-		auto key = strtoul(line, &end, 0);
+		HX_chomp(line);
+		int keyfrom = strtol(line, &end, 0), keyto = keyfrom;
 		++lnum;
 		do {
+			if (*end == '-')
+				keyto = strtol(end + 1, &end, 0);
 			ptr = end;
 			while (HX_isspace(*ptr) || *ptr == '\r')
 				++ptr;
 			if (*ptr == '\0' || *ptr == '\n' || *ptr == '#')
 				break;
-			if (ptr[0] != 'U') {
+			if (strcmp(ptr, "idem") == 0) {
+				break;
+			} else if (ptr[0] != 'U') {
 				fprintf(stderr, "Warning: Unexpected char '%c' in unicode map line %zu.\n", ptr[0], lnum);
 				break;
 			} else if (ptr[1] != '+') {
 				fprintf(stderr, "Warning: Unexpected char '%c' in unicode map line %zu.\n", ptr[1], lnum);
 				break;
 			}
+			if (keyfrom != keyto) {
+				fprintf(stderr, "Warning: No support for ranged mappings (0x%x-0x%x here) for anything but \"idem\".\n", keyfrom, keyto);
+				break;
+			}
 			ptr += 2;
 			auto val = strtoul(ptr, &end, 16);
 			if (end == ptr)
 				break;
-			add_i2u(key, val);
+			add_i2u(keyfrom, val);
 		} while (true);
 	}
 	return true;
