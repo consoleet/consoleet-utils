@@ -51,7 +51,11 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-savesfd\fP \fInew.sfd\fP
 .PP
+\fB\-setbold\fP
+.PP
 \fB\-setname\fP \fIname\fP
+.PP
+\fB\-setprop\fP \fIkey\fP \fIvalue\fP
 .PP
 \fB\-upscale\fP \fIxscale\fP \fIyscale\fP
 .PP
@@ -312,11 +316,17 @@ Saves the font to a Spline Font Database file (SFD). This type of file can be
 processed further by fontforge(1). A fairly trivial vectorizer is used that
 maps each pixels to a square and then collapses shared edges between those to
 reduce the number of polygons fontforge has to process.
+.SS setbold
+.PP
+For BDF/SFD output: Declare the font as being bold.
 .SS setname
 .PP
 Sets a name for the font, which gets emitted for BDF/SFD output. (The other
 file formats have no metadata field for a name, so the filename is all you
 get.)
+.SS setprop
+.PP
+Sets a specific property for SFD fonts (also partly used by BDF).
 .SS upscale
 .PP
 Performs a linear upscale by an integral factor for all glyphs.

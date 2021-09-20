@@ -197,6 +197,16 @@ ssize_t unicode_map::to_index(char32_t uc) const
 	return j->second;
 }
 
+font::font() :
+	props{
+		{"FontName", "vfontas-output"},
+		{"FamilyName", "vfontas output"},
+		{"FullName", "vfontas output"},
+		{"Weight", "medium"},
+		{"TTFWeight", "500"},
+	}
+{}
+
 void font::init_256_blanks()
 {
 	m_glyph = std::vector<glyph>(256, glyph(vfsize(8, 16)));
@@ -612,28 +622,28 @@ int font::save_bdf(const char *file)
 	vfsize sz0;
 	if (m_glyph.size() > 0)
 		sz0 = m_glyph[0].m_size;
-	std::string bfd_name = name;
+	std::string bfd_name = props["FullName"];
 	/* X logical font description (XLFD) does not permit dashes */
 	std::replace(bfd_name.begin(), bfd_name.end(), '-', ' ');
 	fprintf(fp, "STARTFONT 2.1\n");
 	fprintf(fp, "FONT -misc-%s-medium-r-normal--%u-%u-75-75-c-%u-iso10646-1\n",
-		name.c_str(), sz0.h, 10 * sz0.h, 10 * sz0.w);
+		props["FontName"].c_str(), sz0.h, 10 * sz0.h, 10 * sz0.w);
 	fprintf(fp, "SIZE %u 75 75\n", sz0.h);
 	fprintf(fp, "FONTBOUNDINGBOX %u %u 0 -%u\n", sz0.w, sz0.h, sz0.h / 4);
 	fprintf(fp, "STARTPROPERTIES 24\n");
 	fprintf(fp, "FONT_TYPE \"Bitmap\"\n");
 	fprintf(fp, "FONTNAME_REGISTRY \"\"\n");
 	fprintf(fp, "FOUNDRY \"misc\"\n");
-	fprintf(fp, "FAMILY_NAME \"%s\"\n", name.c_str());
-	fprintf(fp, "WEIGHT_NAME \"medium\"\n");
+	fprintf(fp, "FAMILY_NAME \"%s\"\n", props["FamilyName"].c_str());
+	fprintf(fp, "WEIGHT_NAME \"%s\"\n", props["Weight"].c_str());
 	fprintf(fp, "SLANT \"r\"\n");
 	fprintf(fp, "SETWIDTH_NAME \"normal\"\n");
 	fprintf(fp, "PIXEL_SIZE %u\n", sz0.h);
 	fprintf(fp, "POINT_SIZE %u\n", 10 * sz0.h);
 	fprintf(fp, "SPACING \"C\"\n");
 	fprintf(fp, "AVERAGE_WIDTH %u\n", 10 * sz0.w);
-	fprintf(fp, "FONT \"%s\"\n", name.c_str());
-	fprintf(fp, "WEIGHT 10\n");
+	fprintf(fp, "FONT \"%s\"\n", props["FullName"].c_str());
+	fprintf(fp, "WEIGHT %s\n", props["TTFWeight"].c_str());
 	fprintf(fp, "RESOLUTION 75\n");
 	fprintf(fp, "RESOLUTION_X 75\n");
 	fprintf(fp, "RESOLUTION_Y 75\n");
@@ -859,21 +869,26 @@ std::pair<int, int> font::find_ascent_descent() const
 	return asds;
 }
 
+static unsigned int ttfweight_to_panose(const char *s)
+{
+	unsigned int z = strtoul(s, nullptr, 0);
+	if (z >= 1 && z <= 999)
+		return 1 + z / 100;
+	return 6;
+}
+
 int font::save_sfd(const char *file, enum vectoalg vt)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
 	if (filep == nullptr)
 		return -errno;
 	auto fp = filep.get();
-	std::string ps_name = name;
-	/* PostScript name does not allow spaces */
-	std::replace(ps_name.begin(), ps_name.end(), ' ', '-');
 	auto asds = find_ascent_descent();
 	fprintf(fp, "SplineFontDB: 3.0\n");
-	fprintf(fp, "FontName: %s\n", ps_name.c_str());
-	fprintf(fp, "FullName: %s\n", name.c_str());
-	fprintf(fp, "FamilyName: %s\n", name.c_str());
-	fprintf(fp, "Weight: medium\n");
+	fprintf(fp, "FontName: %s\n", props["FontName"].c_str());
+	fprintf(fp, "FullName: %s\n", props["FullName"].c_str());
+	fprintf(fp, "FamilyName: %s\n", props["FamilyName"].c_str());
+	fprintf(fp, "Weight: %s\n", props["Weight"].c_str());
 	fprintf(fp, "Version: 001.000\n");
 	fprintf(fp, "ItalicAngle: 0\n");
 	fprintf(fp, "UnderlinePosition: -3\n");
@@ -883,9 +898,9 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	fprintf(fp, "NeedsXUIDChange: 1\n");
 	fprintf(fp, "FSType: 0\n");
 	fprintf(fp, "PfmFamily: 49\n");
-	fprintf(fp, "TTFWeight: 500\n");
+	fprintf(fp, "TTFWeight: %s\n", props["TTFWeight"].c_str());
 	fprintf(fp, "TTFWidth: 5\n");
-	fprintf(fp, "Panose: 2 0 6 9 9 0 0 0 0 0\n");
+	fprintf(fp, "Panose: 2 0 %u 9 9 0 0 0 0 0\n", ttfweight_to_panose(props["TTFWeight"].c_str()));
 	fprintf(fp, "LineGap: 0\n");
 	fprintf(fp, "VLineGap: 0\n");
 	fprintf(fp, "OS2TypoAscent: %d\n", asds.first * vectorizer::scale_factor);

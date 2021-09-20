@@ -9,6 +9,7 @@
  *	For details, see the file named "LICENSE.GPL3".
  */
 #include "config.h"
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -285,9 +286,29 @@ static bool vf_saven2ev(font &f, char **args)
 	return false;
 }
 
+static bool vf_setbold(font &f, char **args)
+{
+	f.props.insert_or_assign("TTFWeight", "700");
+	f.props.insert_or_assign("StyleMap", "0x0020");
+	f.props.insert_or_assign("Weight", "bold");
+	return true;
+}
+
 static bool vf_setname(font &f, char **args)
 {
-	f.name = args[0];
+	std::string ps_name = args[0];
+	/* PostScript name does not allow spaces */
+	std::replace(ps_name.begin(), ps_name.end(), ' ', '-');
+	f.props.insert_or_assign("FontName", std::move(ps_name));
+	f.props.insert_or_assign("FullName", args[0]);
+	f.props.insert_or_assign("FamilyName", args[0]);
+	f.props.emplace("Weight", "medium");
+	return true;
+}
+
+static bool vf_setprop(font &f, char **args)
+{
+	f.props.insert_or_assign(args[0], args[1]);
 	return true;
 }
 
@@ -449,7 +470,9 @@ static const struct vf_command {
 	{"savepbm", 1, vf_savepbm},
 	{"savepsf", 1, vf_savepsf},
 	{"savesfd", 1, vf_savesfd},
+	{"setbold", 0, vf_setbold},
 	{"setname", 1, vf_setname},
+	{"setprop", 2, vf_setprop},
 	{"upscale", 2, vf_upscale},
 	{"xcpi", 2, vf_xcpi},
 	{"xlat", 2, vf_xlat},

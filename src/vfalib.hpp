@@ -110,6 +110,7 @@ class glyph {
 
 class font {
 	public:
+	font();
 	void init_256_blanks();
 	int load_bdf(const char *file);
 	int load_clt(const char *dir);
@@ -133,7 +134,7 @@ class font {
 		{ for (auto &g : m_glyph) g = g.upscale(factor); }
 	void lge();
 
-	std::string name = "vfontas output";
+	std::map<std::string, std::string> props;
 
 	private:
 	std::pair<int, int> find_ascent_descent() const;
