@@ -137,6 +137,12 @@ static bool vf_lgeu(font &f, char **args)
 	return true;
 }
 
+static bool vf_lgeuf(font &f, char **args)
+{
+	f.lgeuf();
+	return true;
+}
+
 static bool vf_loadbdf(font &f, char **args)
 {
 	auto ret = f.load_bdf(args[0]);
@@ -460,6 +466,7 @@ static const struct vf_command {
 	{"invert", 0, vf_invert},
 	{"lge", 0, vf_lge},
 	{"lgeu", 0, vf_lgeu},
+	{"lgeuf", 0, vf_lgeuf},
 	{"loadbdf", 1, vf_loadbdf},
 	{"loadclt", 1, vf_loadclt},
 	{"loadfnt", 1, vf_loadfnt},

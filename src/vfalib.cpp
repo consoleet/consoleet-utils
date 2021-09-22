@@ -244,6 +244,24 @@ void font::lgeu()
 	}
 }
 
+void font::lgeuf()
+{
+	if (m_unicode_map == nullptr) {
+		fprintf(stderr, "This font has no unicode map, can't perform LGEU command.\n");
+		return;
+	}
+	auto &map = *m_unicode_map;
+	for (auto it = map.m_u2i.lower_bound(0x2500);
+	     it != map.m_u2i.upper_bound(0x2591); ++it)
+		m_glyph[it->second].lge();
+	for (auto it = map.m_u2i.lower_bound(0x2591);
+	     it != map.m_u2i.upper_bound(0x2594); ++it)
+		m_glyph[it->second].lge(2);
+	for (auto it = map.m_u2i.lower_bound(0x2594);
+	     it != map.m_u2i.upper_bound(0x2600); ++it)
+		m_glyph[it->second].lge();
+}
+
 struct bdfglystate {
 	int uc = -1, w = 0, h = 0, of_left = 0, of_baseline = 0;
 	unsigned int dwidth = 0, lr = 0;
@@ -1536,12 +1554,12 @@ void glyph::invert()
 	std::transform(m_data.begin(), m_data.end(), m_data.begin(), [](char c) { return ~c; });
 }
 
-void glyph::lge()
+void glyph::lge(unsigned int adj)
 {
-	if (m_size.w < 2)
+	if (m_size.w < adj + 1)
 		return;
 	for (unsigned int y = 0; y < m_size.h; ++y) {
-		bitpos ipos = (y + 1) * m_size.w - 2;
+		bitpos ipos = (y + 1) * m_size.w - 1 - adj;
 		bitpos opos = (y + 1) * m_size.w - 1;
 		if (m_data[ipos.byte] & ipos.mask)
 			m_data[opos.byte] |= opos.mask;

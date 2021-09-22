@@ -25,6 +25,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-lgeu\fP
 .PP
+\fB\-lgeuf\fP
+.PP
 \fB\-loadbdf\fP \fIff.bdf\fP
 .PP
 \fB\-loadclt\fP \fIdirectory/\fP
@@ -218,9 +220,17 @@ command is more or less limited to DOS fonts which have graphic characters in
 exactly those indices.
 .SS lgeu
 .PP
-Applies LGE on \fIunicode codepoints\fP. This is suitable for all kinds of
-font formats, but do make sure a Unicode table is present. (BDF and PSF
-come with a table, .fnt does not, so use \-loadmap before \-lgeu).
+Applies LGE on the graphic glyphs that are \fIin cp437\fP and other DOS
+codepages. It does this for \fIunicode codepoints\fP rather than glyph indices.
+This is suitable for all kinds of font formats, but do make sure a Unicode
+table is present. (BDF and PSF come with a table, .fnt does not, so use
+\-loadmap before \-lgeu).
+.SS lgeuf
+.PP
+Applies LGE on \fIall\fP glyphs from U+2500 thru U+25FF (Unicode "box drawing"
+and "box elements" classes), with special handling for the shades at U+2591
+thru U+2593. This is provided as an alternative to the "true DOS look" that
+lge/lgeu would make.
 .SS loadbdf
 .PP
 Reads a BDF (Adobe Glyph Bitmap Distribution Format) font file.

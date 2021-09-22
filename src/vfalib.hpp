@@ -98,7 +98,7 @@ class glyph {
 	glyph flip(bool x, bool y) const;
 	void invert();
 	glyph upscale(const vfsize &factor) const;
-	void lge();
+	void lge(unsigned int adj = 1);
 
 	private:
 	std::vector<uint32_t> as_rgba() const;
@@ -134,6 +134,7 @@ class font {
 		{ for (auto &g : m_glyph) g = g.upscale(factor); }
 	void lge();
 	void lgeu();
+	void lgeuf();
 
 	std::map<std::string, std::string> props;
 
