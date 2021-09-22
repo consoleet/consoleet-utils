@@ -23,6 +23,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-lge\fP
 .PP
+\fB\-lgeu\fP
+.PP
 \fB\-loadbdf\fP \fIff.bdf\fP
 .PP
 \fB\-loadclt\fP \fIdirectory/\fP
@@ -210,8 +212,15 @@ Mirrors/flips glyphs.
 .SS lge
 .PP
 Applies a "Line Graphics Enable" transformation on glyphs. It copies the pixels
-in the second rightmost column to the rightmost column, and does this for glyph
-indices 0xC0 to 0xDF.
+in the second rightmost column to the rightmost column, and does this for
+\fIglyph indices\fP 0xC0 to 0xDF. In other words, the usefulness of the \-lge
+command is more or less limited to DOS fonts which have graphic characters in
+exactly those indices.
+.SS lgeu
+.PP
+Applies LGE on \fIunicode codepoints\fP. This is suitable for all kinds of
+font formats, but do make sure a Unicode table is present. (BDF and PSF
+come with a table, .fnt does not, so use \-loadmap before \-lgeu).
 .SS loadbdf
 .PP
 Reads a BDF (Adobe Glyph Bitmap Distribution Format) font file.

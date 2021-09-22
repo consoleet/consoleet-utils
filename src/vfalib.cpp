@@ -219,6 +219,31 @@ void font::lge()
 		m_glyph[k].lge();
 }
 
+void font::lgeu()
+{
+	static constexpr uint16_t cand[] = {
+		/*
+		 * It looks like cp{737,850,852,865,866} only have subsets
+		 * of cp437's graphic characters. Therefore I did not bother
+		 * checking cp{855,857,860,861,863,869}.
+		 */
+		0x2500, 0x250c, 0x2514, 0x2518, 0x251c, 0x252c, 0x2534, 0x253c,
+		0x2550, 0x2552, 0x2553, 0x2554, 0x2558, 0x2559, 0x255a, 0x255e,
+		0x255f, 0x2560, 0x2564, 0x2565, 0x2566, 0x2567, 0x2568, 0x2569,
+		0x256a, 0x256b, 0x256c, 0x2580, 0x2584, 0x2588, 0x258c, 0x2590,
+	};
+	if (m_unicode_map == nullptr) {
+		fprintf(stderr, "This font has no unicode map, can't perform LGEU command.\n");
+		return;
+	}
+	auto &map = *m_unicode_map;
+	for (auto uc : cand) {
+		auto it = map.m_u2i.find(uc);
+		if (it != map.m_u2i.end())
+			m_glyph[it->second].lge();
+	}
+}
+
 struct bdfglystate {
 	int uc = -1, w = 0, h = 0, of_left = 0, of_baseline = 0;
 	unsigned int dwidth = 0, lr = 0;

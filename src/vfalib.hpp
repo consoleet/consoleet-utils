@@ -133,6 +133,7 @@ class font {
 	void upscale(const vfsize &factor)
 		{ for (auto &g : m_glyph) g = g.upscale(factor); }
 	void lge();
+	void lgeu();
 
 	std::map<std::string, std::string> props;
 
