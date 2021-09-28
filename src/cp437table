@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+# print the cp437 character table (used for font testing)
+
+use strict;
+open(FH, "<../kbd/cp437x.uni") or die;
+my @map;
+while (<FH>) {
+	if (m{^#}) { next; }
+	my($src, $dst) = split(m{\s+}, $_);
+	$dst =~ s{U\+(\S+)}{chr(hex($1))}eg;
+	$map[hex($src)] = $dst;
+}
+close FH;
+$map[0] = ' ';
+binmode(STDOUT, ":utf8");
+for (my $y = 0; $y < 8; ++$y) {
+	for (my $x = 0; $x < 32; ++$x) {
+		print $map[$y*32+$x];
+	}
+	print "\n";
+}
