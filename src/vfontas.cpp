@@ -208,6 +208,16 @@ static bool vf_loadpsf(font &f, char **args)
 	return false;
 }
 
+static bool vf_move(font &f, char **args)
+{
+	auto x = strtol(args[0], nullptr, 0);
+	auto y = strtol(args[1], nullptr, 0);
+	if (f.m_glyph.size() <= 0)
+		return true;
+	f.blit(vfpos() | f.m_glyph[0].m_size, vfpos(x, y) | f.m_glyph[0].m_size);
+	return true;
+}
+
 static bool vf_savebdf(font &f, char **args)
 {
 	auto ret = f.save_bdf(args[0]);
@@ -474,6 +484,7 @@ static const struct vf_command {
 	{"loadhex", 1, vf_loadhex},
 	{"loadmap", 1, vf_loadmap},
 	{"loadpsf", 1, vf_loadpsf},
+	{"move", 2, vf_move},
 	{"savebdf", 1, vf_savebdf},
 	{"saveclt", 1, vf_saveclt},
 	{"savefnt", 1, vf_savefnt},

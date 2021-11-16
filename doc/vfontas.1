@@ -39,6 +39,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-loadpsf\fP \fIter-v32b.psfu\fP
 .PP
+\fB\-move\fP \fIshiftx\fP \fIshifty\fP
+.PP
 \fB\-savebdf\fP \fIout.bdf\fP
 .PP
 \fB\-saveclt\fP \fIoutdir/\fP
@@ -262,6 +264,10 @@ cumulate mappings from multiple files.
 Reads a PC Screen Font PSF 2 version 0. If the psf file comes with a mapping
 table, the current in-memory table will be discarded and replaced with the one
 from the PSF.
+.SS move
+.PP
+Shift all glyphs by the given x/y offsets within their existing glyph box
+(possibly truncating them).
 .SS savebdf
 .PP
 Saves the font to a Glyph Bitmap Distribution Format file (BDF). This type of
