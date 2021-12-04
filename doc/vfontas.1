@@ -1,12 +1,9 @@
 .TH vfontas 1 "2019-04-21" "hxtools" "hxtools"
 .SH Name
-.PP
 vfontas \(em a bitmap font file transformation utility
 .SH Syntax
-.PP
 \fBvfontas\fP \fIcommands\fP...
 .SS Commands
-.PP
 \fB\-blankfnt\fP
 .PP
 \fB\-canvas\fP \fIxsize\fP \fIysize\fP
@@ -70,7 +67,6 @@ vfontas \(em a bitmap font file transformation utility
 \fB\-xlat\fP \fIxoffset\fP \fIyoffset\fP
 .PP
 .SH Description
-.PP
 vfontas (originally "VGA font file assembler") can read/write bitmap fonts
 from/to a number of formats and transform the glyphs in various ways. vfontas
 is able to generate a vector format.
@@ -83,7 +79,6 @@ like FON and TTF can be made available to vfontas by FF.
 With its own CLT format, vfontas makes glyphs in a textgraphical format to
 facilitate editing with plain-text screen editors such as vi, nano, etc.
 .SH Aspect ratio
-.PP
 CRT screens of the time commonly had an aspect ratio of 4:3, and whatever
 resolution was shown would be squeezed into that frame, potentially making the
 pixels non-square. This means that bitmap fonts of the time will need a
@@ -197,97 +192,76 @@ l l l l.
 .TE
 .SH Commands
 .SS blankfnt
-.PP
 Initializes the memory buffer with 256 empty 8x16 glyphs. The primary purpose
 for this is with \fBsaveclt\fP to get blank glyph files for hand-editing. For a
 differently-sized canvas, combine with \fB\-crop\fP or \fB\-canvas\fP.
 .SS canvas
-.PP
 Enlarges the glyph box to the specified size. (It never shrinks it.)
 .SS clearmap
-.PP
 Discards the in-memory glyph index <-> Unicode mapping table.
 .SS crop
-.PP
 Removes an outer area from the glyph images, shrinking the image in the process.
 .SS fliph, flipv
-.PP
 Mirrors/flips glyphs.
 .SS lge
-.PP
 Applies a "Line Graphics Enable" transformation on glyphs. It copies the pixels
 in the second rightmost column to the rightmost column, and does this for
 \fIglyph indices\fP 0xC0 to 0xDF. In other words, the usefulness of the \-lge
 command is more or less limited to DOS fonts which have graphic characters in
 exactly those indices.
 .SS lgeu
-.PP
 Applies LGE on the graphic glyphs that are \fIin cp437\fP and other DOS
 codepages. It does this for \fIunicode codepoints\fP rather than glyph indices.
 This is suitable for all kinds of font formats, but do make sure a Unicode
 table is present. (BDF and PSF come with a table, .fnt does not, so use
 \-loadmap before \-lgeu).
 .SS lgeuf
-.PP
 Applies LGE on \fIall\fP glyphs from U+2500 thru U+25FF (Unicode "box drawing"
 and "box elements" classes), with special handling for the shades at U+2591
 thru U+2593. This is provided as an alternative to the "true DOS look" that
 lge/lgeu would make.
 .SS loadbdf
-.PP
 Reads a BDF (Adobe Glyph Bitmap Distribution Format) font file.
 .SS loadclt
-.PP
 Reads a directory full of CLT files containing glyphs. CLT is a textgraphical
 format to facilitate visual editing with a text console editor.
 .SS loadfnt
-.PP
 Reads a headerless bitmap font file, as typically used for CGA/EGA/VGA/MDA
 hardware, from the specified file into memory. 8x8x256 (width/height/glyphs),
 8x12x256, 8x14x256, 8x16x256 and 8x16x512 are supported.
 .SS loadfnth
-.PP
 Reads a headerless bitmap font file, using the specified height N and width 8.
 The number of characters is then autoderived from the filesize.
 .SS loadhex
-.PP
 Reads a Unifont .hex encoded file.
 .SS loadmap
-.PP
 Reads a glyphindex <-> Unicode codepoint mapping table from the given file into
 memory. The format follows the maps from /usr/share/kbd/unimaps, that is, "0x00
 U+0000" at its simplest. Multiple U+ codepoints can be specified in a line.
 \fB\-loadmap\fP does not clear the mapping table, which makes it possible to
 cumulate mappings from multiple files.
 .SS loadpsf
-.PP
 Reads a PC Screen Font PSF 2 version 0. If the psf file comes with a mapping
 table, the current in-memory table will be discarded and replaced with the one
 from the PSF.
 .SS move
-.PP
 Shift all glyphs by the given x/y offsets within their existing glyph box
 (possibly truncating them).
 .SS savebdf
-.PP
 Saves the font to a Glyph Bitmap Distribution Format file (BDF). This type of
 file can be processed further by other tools such as bdftopcf(1) or
 fontforge(1) to, for example, turn them into Portable Compiled Format (PCF) or
 TrueType/OpenType (TTF/OTF) files. (See the "Examples" section.)
 .SS saveclt
-.PP
 Saves the current in-memory glyphs as multiple CLT files to the given
 directory. CLT is a textgraphical format to facilitate visual editing with a
 text console editor.
 .SS savefnt
-.PP
 Saves the current in-memory glyphs to the given file, using the headerless
 format.
 .SS savemap
-.PP
 Saves the current in-memory Unicode mapping table to the given file.
 .SS saven1
-.PP
 N1 was an experiment to try and model the "diagonalization idea" (cf. \-saven2)
 by analyzing the original glyph \fIbitmap\fP. Its defining characteristic is a
 lookaround window of 3x3 pixels, whose contents are mapped to a set of
@@ -302,7 +276,6 @@ as in spirals like U+0040 or jampacked glyphs like U+20A7. N2 operates on edges
 and knows their direction, and avoids making connections to "pixel islands" at
 certain angles.
 .SS saven2
-.PP
 Similar to \fB\-savesfd\fP, this produces an SFD file, but uses an alternate
 vectorizer (aptly named "N2"), which smoothens the jagged edges of a bitmap
 font.
@@ -331,45 +304,35 @@ or turn it into three or so beziers, which is not nearly enough for '&'.
 .IP \(bu 4
 N1/N2 is only specified for monochrome input.
 .SS savepsf
-.PP
 Saves the current in-memory glyphs as a PC Screen Font PSF2.0 file, which can
 then be loaded into a Linux text console with setfont(1). The in-memory Unicode
 mapping table is added to the PSF.
 .SS savesfd
-.PP
 Saves the font to a Spline Font Database file (SFD). This type of file can be
 processed further by fontforge(1). A fairly trivial vectorizer is used that
 maps each pixels to a square and then collapses shared edges between those to
 reduce the number of polygons fontforge has to process.
 .SS setbold
-.PP
 For BDF/SFD output: Declare the font as being bold.
 .SS setname
-.PP
 Sets a name for the font, which gets emitted for BDF/SFD output. (The other
 file formats have no metadata field for a name, so the filename is all you
 get.)
 .SS setprop
-.PP
 Sets a specific property for SFD fonts (also partly used by BDF).
 .SS upscale
-.PP
 Performs a linear upscale by an integral factor for all glyphs.
 .SS xcpi
-.PP
 Extracts a multi-font .cpi file (as was typically used on DOS) as separate .fnt
 files into the specified directory. This operation does not touch the in-memory
 glyph buffers or Unicode mapping table.
 .SS xlat
-.PP
 Moves all glyphs around within their canvases by the specified amount.
 vfontas's coordinate system has (0,0) in the upper left corner, with positive x
 going to the right, and positive y going down.
 .SH Known limits
-.PP
 The Linux kernel accepts console font glyphs of at most 32x32 in size.
 .SH The Consoleet bitmap format
-.PP
 The Consoleet text bitmap format is very similar to PBM itself. Instead of "P1"
 as in PBM, a CLT file begins with "PCLT" on the first line. In the second line,
 width and height of the bitmap in pixels is given. What follow is the bitmap
@@ -389,7 +352,6 @@ by a newline, like in PBM.
 	..................
 .fi
 .SH Examples
-.PP
 Decompose a classic file into editable pictograph text files (with the help
 of a Unicode map):
 .PP
@@ -431,7 +393,6 @@ for i in 1 2 3; do vfontas \-loadfnt mux.fnt \-loadmap cp437AB.uni \-canvas 9
 .fi
 .RE
 .SH Comparison to earlier vfontas (2005-2018) invocation syntax
-.PP
 `vfontas \-D out/ \-xf x.fnt` has become `vfontas \-loadfnt x.fnt \-saveclt
 out/`.
 .PP
@@ -447,5 +408,4 @@ out/`.
 .PP
 `vfontas \-\-cpi \-D out/ \-f x.cpi/` has become `vfontas \-xcpi x.cpi out/`.
 .SH See also
-.PP
 \fBhxtools\fP(7)
