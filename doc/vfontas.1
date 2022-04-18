@@ -287,9 +287,10 @@ work) for the "Nouveau IBM" and "Nouveau IBM Stretch" vector font versions of
 the IBM VGA 9x16 ROM font.
 .PP
 The defining characteristic of N2 is that it analyzes glyph edges (similar to
-those produced by \-savesfd) using a lookaround window of 7 edge segments,
-which is used to work on areas of effectively 5x5 pixels. When a 90/270 corner
-is found, it will be transformed by adding diagonal edges.
+those produced by \-savesfd) using a lookaround window of +/- 3 edge segments,
+which is somewhat comparable to a set of bitmap matrices (of size 7x2, 6x3,
+5x4, 4x5, 3x6, 2x7). When a 90/270 corner is found, it will be transformed by
+adding diagonal edges.
 .PP
 In comparison to other scalers,
 .IP \(bu 4

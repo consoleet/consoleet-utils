@@ -77,6 +77,15 @@ class vectorizer final {
 	std::vector<std::vector<edge>> n1();
 	std::vector<std::vector<edge>> n2(unsigned int flags = 0);
 
+	/*
+	 * A distance of one pixel is mapped to this many vector font units.
+	 * The EmSize value is also scaled, hence a font generally always looks
+	 * the same regardless of the chosen factor.
+	 *
+	 * When the N2 vectorizer does its work, it generates nodal points at
+	 * what would be half a pixel. Because SFD does not use floating point,
+	 * we need to increase the base precision first.
+	 */
 	static constexpr const int scale_factor = 2;
 	static const unsigned int P_ISTHMUS = 1 << 1;
 
@@ -998,6 +1007,13 @@ vectorizer::vectorizer(const glyph &g, int desc) :
 	m_glyph(g), m_descent(desc)
 {}
 
+/**
+ * Produce a polygon for a given pixel.
+ *
+ * The "polygon" association is never stored. Instead, this property
+ * is implicit in the graph (emap) and a polygon is defined by the
+ * smallest walk with right turns only.
+ */
 void vectorizer::set(int x, int y)
 {
 	/* TTF/OTF spec: right side of line to be interior */
@@ -1026,12 +1042,21 @@ void vectorizer::make_squares()
 void vectorizer::internal_edge_delete()
 {
 	/*
-	 * Remove overlaps: As enforced by set(), all the polygons are added
-	 * with the same orientation. Polygons at most touch, and never
-	 * overlap. Joining polygons therefore simply requires removing shared
-	 * contradirectional edges. The remaining set of edges then forms a new
-	 * set of polygons, and, as the edges themselves were never reoriented,
-	 * these polygons have the correct orientation.
+	 * Remove overlaps: As enforced by set(), all the abstract polygons are
+	 * added with the same orientation. Polygons at most touch, and never
+	 * overlap. Joining these abstract polygons simply requires removing
+	 * shared contradirectional edges. It follows by induction that the
+	 * intrinsic property {{smallest walk with right turns only} forms a
+	 * closed polygon} is kept.
+	 *
+	 * *--->**--->**--->*      *--->*--->**--->*
+	 * ^    |^    |^    |  =>  ^         |^    |
+	 * |    v|    v|    v      |         v|    v
+	 * *<---**<---**<---*      *<---*<---**<---*
+	 *
+	 * As the edges were never reoriented, polygons also retain their
+	 * orientation. In other words, after this edge removal, the remaining
+	 * set of edges forms a new set of abstract polygons.
 	 */
 	for (auto edge = emap.begin(); edge != emap.end(); ) {
 		auto twin = emap.find({edge->end_vtx, edge->start_vtx});
@@ -1149,6 +1174,15 @@ std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
 	return outward;
 }
 
+/**
+ * Extract one polygon from the graph.
+ *
+ * The vectorizer class only keeps a loose set of edge descriptions, but all
+ * these edges form valid closed polygons (cf. vectorizer::set,
+ * vectorizer::internal_edge_removal). Thus, by starting a walk at an arbitrary
+ * edge and following the path with "right turns only" until we see the same
+ * edge again, that will be our polygon.
+ */
 std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 {
 	std::vector<edge> poly;
@@ -1273,6 +1307,19 @@ static void n2_angle(std::vector<edge> &poly)
 		M_XHEAD = 0x10, M_XTAIL = 0x01;
 	std::vector<unsigned int> flags(poly.size());
 
+	/*
+	 * It's a closed polygon and so it does not matter which edge
+	 * processing starts at. (xm3 = x minus 3, x00 = current edge, xp3 = x
+	 * plus 3, etc.)
+	 *
+	 * In the loop, edges are marked with bitflags M_HEAD/M_TAIL to
+	 * indicate that a particular edge allows modification of the start or
+	 * end vertex (or both).
+	 *
+	 * M_XHEAD/M_XTAIL are used as veto flags. (We cannot just use e.g.
+	 * `flags[xm3] & ~M_XHEAD` in one iteration, because a subsequent
+	 * iteration may set it again via e.g. `flags[xm2] |= M_HEAD`.)
+	 */
 	for (size_t xm3 = 0; xm3 < poly.size(); ++xm3) {
 		auto xm2 = (xm3 + 1) % poly.size();
 		auto xm1 = (xm3 + 2) % poly.size();
@@ -1330,11 +1377,11 @@ static void n2_angle(std::vector<edge> &poly)
 		if ((d00 + 270) % 360 != dp1 && (d00 + 90) % 360 != dp1)
 			continue;
 
-		/* #5: serif (ramp), topleft of 'E' */
+		/* #5: serif (ramp), topleft of ibmvga916 'E' */
 		if (dm2 == dm1 && d00 == (dm1 + 270) % 360 &&
 		    dp1 == dm1 && dp2 == (dm1 + 90) % 360 && dp3 == dp2)
 			continue;
-		/* bottomleft 'E' */
+		/* bottomleft of ibmvga916 'E' */
 		if (dm3 == dm2 && dm1 == (dm2 + 90) % 360 &&
 		    d00 == (dm2 + 180) % 360 && dp1 == dm1 && dp2 == dp1)
 			continue;
@@ -1375,6 +1422,7 @@ static void n2_angle(std::vector<edge> &poly)
 		f_iter = flags.insert(std::next(f_iter), 0);
 		ib = (ia + 2) % poly.size();
 
+		/* Shift nodal points. This actually creates the diagonal visuals. */
 		auto da = poly[ia].trivial_dir(), db = poly[ib].trivial_dir();
 		if (da == 0)
 			--poly[ia].end_vtx.y;
@@ -1422,7 +1470,7 @@ std::vector<std::vector<edge>> vectorizer::n2(unsigned int flags)
 	internal_edge_delete();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
-		/* Have all edges retian length 1 */
+		/* Have all edges retain length 1 */
 		auto poly = pop_poly(flags);
 		if (poly.size() == 0)
 			break;
