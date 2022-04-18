@@ -1301,7 +1301,7 @@ std::vector<std::vector<edge>> vectorizer::n1()
 	return pmap;
 }
 
-static void n2_angle(std::vector<edge> &poly)
+static void n2_angle(std::vector<edge> &poly, unsigned int shift)
 {
 	static const unsigned int M_HEAD = 0x20, M_TAIL = 0x02,
 		M_XHEAD = 0x10, M_XTAIL = 0x01;
@@ -1425,21 +1425,21 @@ static void n2_angle(std::vector<edge> &poly)
 		/* Shift nodal points. This actually creates the diagonal visuals. */
 		auto da = poly[ia].trivial_dir(), db = poly[ib].trivial_dir();
 		if (da == 0)
-			--poly[ia].end_vtx.y;
+			poly[ia].end_vtx.y -= shift;
 		else if (da == 90)
-			--poly[ia].end_vtx.x;
+			poly[ia].end_vtx.x -= shift;
 		else if (da == 180)
-			++poly[ia].end_vtx.y;
+			poly[ia].end_vtx.y += shift;
 		else if (da == 270)
-			++poly[ia].end_vtx.x;
+			poly[ia].end_vtx.x += shift;
 		if (db == 0)
-			++poly[ib].start_vtx.y;
+			poly[ib].start_vtx.y += shift;
 		else if (db == 90)
-			++poly[ib].start_vtx.x;
+			poly[ib].start_vtx.x += shift;
 		else if (db == 180)
-			--poly[ib].start_vtx.y;
+			poly[ib].start_vtx.y -= shift;
 		else if (db == 270)
-			--poly[ib].start_vtx.x;
+			poly[ib].start_vtx.x -= shift;
 		poly[ix].start_vtx = poly[ia].end_vtx;
 		poly[ix].end_vtx   = poly[ib].start_vtx;
 		++ia;
@@ -1474,7 +1474,7 @@ std::vector<std::vector<edge>> vectorizer::n2(unsigned int flags)
 		auto poly = pop_poly(flags);
 		if (poly.size() == 0)
 			break;
-		n2_angle(poly);
+		n2_angle(poly, scale_factor / 2);
 		pmap.push_back(std::move(poly));
 	}
 	return pmap;
