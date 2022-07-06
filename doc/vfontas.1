@@ -78,6 +78,160 @@ like FON and TTF can be made available to vfontas by FF.
 .PP
 vfontas offers the CLT bitmap format, wherein glyphs are represented as
 textgraphical files to facilitate editing with terminal editors.
+.SH Multi-size bitmap fonts are styles
+A bitmap font which is offered by its authors in multiple sizes can not only
+constitute different sizes, but also visually different styles, similar to what
+italic fonts are to regular fonts (e.g. longer descenders, more bulbous
+terminals, etc.).
+.PP
+When vfontas converts bitmap fonts to vector, the "size" of a bitmap font
+becomes "resolution". An 8x8 bitmap font and an 8x16 bitmap font, after
+conversion to SFD and other vector formats \fBwill\fP have the same height when
+the user requests such vectorized forms to be rendered in size 12pt.
+.SH Vector font display sizes
+Pixel-perfect rendering of a (vectorized) bitmap font requires taking the
+original size in px and applying the monitor DPI. A 16px tall font on a system
+which uses a 96dpi setting displays well using 12pt or multiples thereof.
+(16*72/96=12). Here is a cheat table for some font heights:
+.TS
+allbox tab(:);
+lB lB lB lB lB.
+T{
+BM Height
+T}:T{
+96dpi
+T}:T{
+x2
+T}:T{
+120dpi
+T}:T{
+x2
+T}
+.T&
+l l l l.
+T{
+13px
+T}:T{
+9.75pt
+T}:T{
+19.5pt
+T}:T{
+7.8pt
+T}:T{
+15.6pt
+T}
+.T&
+l l l l.
+T{
+14px
+T}:T{
+10.5pt
+T}:T{
+21pt
+T}:T{
+8.4pt
+T}:T{
+16.8pt
+T}
+.T&
+l l l l.
+T{
+15px
+T}:T{
+11.25pt
+T}:T{
+22.5pt
+T}:T{
+9pt
+T}:T{
+18pt
+T}
+.T&
+l l l l.
+T{
+16px
+T}:T{
+12pt
+T}:T{
+24pt
+T}:T{
+9.6pt
+T}:T{
+19.2pt
+T}
+.T&
+l l l l.
+T{
+18px
+T}:T{
+13.5pt
+T}:T{
+27pt
+T}:T{
+10.8pt
+T}:T{
+21.6pt
+T}
+.T&
+l l l l.
+T{
+20px
+T}:T{
+15pt
+T}:T{
+30pt
+T}:T{
+12pt
+T}:T{
+24pt
+T}
+.T&
+l l l l.
+T{
+22px
+T}:T{
+16.5pt
+T}:T{
+T}:T{
+13.2pt
+T}:T{
+26.4pt
+T}
+.T&
+l l l l.
+T{
+24px
+T}:T{
+18pt
+T}:T{
+T}:T{
+14.4pt
+T}:T{
+28.8pt
+T}
+.T&
+l l l l.
+T{
+28px
+T}:T{
+21pt
+T}:T{
+T}:T{
+16.8pt
+T}:T{
+T}
+.T&
+l l l l.
+T{
+32px
+T}:T{
+24pt
+T}:T{
+T}:T{
+19.2pt
+T}:T{
+T}
+.TE
 .SH Aspect ratio
 CRT screens of the time commonly had an aspect ratio of 4:3, and whatever
 resolution was shown would be squeezed into that frame, potentially making the
