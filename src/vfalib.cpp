@@ -929,6 +929,31 @@ static unsigned int ttfweight_to_panose(const char *s)
 	return 6;
 }
 
+static void name_reminder(font::propmap_t &props)
+{
+	auto &a = props["FontName"], &b = props["FamilyName"], &c = props["FullName"];
+	auto x = a.empty() || a == "vfontas-output";
+	auto y = b.empty() || b == "vfontas output";
+	auto z = c.empty() || c == "vfontas output";
+	if (x && y && z) {
+		fprintf(stderr, "Hint: Consider -setname <name>, "
+		        "or the detailed version, "
+		        "-setprop {FontName|FamilyName|FullName}.\n");
+		return;
+	}
+	if (x)
+		fprintf(stderr, "Hint: Consider -setprop FontName <name>. "
+		        "This is the PostScript name and "
+		        "drives FontForge's default output filename. "
+		        "This name should not have spaces.\n");
+	if (y)
+		fprintf(stderr, "Hint: Consider -setprop FamilyName <name>. "
+		        "This is the name without \"Bold\", \"Italic\", etc. suffix.\n");
+	if (z)
+		fprintf(stderr, "Hint: Consider -setprop FullName <name>. "
+		        "This is the name with \"Bold\", \"Italic\", etc. suffix.\n");
+}
+
 int font::save_sfd(const char *file, enum vectoalg vt)
 {
 	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
@@ -936,6 +961,7 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 		return -errno;
 	auto fp = filep.get();
 	auto asds = find_ascent_descent();
+	name_reminder(props);
 	fprintf(fp, "SplineFontDB: 3.0\n");
 	fprintf(fp, "FontName: %s\n", props["FontName"].c_str());
 	fprintf(fp, "FullName: %s\n", props["FullName"].c_str());

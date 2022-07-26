@@ -136,7 +136,8 @@ class font {
 	void lgeu();
 	void lgeuf();
 
-	std::map<std::string, std::string> props;
+	using propmap_t = std::map<std::string, std::string, std::less<>>;
+	propmap_t props;
 
 	private:
 	std::pair<int, int> find_ascent_descent() const;
