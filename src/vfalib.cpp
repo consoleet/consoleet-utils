@@ -206,6 +206,23 @@ ssize_t unicode_map::to_index(char32_t uc) const
 	return j->second;
 }
 
+void unicode_map::swap_idx(unsigned int a, unsigned int b)
+{
+	decltype(m_i2u) new_i2u;
+	decltype(m_u2i) new_u2i;
+	for (auto &e : m_u2i) {
+		if (e.second == a)
+			e.second = b;
+		else if (e.second == b)
+			e.second = a;
+	}
+	for (const auto &e : m_i2u)
+		new_i2u.emplace(e.first == a ? b :
+		                e.first == b ? a :
+		                e.first, std::move(e.second));
+	m_i2u = std::move(new_i2u);
+}
+
 font::font() :
 	props{
 		{"FontName", "vfontas-output"},
@@ -458,6 +475,13 @@ int font::load_clt(const char *dirname)
 			return ret;
 		m_unicode_map->add_i2u(m_glyph.size(), uc);
 		m_glyph.emplace_back(std::move(ng));
+		auto last_idx = m_glyph.size() - 1;
+		auto repl = m_unicode_map->m_u2i.find(last_idx);
+		if (repl != m_unicode_map->m_u2i.end()) {
+			/* There is a glyph which would be better for this spot */
+			std::swap(m_glyph.back(), m_glyph[repl->second]);
+			m_unicode_map->swap_idx(last_idx, repl->second);
+		}
 	}
 	return 0;
 }

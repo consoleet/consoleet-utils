@@ -61,6 +61,7 @@ struct unicode_map {
 	void add_i2u(unsigned int, char32_t);
 	std::set<char32_t> to_unicode(unsigned int idx) const;
 	ssize_t to_index(char32_t uc) const;
+	void swap_idx(unsigned int, unsigned int);
 };
 
 struct vertex {
