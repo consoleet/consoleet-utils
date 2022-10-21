@@ -78,7 +78,7 @@ static bool vf_canvas(font &f, char **args)
 		return false;
 	}
 	if (f.m_glyph.size() > 0)
-		f.blit(vfpos() | f.m_glyph[0].m_size, vfpos() | vfsize(x, y));
+		f.copy_to_blank(vfpos() | f.m_glyph[0].m_size, vfpos() | vfsize(x, y));
 	return true;
 }
 
@@ -103,7 +103,7 @@ static bool vf_crop(font &f, char **args)
 		return false;
 	}
 	if (f.m_glyph.size() > 0)
-		f.blit(vfpos(x, y) | f.m_glyph[0].m_size, vfpos() | vfsize(w, h));
+		f.copy_to_blank(vfpos(x, y) | f.m_glyph[0].m_size, vfpos() | vfsize(w, h));
 	return true;
 }
 
@@ -214,7 +214,7 @@ static bool vf_move(font &f, char **args)
 	auto y = strtol(args[1], nullptr, 0);
 	if (f.m_glyph.size() <= 0)
 		return true;
-	f.blit(vfpos() | f.m_glyph[0].m_size, vfpos(x, y) | f.m_glyph[0].m_size);
+	f.copy_to_blank(vfpos() | f.m_glyph[0].m_size, vfpos(x, y) | f.m_glyph[0].m_size);
 	return true;
 }
 
@@ -458,7 +458,7 @@ static bool vf_xlat(font &f, char **args)
 	auto x = strtol(args[0], nullptr, 0);
 	auto y = strtol(args[1], nullptr, 0);
 	if (f.m_glyph.size() > 0)
-		f.blit(vfpos() | f.m_glyph[0].m_size, vfpos(x, y) | f.m_glyph[0].m_size);
+		f.copy_to_blank(vfpos() | f.m_glyph[0].m_size, vfpos(x, y) | f.m_glyph[0].m_size);
 	return true;
 }
 

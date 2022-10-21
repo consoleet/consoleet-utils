@@ -349,7 +349,7 @@ static glyph bdfcomplete(const bdfglystate &cchar)
 	dst_rect.y = std::max(0, static_cast<int>(cchar.font_ascent) - cchar.of_baseline - cchar.h);
 	dst_rect.w = cchar.dwidth;
 	dst_rect.h = cchar.font_height;
-	return g.blit(src_rect, dst_rect);
+	return g.copy_to_blank(src_rect, dst_rect);
 }
 
 int font::load_bdf(const char *filename)
@@ -1587,7 +1587,7 @@ glyph glyph::create_from_rpad(const vfsize &size, const char *buf, size_t z)
 	return ng;
 }
 
-glyph glyph::blit(const vfrect &sof, const vfrect &pof) const
+glyph glyph::copy_to_blank(const vfrect &sof, const vfrect &pof) const
 {
 	glyph ng(pof);
 
