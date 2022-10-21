@@ -88,6 +88,27 @@ static bool vf_clearmap(font &f, char **args)
 	return true;
 }
 
+static bool vf_copy(font &f, char **args)
+{
+	auto x = strtol(args[0], nullptr, 0);
+	auto y = strtol(args[1], nullptr, 0);
+	auto w = strtol(args[2], nullptr, 0);
+	auto h = strtol(args[3], nullptr, 0);
+	auto bx = strtol(args[4], nullptr, 0);
+	auto by = strtol(args[5], nullptr, 0);
+	if (x < 0 || y < 0) {
+		fprintf(stderr, "Error: Crop xpos/ypos must be positive.\n");
+		return false;
+	}
+	if (w <= 0 || h <= 0) {
+		fprintf(stderr, "Error: Crop width/height must be positive non-zero.\n");
+		return false;
+	}
+	if (f.m_glyph.size() > 0)
+		f.copy_rect(vfpos(x, y) | vfsize(w, h), vfpos(bx, by) | f.m_glyph[0].m_size);
+	return true;
+}
+
 static bool vf_crop(font &f, char **args)
 {
 	auto x = strtol(args[0], nullptr, 0);
@@ -470,6 +491,7 @@ static const struct vf_command {
 	{"blankfnt", 0, vf_blankfnt},
 	{"canvas", 2, vf_canvas},
 	{"clearmap", 0, vf_clearmap},
+	{"copy", 6, vf_copy},
 	{"crop", 4, vf_crop},
 	{"fliph", 0, vf_fliph},
 	{"flipv", 0, vf_flipv},
