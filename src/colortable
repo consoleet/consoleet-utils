@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# SPDX-License-Identifier: MIT
 # Display the ANSI color table
 
 if ($ENV{TERM} =~ /^(\w+\.)?xterm/) {

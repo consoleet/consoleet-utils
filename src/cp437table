@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# SPDX-License-Identifier: MIT
 # print the cp437 character table (used for font testing)
 
 use strict;
