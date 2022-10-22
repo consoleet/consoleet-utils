@@ -1,12 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2019 Jan Engelhardt
 /*
  *	Command-line interface of the "VGA font assembler"
- *	written by Jan Engelhardt, 2019
- *
- *	This program is free software; you can redistribute it and/or
- *	modify it under the terms of the GNU General Public License
- *	as published by the Free Software Foundation; either version
- *	3 of the License, or (at your option) any later version.
- *	For details, see the file named "LICENSE.GPL3".
  */
 #include "config.h"
 #include <algorithm>
