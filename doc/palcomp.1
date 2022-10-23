@@ -1,0 +1,32 @@
+.TH palcomp 1 "2022-10-23" "hxtools" "hxtools"
+.SH Name
+palcomp \(em palette composer
+.SH Syntax
+\fBpalcomp\fP [commands...]
+.SS Commands
+\fBdebug\fP, \fBemit\fP, \fBlch\fP, \fBrgb\fP, \fBsatmul=\fP\fIr\fP, \fBvga\fP,
+\fBvgs\fP, \fBxterm\fP
+.SH Description
+palcomp modifies a color palette in certain ways.
+.SH Commands
+.SS debug
+Turn on individual colorspace conversion reporting.
+.SS emit
+Emit the the RGB palette as a line for an XDG theme file.
+.SS lch
+Computes the LCh-based palette from the current in-memory RGB palette, and
+stores the result in the LCH slot.
+.SS rgb
+Computes the RGB-based palette from the current in-memory LCh palette, and
+stores the result in the RGB slot.
+.SS satmul=r
+Multiplies the C channel of the LCH palette's colors with factor \fIr\fP. In
+effect, this causes a desaturation of colors with r<1; r=0 leads to grayscale.
+.SS vga
+Loads the standard VGA palette into the RGB slot.
+.SS vgs
+Loads a full-saturated VGA palette into the RGB slot.
+.SS xterm
+Emit the RGB palette as an xterm command line.
+.SH See also
+\fBhxtools\fP(7)
