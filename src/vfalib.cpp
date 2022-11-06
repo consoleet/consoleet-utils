@@ -81,7 +81,8 @@ class vectorizer final {
 	 * what would be half a pixel. Because SFD does not use floating point,
 	 * we need to increase the base precision first.
 	 */
-	static constexpr const int scale_factor = 2;
+	static constexpr int default_scale_factor = 2;
+	int scale_factor = default_scale_factor;
 	static const unsigned int P_ISTHMUS = 1 << 1;
 
 	private:
@@ -981,6 +982,9 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	auto fp = filep.get();
 	auto asds = find_ascent_descent();
 	name_reminder(props);
+	auto it = props.find("ssf");
+	if (it != props.end())
+		m_ssf = strtod(it->second.c_str(), nullptr);
 	fprintf(fp, "SplineFontDB: 3.0\n");
 	fprintf(fp, "FontName: %s\n", props["FontName"].c_str());
 	fprintf(fp, "FullName: %s\n", props["FullName"].c_str());
@@ -990,8 +994,8 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	fprintf(fp, "ItalicAngle: 0\n");
 	fprintf(fp, "UnderlinePosition: -3\n");
 	fprintf(fp, "UnderlineWidth: 1\n");
-	fprintf(fp, "Ascent: %d\n", asds.first * vectorizer::scale_factor);
-	fprintf(fp, "Descent: %d\n", asds.second * vectorizer::scale_factor);
+	fprintf(fp, "Ascent: %d\n", asds.first * m_ssf);
+	fprintf(fp, "Descent: %d\n", asds.second * m_ssf);
 	fprintf(fp, "NeedsXUIDChange: 1\n");
 	fprintf(fp, "FSType: 0\n");
 	fprintf(fp, "PfmFamily: 49\n");
@@ -1000,18 +1004,18 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	fprintf(fp, "Panose: 2 0 %u 9 9 0 0 0 0 0\n", ttfweight_to_panose(props["TTFWeight"].c_str()));
 	fprintf(fp, "LineGap: 0\n");
 	fprintf(fp, "VLineGap: 0\n");
-	fprintf(fp, "OS2TypoAscent: %d\n", asds.first * vectorizer::scale_factor);
+	fprintf(fp, "OS2TypoAscent: %d\n", asds.first * m_ssf);
 	fprintf(fp, "OS2TypoAOffset: 0\n");
-	fprintf(fp, "OS2TypoDescent: %d\n", -asds.second * vectorizer::scale_factor);
+	fprintf(fp, "OS2TypoDescent: %d\n", -asds.second * m_ssf);
 	fprintf(fp, "OS2TypoDOffset: 0\n");
 	fprintf(fp, "OS2TypoLinegap: 0\n");
-	fprintf(fp, "OS2WinAscent: %d\n", asds.first * vectorizer::scale_factor);
+	fprintf(fp, "OS2WinAscent: %d\n", asds.first * m_ssf);
 	fprintf(fp, "OS2WinAOffset: 0\n");
-	fprintf(fp, "OS2WinDescent: %d\n", asds.second * vectorizer::scale_factor);
+	fprintf(fp, "OS2WinDescent: %d\n", asds.second * m_ssf);
 	fprintf(fp, "OS2WinDOffset: 0\n");
-	fprintf(fp, "HheadAscent: %d\n", asds.first * vectorizer::scale_factor);
+	fprintf(fp, "HheadAscent: %d\n", asds.first * m_ssf);
 	fprintf(fp, "HheadAOffset: 0\n");
-	fprintf(fp, "HheadDescent: %d\n", -asds.second * vectorizer::scale_factor);
+	fprintf(fp, "HheadDescent: %d\n", -asds.second * m_ssf);
 	fprintf(fp, "HheadDOffset: 0\n");
 	fprintf(fp, "Encoding: UnicodeBmp\n");
 	fprintf(fp, "UnicodeInterp: none\n");
@@ -1533,20 +1537,22 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
 	const auto &sz = g.m_size;
 	fprintf(fp, "StartChar: %04x\n", cpx);
 	fprintf(fp, "Encoding: %u %u %u\n", cpx, cpx, cpx);
-	fprintf(fp, "Width: %u\n", sz.w * vectorizer::scale_factor);
+	fprintf(fp, "Width: %u\n", sz.w * m_ssf);
 	fprintf(fp, "Flags: MW\n");
 	fprintf(fp, "Fore\n");
 	fprintf(fp, "SplineSet\n");
 
 	std::vector<std::vector<edge>> pmap;
+	vectorizer vct(m_glyph[idx], desc);
+	vct.scale_factor = m_ssf;
 	if (vt == V_SIMPLE)
-		pmap = vectorizer(m_glyph[idx], desc).simple();
+		pmap = vct.simple();
 	else if (vt == V_N1)
-		pmap = vectorizer(m_glyph[idx], desc).n1();
+		pmap = vct.n1();
 	else if (vt == V_N2)
-		pmap = vectorizer(m_glyph[idx], desc).n2();
+		pmap = vct.n2();
 	else if (vt == V_N2EV)
-		pmap = vectorizer(m_glyph[idx], desc).n2(vectorizer::P_ISTHMUS);
+		pmap = vct.n2(vectorizer::P_ISTHMUS);
 	for (const auto &poly : pmap) {
 		const auto &v1 = poly.cbegin()->start_vtx;
 		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
