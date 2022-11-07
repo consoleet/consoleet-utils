@@ -474,7 +474,36 @@ Sets a name for the font, which gets emitted for BDF/SFD output. (The other
 file formats have no metadata field for a name, so the filename is all you
 get.)
 .SS setprop
-Sets a specific property for SFD fonts (also partly used by BDF).
+Sets a specific property for SFD fonts (also partly used by BDF). Only a
+limited set of \fIkey\fP names are recognized.
+.TP
+\fBFamilyName\fP
+BDF: The value is used for the FAMILY_NAME attribute.
+.br
+SFD: The value is influential for font selection UIs. A fontface's
+regular/medium/bold/italic variants should carry the same FamilyName.
+.TP
+\fBFontName\fP
+The PostScript font name. For BDF, this name will be used to construct the X
+Logical Font Description (XLFD), i.e. the unwieldly
+"-misc-FontName-medium-r-normal--0-0-75-75-c-10-iso10646-1" string.
+.TP
+\fBFullName\fP
+BDF: The values is used for the FONT attribute
+.br
+SFD: The value should be the FamilyName joined by the name of the variant
+(Regular/Medium, Bold, Italic, etc.). By convention, the regular/medium variant
+is allowed to be represented without a specific variant name. In other words,
+using {MyFont; MyFont Bold} or {MyFont Regular; MyFont Bold} as the names for a
+font project with two thicknesses is up to the user.
+.TP
+\fBTTFWeight\fP
+BDF: for the WEIGHT attribute; should be a numeric value between 1-1000.
+.TP
+\fBWeight\fP
+BDF: The values is used for the WEIGHT_NAME attribute.
+.br
+SFD: A non-empty variant name, in lower case. ("medium", "bold", ...)
 .SS upscale
 Performs a linear upscale by an integral factor for all glyphs.
 .SS xcpi
