@@ -31,7 +31,9 @@
 #include <libHX/string.h>
 #include "vfalib.hpp"
 
-namespace vfalib {
+using namespace vfalib;
+
+namespace {
 
 enum {
 	PSF1_MAGIC0 = 0x36,
@@ -99,9 +101,11 @@ class vectorizer final {
 	static const unsigned int P_SIMPLIFY_LINES = 1 << 0;
 };
 
+}
+
 static const char vfhex[] = "0123456789abcdef";
 
-static FILE *fopen(const char *name, const char *mode)
+static FILE *vfopen(const char *name, const char *mode)
 {
 	if (strcmp(name, "-") != 0)
 		return ::fopen(name, mode);
@@ -137,7 +141,7 @@ void unicode_map::add_i2u(unsigned int idx, char32_t uc)
 
 int unicode_map::load(const char *file)
 {
-	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "rb"));
 	if (fp == nullptr) {
 		fprintf(stderr, "Could not open %s: %s", file, strerror(errno));
 		return -errno;
@@ -351,7 +355,7 @@ static glyph bdfcomplete(const bdfglystate &cchar)
 int font::load_bdf(const char *filename)
 {
 	enum { BDF_NONE, BDF_FONT, BDF_CHAR, BDF_BITMAP, BDF_PASTBITMAP, BDF_DONE };
-	std::unique_ptr<FILE, deleter> fp(fopen(filename, "r"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(filename, "r"));
 	if (fp == nullptr)
 		return -errno;
 	if (m_unicode_map == nullptr)
@@ -514,7 +518,7 @@ int font::load_clt_glyph(FILE *fp, glyph &ng)
 
 int font::load_fnt(const char *file, unsigned int height)
 {
-	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "rb"));
 	if (fp == nullptr)
 		return -errno;
 	unsigned int width = 8;
@@ -542,7 +546,7 @@ int font::load_fnt(const char *file, unsigned int height)
 
 int font::load_hex(const char *file)
 {
-	std::unique_ptr<FILE, deleter> fp(fopen(file, "r"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "r"));
 	if (fp == nullptr)
 		return -errno;
 	if (m_unicode_map == nullptr)
@@ -625,7 +629,7 @@ static unsigned int psf_version(FILE *fp)
 
 int font::load_psf(const char *file)
 {
-	std::unique_ptr<FILE, deleter> fp(fopen(file, "rb"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "rb"));
 	if (fp == nullptr)
 		return -errno;
 
@@ -687,7 +691,7 @@ int font::load_psf(const char *file)
 
 int font::save_bdf(const char *file)
 {
-	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
+	std::unique_ptr<FILE, deleter> filep(vfopen(file, "w"));
 	if (filep == nullptr)
 		return -errno;
 	auto fp = filep.get();
@@ -791,7 +795,7 @@ int font::save_clt_glyph(const char *dir, size_t idx, char32_t codepoint)
 	std::stringstream ss;
 	ss << dir << "/" << std::setfill('0') << std::setw(4) << std::hex << codepoint << ".txt";
 	auto outpath = ss.str();
-	std::unique_ptr<FILE, deleter> fp(fopen(outpath.c_str(), "w"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(outpath.c_str(), "w"));
 	if (fp == nullptr) {
 		fprintf(stderr, "Could not open %s for writing: %s\n", outpath.c_str(), strerror(errno));
 		return -errno;
@@ -807,7 +811,7 @@ int font::save_clt_glyph(const char *dir, size_t idx, char32_t codepoint)
 
 int font::save_fnt(const char *file)
 {
-	std::unique_ptr<FILE, deleter> fp(fopen(file, "wb"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "wb"));
 	if (fp == nullptr)
 		return -errno;
 	for (const auto &glyph : m_glyph) {
@@ -820,7 +824,7 @@ int font::save_fnt(const char *file)
 
 int font::save_map(const char *file)
 {
-	std::unique_ptr<FILE, deleter> fp(fopen(file, "w"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "w"));
 	if (fp == nullptr)
 		return -errno;
 	if (m_unicode_map == nullptr)
@@ -874,7 +878,7 @@ int font::save_pbm_glyph(const char *dir, size_t idx, char32_t codepoint)
 
 int font::save_psf(const char *file)
 {
-	std::unique_ptr<FILE, deleter> fp(fopen(file, "wb"));
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "wb"));
 	if (fp == nullptr)
 		return -errno;
 	struct psf2_header hdr = {{PSF2_MAGIC0, PSF2_MAGIC1, PSF2_MAGIC2, PSF2_MAGIC3}, 0, sizeof(hdr)};
@@ -976,7 +980,7 @@ static void name_reminder(font::propmap_t &props)
 
 int font::save_sfd(const char *file, enum vectoalg vt)
 {
-	std::unique_ptr<FILE, deleter> filep(fopen(file, "w"));
+	std::unique_ptr<FILE, deleter> filep(vfopen(file, "w"));
 	if (filep == nullptr)
 		return -errno;
 	auto fp = filep.get();
@@ -1804,5 +1808,3 @@ unsigned int edge::trivial_dir() const
 		       end_vtx.x < start_vtx.x ? 225 : 135;
 	return end_vtx.x < start_vtx.x ? 270 : 90;
 }
-
-} /* namespace vfalib */
