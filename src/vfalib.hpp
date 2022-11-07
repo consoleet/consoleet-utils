@@ -150,7 +150,7 @@ class font {
 	int save_clt_glyph(const char *dir, size_t n, char32_t cp);
 	int save_pbm_glyph(const char *dir, size_t n, char32_t cp);
 	void save_sfd_glyph(FILE *, size_t idx, char32_t cp, int, int, enum vectoalg);
-	int m_ssf = 2;
+	int m_ssfx = 2, m_ssfy = 2;
 
 	public:
 	std::vector<glyph> m_glyph;

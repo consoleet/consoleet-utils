@@ -497,6 +497,13 @@ is allowed to be represented without a specific variant name. In other words,
 using {MyFont; MyFont Bold} or {MyFont Regular; MyFont Bold} as the names for a
 font project with two thicknesses is up to the user.
 .TP
+\fBssf\fP
+This special property controls the horizontal scaling of all coordinates, but
+not the font's em size. The default value is \fI1/1\fP. This setting is useful
+for implementing the correction mentioned in the "Aspect ratio" section.
+Applying the 80x25@720x400 correction for example requires the use of the value
+\fI20/27\fP.
+.TP
 \fBTTFWeight\fP
 BDF: for the WEIGHT attribute; should be a numeric value between 1-1000.
 .TP

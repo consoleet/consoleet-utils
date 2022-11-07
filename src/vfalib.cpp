@@ -82,7 +82,7 @@ class vectorizer final {
 	 * we need to increase the base precision first.
 	 */
 	static constexpr int default_scale_factor = 2;
-	int scale_factor = default_scale_factor;
+	int scale_factor_x = default_scale_factor, scale_factor_y = default_scale_factor;
 	static const unsigned int P_ISTHMUS = 1 << 1;
 
 	private:
@@ -983,8 +983,21 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	auto asds = find_ascent_descent();
 	name_reminder(props);
 	auto it = props.find("ssf");
-	if (it != props.end())
-		m_ssf = strtod(it->second.c_str(), nullptr);
+	if (it != props.end()) {
+		char *end = nullptr;
+		auto a = strtoul(it->second.c_str(), &end, 0);
+		if (end == nullptr || end[0] != '/') {
+			fprintf(stderr, "What garbage is \"%s\"? Ignored -setprop request.\n", it->second.c_str());
+		} else if (end[0] == '/') {
+			auto b = strtoul(end + 1, nullptr, 0);
+			if (b == 0) {
+				fprintf(stderr, "What garbage is \"%s\"? Ignored -setprop request.\n", it->second.c_str());
+			} else {
+				m_ssfx = 2 * a;
+				m_ssfy = 2 * b;
+			}
+		}
+	}
 	fprintf(fp, "SplineFontDB: 3.0\n");
 	fprintf(fp, "FontName: %s\n", props["FontName"].c_str());
 	fprintf(fp, "FullName: %s\n", props["FullName"].c_str());
@@ -994,8 +1007,8 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	fprintf(fp, "ItalicAngle: 0\n");
 	fprintf(fp, "UnderlinePosition: -3\n");
 	fprintf(fp, "UnderlineWidth: 1\n");
-	fprintf(fp, "Ascent: %d\n", asds.first * m_ssf);
-	fprintf(fp, "Descent: %d\n", asds.second * m_ssf);
+	fprintf(fp, "Ascent: %d\n", asds.first * m_ssfy);
+	fprintf(fp, "Descent: %d\n", asds.second * m_ssfy);
 	fprintf(fp, "NeedsXUIDChange: 1\n");
 	fprintf(fp, "FSType: 0\n");
 	fprintf(fp, "PfmFamily: 49\n");
@@ -1004,18 +1017,18 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	fprintf(fp, "Panose: 2 0 %u 9 9 0 0 0 0 0\n", ttfweight_to_panose(props["TTFWeight"].c_str()));
 	fprintf(fp, "LineGap: 0\n");
 	fprintf(fp, "VLineGap: 0\n");
-	fprintf(fp, "OS2TypoAscent: %d\n", asds.first * m_ssf);
+	fprintf(fp, "OS2TypoAscent: %d\n", asds.first * m_ssfy);
 	fprintf(fp, "OS2TypoAOffset: 0\n");
-	fprintf(fp, "OS2TypoDescent: %d\n", -asds.second * m_ssf);
+	fprintf(fp, "OS2TypoDescent: %d\n", -asds.second * m_ssfy);
 	fprintf(fp, "OS2TypoDOffset: 0\n");
 	fprintf(fp, "OS2TypoLinegap: 0\n");
-	fprintf(fp, "OS2WinAscent: %d\n", asds.first * m_ssf);
+	fprintf(fp, "OS2WinAscent: %d\n", asds.first * m_ssfy);
 	fprintf(fp, "OS2WinAOffset: 0\n");
-	fprintf(fp, "OS2WinDescent: %d\n", asds.second * m_ssf);
+	fprintf(fp, "OS2WinDescent: %d\n", asds.second * m_ssfy);
 	fprintf(fp, "OS2WinDOffset: 0\n");
-	fprintf(fp, "HheadAscent: %d\n", asds.first * m_ssf);
+	fprintf(fp, "HheadAscent: %d\n", asds.first * m_ssfy);
 	fprintf(fp, "HheadAOffset: 0\n");
-	fprintf(fp, "HheadDescent: %d\n", -asds.second * m_ssf);
+	fprintf(fp, "HheadDescent: %d\n", -asds.second * m_ssfy);
 	fprintf(fp, "HheadDOffset: 0\n");
 	fprintf(fp, "Encoding: UnicodeBmp\n");
 	fprintf(fp, "UnicodeInterp: none\n");
@@ -1066,13 +1079,13 @@ vectorizer::vectorizer(const glyph &g, int desc) :
 void vectorizer::set(int x, int y)
 {
 	/* TTF/OTF spec: right side of line to be interior */
-	int s = scale_factor;
-	x *= s;
-	y *= s;
-	emap.insert(edge{{y, x}, {y + s, x}});
-	emap.insert(edge{{y + s, x}, {y + s, x + s}});
-	emap.insert(edge{{y + s, x + s}, {y, x + s}});
-	emap.insert(edge{{y, x + s}, {y, x}});
+	const int &sx = scale_factor_x, &sy = scale_factor_y;
+	x *= sx;
+	y *= sy;
+	emap.insert(edge{{y, x}, {y + sy, x}});
+	emap.insert(edge{{y + sy, x}, {y + sy, x + sx}});
+	emap.insert(edge{{y + sy, x + sx}, {y, x + sx}});
+	emap.insert(edge{{y, x + sx}, {y, x}});
 }
 
 void vectorizer::make_squares()
@@ -1187,13 +1200,13 @@ std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
 	if (cur_dir == 0)
 		bmp = cur_edge.start_vtx;
 	else if (cur_dir == 90)
-		bmp = {cur_edge.start_vtx.x, cur_edge.start_vtx.y - scale_factor};
+		bmp = {cur_edge.start_vtx.x, cur_edge.start_vtx.y - scale_factor_y};
 	else if (cur_dir == 180)
-		bmp = {cur_edge.start_vtx.x - scale_factor, cur_edge.end_vtx.y};
+		bmp = {cur_edge.start_vtx.x - scale_factor_x, cur_edge.end_vtx.y};
 	else if (cur_dir == 270)
 		bmp = cur_edge.end_vtx;
-	bmp.x /= scale_factor;
-	bmp.y /= scale_factor;
+	bmp.x /= scale_factor_x;
+	bmp.y /= scale_factor_y;
 	bmp.y = m_glyph.m_size.h - bmp.y - m_descent - 1;
 
 	/* Test for pattern A1 */
@@ -1350,7 +1363,7 @@ std::vector<std::vector<edge>> vectorizer::n1()
 	return pmap;
 }
 
-static void n2_angle(std::vector<edge> &poly, unsigned int shift)
+static void n2_angle(std::vector<edge> &poly, unsigned int sx, unsigned int sy)
 {
 	static const unsigned int M_HEAD = 0x20, M_TAIL = 0x02,
 		M_XHEAD = 0x10, M_XTAIL = 0x01;
@@ -1474,21 +1487,21 @@ static void n2_angle(std::vector<edge> &poly, unsigned int shift)
 		/* Shift nodal points. This actually creates the diagonal visuals. */
 		auto da = poly[ia].trivial_dir(), db = poly[ib].trivial_dir();
 		if (da == 0)
-			poly[ia].end_vtx.y -= shift;
+			poly[ia].end_vtx.y -= sy;
 		else if (da == 90)
-			poly[ia].end_vtx.x -= shift;
+			poly[ia].end_vtx.x -= sx;
 		else if (da == 180)
-			poly[ia].end_vtx.y += shift;
+			poly[ia].end_vtx.y += sy;
 		else if (da == 270)
-			poly[ia].end_vtx.x += shift;
+			poly[ia].end_vtx.x += sx;
 		if (db == 0)
-			poly[ib].start_vtx.y += shift;
+			poly[ib].start_vtx.y += sy;
 		else if (db == 90)
-			poly[ib].start_vtx.x += shift;
+			poly[ib].start_vtx.x += sx;
 		else if (db == 180)
-			poly[ib].start_vtx.y -= shift;
+			poly[ib].start_vtx.y -= sy;
 		else if (db == 270)
-			poly[ib].start_vtx.x -= shift;
+			poly[ib].start_vtx.x -= sx;
 		poly[ix].start_vtx = poly[ia].end_vtx;
 		poly[ix].end_vtx   = poly[ib].start_vtx;
 		++ia;
@@ -1523,7 +1536,7 @@ std::vector<std::vector<edge>> vectorizer::n2(unsigned int flags)
 		auto poly = pop_poly(flags);
 		if (poly.size() == 0)
 			break;
-		n2_angle(poly, scale_factor / 2);
+		n2_angle(poly, scale_factor_x / 2, scale_factor_y / 2);
 		pmap.push_back(std::move(poly));
 	}
 	return pmap;
@@ -1537,14 +1550,15 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
 	const auto &sz = g.m_size;
 	fprintf(fp, "StartChar: %04x\n", cpx);
 	fprintf(fp, "Encoding: %u %u %u\n", cpx, cpx, cpx);
-	fprintf(fp, "Width: %u\n", sz.w * m_ssf);
+	fprintf(fp, "Width: %u\n", sz.w * m_ssfx);
 	fprintf(fp, "Flags: MW\n");
 	fprintf(fp, "Fore\n");
 	fprintf(fp, "SplineSet\n");
 
 	std::vector<std::vector<edge>> pmap;
 	vectorizer vct(m_glyph[idx], desc);
-	vct.scale_factor = m_ssf;
+	vct.scale_factor_x = m_ssfx;
+	vct.scale_factor_y = m_ssfy;
 	if (vt == V_SIMPLE)
 		pmap = vct.simple();
 	else if (vt == V_N1)
