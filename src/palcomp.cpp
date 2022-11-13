@@ -157,22 +157,22 @@ static std::vector<lch> to_lch(const std::vector<srgb888> &in)
 	std::vector<lch> out;
 	for (const auto &color : in) {
 		if (debug_cvt)
-			printf("to_lch(%s):\n", to_hex(color).c_str());
+			fprintf(stderr, "to_lch(%s):\n", to_hex(color).c_str());
 		auto a = to_srgb(color);
 		if (debug_cvt)
-			printf("\tsrgb = {%f, %f, %f}\n", a.r, a.g, a.b);
+			fprintf(stderr, "\tsrgb = {%f, %f, %f}\n", a.r, a.g, a.b);
 		auto b = to_lrgb(a);
 		if (debug_cvt)
-			printf("\tlrgb = {%f, %f, %f}\n", b.r, b.g, b.b);
+			fprintf(stderr, "\tlrgb = {%f, %f, %f}\n", b.r, b.g, b.b);
 		auto c = to_xyz(b);
 		if (debug_cvt)
-			printf("\txyz = {%f, %f, %f}\n", c.x, c.y, c.z);
+			fprintf(stderr, "\txyz = {%f, %f, %f}\n", c.x, c.y, c.z);
 		auto d = to_lab(c);
 		if (debug_cvt)
-			printf("\tlab = {%f, %f, %f}\n", d.l, d.a, d.b);
+			fprintf(stderr, "\tlab = {%f, %f, %f}\n", d.l, d.a, d.b);
 		auto e = to_lch(d);
 		if (debug_cvt)
-			printf("\tlch = {%f, %f, %f}\n", e.l, e.c, e.h);
+			fprintf(stderr, "\tlch = {%f, %f, %f}\n", e.l, e.c, e.h);
 		out.push_back(e);
 	}
 	return out;
@@ -183,22 +183,22 @@ static std::vector<srgb888> to_srgb888(const std::vector<lch> &in)
 	std::vector<srgb888> out;
 	for (const auto &color : in) {
 		if (debug_cvt)
-			printf("to_srgb888(lch{%f, %f, %f}):\n", color.l, color.c, color.h);
+			fprintf(stderr, "to_srgb888(lch{%f, %f, %f}):\n", color.l, color.c, color.h);
 		auto a = to_lab(color);
 		if (debug_cvt)
-			printf("\tlab = {%f, %f, %f}\n", a.l, a.a, a.b);
+			fprintf(stderr, "\tlab = {%f, %f, %f}\n", a.l, a.a, a.b);
 		auto b = to_xyz(a);
 		if (debug_cvt)
-			printf("\txyz = {%f, %f, %f}\n", b.x, b.y, b.z);
+			fprintf(stderr, "\txyz = {%f, %f, %f}\n", b.x, b.y, b.z);
 		auto c = to_lrgb(b);
 		if (debug_cvt)
-			printf("\tlrgb = {%f, %f, %f}\n", c.r, c.g, c.b);
+			fprintf(stderr, "\tlrgb = {%f, %f, %f}\n", c.r, c.g, c.b);
 		auto d = to_srgb(c);
 		if (debug_cvt)
-			printf("\tsrgb = {%f, %f, %f}\n", d.r, d.g, d.b);
+			fprintf(stderr, "\tsrgb = {%f, %f, %f}\n", d.r, d.g, d.b);
 		auto e = to_srgb888(d);
 		if (debug_cvt)
-			printf("\thex = %s\n", to_hex(e).c_str());
+			fprintf(stderr, "\thex = %s\n", to_hex(e).c_str());
 		out.push_back(e);
 	}
 	return out;
