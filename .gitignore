@@ -1,0 +1,17 @@
+*.exe
+*.o
+.deps/
+.dirstamp
+Makefile
+Makefile.in
+
+/aclocal.m4
+/autom4te.cache/
+/build-aux/
+/config.*
+/configure
+/libtool
+/stamp-h1
+
+/palcomp
+/vfontas
