@@ -5,6 +5,7 @@ AM_CFLAGS   = ${regular_CFLAGS}
 AM_CXXFLAGS = ${regular_CXXFLAGS}
 
 bin_PROGRAMS = palcomp vfontas
+EXTRA_DIST = doc/vfontas-formats.dot src/colortable src/cp437table src/cp437x.uni
 
 palcomp_SOURCES = src/palcomp.cpp
 palcomp_LDADD = -lm
