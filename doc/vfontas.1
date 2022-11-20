@@ -10,6 +10,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-clearmap\fP
 .PP
+\fB\-cpisep\fP \fIsep\fP
+.PP
 \fB\-crop\fP \fIxpos\fP \fIypos\fP \fIwidth\fP \fIheight\fP
 .PP
 \fB\-fliph\fP
@@ -353,6 +355,9 @@ differently-sized canvas, combine with \fB\-crop\fP or \fB\-canvas\fP.
 Enlarges the glyph box to the specified size. (It never shrinks it.)
 .SS clearmap
 Discards the in-memory glyph index <-> Unicode mapping table.
+.SS cpisep
+Switches to flat hierarchy extraction for \-xcpi, using the specified character
+for delimiter.
 .SS crop
 Removes an outer area from the glyph images, shrinking the image in the process.
 .SS fliph, flipv

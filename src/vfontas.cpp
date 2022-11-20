@@ -58,6 +58,8 @@ struct cpi_screenfont_header {
 	uint16_t num_chars;
 } __attribute__((packed));
 
+static std::string cpi_separator;
+
 static bool vf_blankfnt(font &f, char **args)
 {
 	f.init_256_blanks();
@@ -101,6 +103,12 @@ static bool vf_copy(font &f, char **args)
 	}
 	if (f.m_glyph.size() > 0)
 		f.copy_rect(vfpos(x, y) | vfsize(w, h), vfpos(bx, by) | f.m_glyph[0].m_size);
+	return true;
+}
+
+static bool vf_cpisep(font &f, char **args)
+{
+	cpi_separator = args[0];
 	return true;
 }
 
@@ -363,7 +371,7 @@ static bool vf_upscale(font &f, char **args)
 }
 
 static void vf_extract_cpi3(const char *sfhblk, unsigned int num_fonts,
-    const std::string &directory)
+    const std::string &tpl_dir, const char *dev, const char *cpg)
 {
 	for (unsigned int i = 0; i < num_fonts; ++i) {
 		struct cpi_screenfont_header sfh;
@@ -372,9 +380,17 @@ static void vf_extract_cpi3(const char *sfhblk, unsigned int num_fonts,
 
 		char buf[HXSIZEOF_Z32*3];
 		snprintf(buf, sizeof(buf), "%ux%u.fnt", sfh.width, sfh.height);
-		auto out_file = directory + "/" + buf;
+		auto out_dir = tpl_dir;
+		auto out_file = tpl_dir;
+		if (cpi_separator.size() > 0) {
+			out_file += std::string("/") + dev + cpi_separator +
+			            cpg + cpi_separator + buf;
+		} else {
+			out_dir += std::string("/") + dev + "/" + cpg;
+			out_file = out_dir + "/" + buf;
+		}
 		printf("Writing to %s\n", out_file.c_str());
-		HX_mkdir(directory.c_str(), S_IRWXUGO);
+		HX_mkdir(out_dir.c_str(), S_IRWXUGO);
 		auto out_fd = open(out_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUGO | S_IWUGO);
 		if (out_fd < 0) {
 			fprintf(stderr, "Error writing to %s: %s\n", out_file.c_str(), strerror(errno));
@@ -429,14 +445,13 @@ static int vf_extract_cpi2(const char *vdata, const char *directory)
 		if (cpih.version != 1)
 			continue;
 
-		char buf[HXSIZEOF_Z32*2];
-		*buf = '\0';
-		HX_strlncat(buf, cpeh.device_name, sizeof(buf), sizeof(cpeh.device_name));
-		HX_strrtrim(buf);
-		auto out_dir = std::string(directory) + "/" + buf + "/";
-		snprintf(buf, sizeof(buf), "%u", cpeh.codepage);
-		out_dir += buf;
-		vf_extract_cpi3(vdata + cpeh.cpih_offset + sizeof(cpih), cpih.num_fonts, out_dir);
+		char dev[HXSIZEOF_Z32*2], cpg[HXSIZEOF_Z32*2];
+		*dev = '\0';
+		HX_strlncat(dev, cpeh.device_name, std::size(dev), std::size(cpeh.device_name));
+		HX_strrtrim(dev);
+		snprintf(cpg, std::size(cpg), "%u", cpeh.codepage);
+		vf_extract_cpi3(vdata + cpeh.cpih_offset + sizeof(cpih),
+			cpih.num_fonts, directory, dev, cpg);
 	}
 	return true;
 }
@@ -487,6 +502,7 @@ static const struct vf_command {
 	{"canvas", 2, vf_canvas},
 	{"clearmap", 0, vf_clearmap},
 	{"copy", 6, vf_copy},
+	{"cpisep", 1, vf_cpisep},
 	{"crop", 4, vf_crop},
 	{"fliph", 0, vf_fliph},
 	{"flipv", 0, vf_flipv},
