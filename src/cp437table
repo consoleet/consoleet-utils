@@ -3,7 +3,11 @@
 # print the cp437 character table (used for font testing)
 
 use strict;
-open(FH, "<../kbd/cp437x.uni") or die;
+my $dir = $0;
+if ($dir !~ s{^(.*)/.*}{$1}) {
+	$dir = ".";
+}
+open(FH, "<$dir/cp437x.uni") or die "$dir/cp437x.uni absent";
 my @map;
 while (<FH>) {
 	if (m{^#}) { next; }
