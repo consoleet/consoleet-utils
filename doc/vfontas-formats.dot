@@ -1,26 +1,19 @@
 digraph {
-	bdf -> vfontas;
-	clt -> vfontas;
+	bdf -> vfontas [dir=both];
+	clt -> vfontas [dir=both];
 	cpi -> vfontas;
-	fntraw -> vfontas;
+	fntraw -> vfontas [dir=both];
 	gnuhex -> vfontas;
 	psf1 -> vfontas;
-	psf2 -> vfontas;
-	unimap -> vfontas;
-	vfontas -> bdf;
-	vfontas -> clt;
-	vfontas -> fntraw;
+	psf2 -> vfontas [dir=both];
+	unimap -> vfontas [dir=both];
 	vfontas -> pbm;
-	vfontas -> psf2;
 	vfontas -> sfd;
-	vfontas -> unimap;
 	bdf -> bdftopcf;
 	bdftopcf -> pcf;
-	bdf -> fontforge;
+	bdf -> fontforge [dir=both];
 	pcf -> fontforge;
-	sfd -> fontforge;
-	ttf -> fontforge;
-	fontforge -> bdf;
-	fontforge -> sfd;
-	fontforge -> ttf;
+	Type1 -> fontforge [dir=both];
+	sfd -> fontforge [dir=both];
+	otf -> fontforge [dir=both];
 }
