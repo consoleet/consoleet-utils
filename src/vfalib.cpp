@@ -1552,6 +1552,8 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
     enum vectoalg vt)
 {
 	unsigned int cpx = cp;
+	if (idx >= m_glyph.size())
+		return;
 	const auto &g = m_glyph[idx];
 	const auto &sz = g.m_size;
 	fprintf(fp, "StartChar: %04x\n", cpx);
