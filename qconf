@@ -1,0 +1,12 @@
+#!/bin/sh -e
+topdir="${0%/*}"
+if [ "$topdir" = "$0" ]; then
+	topdir=.
+fi
+abstopdir=$(readlink -f "$topdir")
+if [ ! -e "${topdir}/configure" ]; then
+	cd "$topdir"
+	autoreconf -fi
+	cd -
+fi
+exec "$topdir/configure" CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
