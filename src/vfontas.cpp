@@ -37,6 +37,16 @@ struct cpi_fontinfo_header {
 	uint16_t num_codepages;
 } __attribute__((packed));
 
+enum cpi_device_type {
+	DEVTYPE_SCREEN = 1,
+	DEVTYPE_PRINTER,
+};
+
+/**
+ * @device_name:	for screens, usually "EGA", or perhaps "LCD".
+ * 			for printers, usually "4201", "4208", "5202",
+ * 			"1050", "EPS", "PPDS"
+ */
 struct cpi_cpentry_header {
 	uint16_t cpeh_size;
 	uint32_t next_cpeh_offset;
@@ -56,6 +66,10 @@ struct cpi_cpinfo_header {
 struct cpi_screenfont_header {
 	uint8_t height, width, yaspect, xaspect;
 	uint16_t num_chars;
+} __attribute__((packed));
+
+struct cpi_printfont_header {
+	uint16_t printer_type, escape_length;
 } __attribute__((packed));
 
 static std::string cpi_separator;
@@ -370,13 +384,18 @@ static bool vf_upscale(font &f, char **args)
 	return true;
 }
 
-static void vf_extract_cpi3(const char *sfhblk, unsigned int num_fonts,
+static void vf_extract_sfh(const char *sfhblk, unsigned int num_fonts,
     const std::string &tpl_dir, const char *dev, const char *cpg)
 {
 	for (unsigned int i = 0; i < num_fonts; ++i) {
 		struct cpi_screenfont_header sfh;
 		memcpy(&sfh, sfhblk, sizeof(sfh));
 		sfh.num_chars = le16_to_cpu(sfh.num_chars);
+		printf("SFH: %ux%u pixels x %u chars\n", sfh.width, sfh.height,
+		       sfh.num_chars);
+		if (sfh.width == 0 || sfh.height == 0 || sfh.num_chars == 0)
+			/* Avoid producing empty files */
+			continue;
 
 		char buf[HXSIZEOF_Z32*3];
 		snprintf(buf, sizeof(buf), "%ux%u.fnt", sfh.width, sfh.height);
@@ -402,6 +421,16 @@ static void vf_extract_cpi3(const char *sfhblk, unsigned int num_fonts,
 		close(out_fd);
 		sfhblk += sizeof(sfh) + length;
 	}
+}
+
+static void vf_extract_pfh(const char *pfhblk)
+{
+	struct cpi_printfont_header pfh;
+	memcpy(&pfh, pfhblk, sizeof(pfh));
+	pfh.printer_type = le16_to_cpu(pfh.printer_type);
+	pfh.escape_length = le16_to_cpu(pfh.escape_length);
+	printf("PFH: printer_type=%u escape_len=%u\n",
+	       pfh.printer_type, pfh.escape_length);
 }
 
 static int vf_extract_cpi2(const char *vdata, const char *directory)
@@ -430,18 +459,21 @@ static int vf_extract_cpi2(const char *vdata, const char *directory)
 		cpeh.cpih_offset      = le32_to_cpu(cpeh.cpih_offset);
 		cpeblk                = vdata + cpeh.next_cpeh_offset;
 
-		printf("CPEH #%u: Name: %.*s, Codepage: %u\n",
+		if (cpeh.cpeh_size != sizeof(cpeh))
+			return -EINVAL;
+		printf("CPEH #%u: Name: %.*s, Codepage: %u, Device: %.*s, DType: %u\n",
 		       i, static_cast<int>(sizeof(cpeh.device_name)),
-		       cpeh.device_name, cpeh.codepage);
-		if (cpeh.device_type != 1)
-			/* non-screen */
-			continue;
+		       cpeh.device_name, cpeh.codepage,
+		       static_cast<int>(std::size(cpeh.device_name)),
+		       cpeh.device_name, cpeh.device_type);
 
 		struct cpi_cpinfo_header cpih;
 		memcpy(&cpih, vdata + cpeh.cpih_offset, sizeof(cpih));
 		cpih.version   = le16_to_cpu(cpih.version);
 		cpih.num_fonts = le16_to_cpu(cpih.num_fonts);
 		cpih.size      = le16_to_cpu(cpih.size);
+		printf("CPIH: version=%u fonts=%u size=%u\n", cpih.version,
+		       cpih.num_fonts, cpih.size);
 		if (cpih.version != 1)
 			continue;
 
@@ -450,8 +482,11 @@ static int vf_extract_cpi2(const char *vdata, const char *directory)
 		HX_strlncat(dev, cpeh.device_name, std::size(dev), std::size(cpeh.device_name));
 		HX_strrtrim(dev);
 		snprintf(cpg, std::size(cpg), "%u", cpeh.codepage);
-		vf_extract_cpi3(vdata + cpeh.cpih_offset + sizeof(cpih),
-			cpih.num_fonts, directory, dev, cpg);
+		if (cpeh.device_type == DEVTYPE_SCREEN)
+			vf_extract_sfh(vdata + cpeh.cpih_offset + sizeof(cpih),
+				cpih.num_fonts, directory, dev, cpg);
+		else if (cpeh.device_type == DEVTYPE_PRINTER)
+			vf_extract_pfh(vdata + cpeh.cpih_offset + sizeof(cpih));
 	}
 	return true;
 }
