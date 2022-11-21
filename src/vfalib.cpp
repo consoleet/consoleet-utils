@@ -1209,6 +1209,8 @@ std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
 		bmp = {cur_edge.start_vtx.x - scale_factor_x, cur_edge.end_vtx.y};
 	else if (cur_dir == 270)
 		bmp = cur_edge.end_vtx;
+	else
+		bmp = {};
 	bmp.x /= scale_factor_x;
 	bmp.y /= scale_factor_y;
 	bmp.y = m_glyph.m_size.h - bmp.y - m_descent - 1;
