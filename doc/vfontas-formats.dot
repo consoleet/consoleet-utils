@@ -1,6 +1,7 @@
 digraph {
 	bdf -> vfontas;
 	clt -> vfontas;
+	cpi -> vfontas;
 	fntraw -> vfontas;
 	gnuhex -> vfontas;
 	psf1 -> vfontas;

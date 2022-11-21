@@ -384,6 +384,11 @@ static bool vf_upscale(font &f, char **args)
 	return true;
 }
 
+static uint32_t xlate_segoff(uint32_t x)
+{
+	return (x >> 12) + (x & 0xFFFF);
+}
+
 static void vf_extract_sfh(const char *sfhblk, unsigned int num_fonts,
     const std::string &tpl_dir, const char *dev, const char *cpg)
 {
@@ -463,11 +468,11 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 		cpeh.cpeh_size        = le16_to_cpu(cpeh.cpeh_size);
 		if (cpeh.cpeh_size != sizeof(cpeh))
 			return -EINVAL;
-		cpeh.next_cpeh_offset = le32_to_cpu(cpeh.next_cpeh_offset);
+		cpeh.next_cpeh_offset = xlate_segoff(le32_to_cpu(cpeh.next_cpeh_offset));
 		cpeh.device_type      = le16_to_cpu(cpeh.device_type);
 		cpeh.codepage         = le16_to_cpu(cpeh.codepage);
-		cpeh.cpih_offset      = le32_to_cpu(cpeh.cpih_offset);
-		cpeblk                = vdata + cpeh.next_cpeh_offset;
+		cpeh.cpih_offset      = xlate_segoff(le32_to_cpu(cpeh.cpih_offset));
+		cpeblk = vdata + cpeh.next_cpeh_offset;
 
 		printf("CPEH #%u: Name: %.*s, Codepage: %u, Device: %.*s, DType: %u\n",
 		       i, static_cast<int>(sizeof(cpeh.device_name)),
