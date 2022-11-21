@@ -433,9 +433,12 @@ static void vf_extract_pfh(const char *pfhblk)
 	       pfh.printer_type, pfh.escape_length);
 }
 
-static int vf_extract_cpi2(const char *vdata, const char *directory)
+static int vf_extract_cpi2(const char *vdata, size_t vsize,
+    const char *directory)
 {
 	struct cpi_fontfile_header ffh;
+	struct cpi_fontinfo_header fih;
+
 	memcpy(&ffh, vdata, sizeof(ffh));
 	ffh.pnum = le16_to_cpu(ffh.pnum);
 	ffh.fih_offset = le32_to_cpu(ffh.fih_offset);
@@ -443,31 +446,39 @@ static int vf_extract_cpi2(const char *vdata, const char *directory)
 	if (ffh.id0 != 0xFF || strncmp(ffh.id, "FONT    ", sizeof(ffh.id)) != 0 ||
 	    ffh.pnum != 1 || ffh.ptyp != 1)
 		return -EINVAL;
+	if (ffh.fih_offset + sizeof(fih) >= vsize)
+		return -EINVAL;
 
-	struct cpi_fontinfo_header fih;
 	memcpy(&fih, vdata + ffh.fih_offset, sizeof(fih));
 	fih.num_codepages = le16_to_cpu(fih.num_codepages);
 
 	const char *cpeblk = vdata + ffh.fih_offset + sizeof(fih);
 	for (unsigned int i = 0; i < fih.num_codepages; ++i) {
 		struct cpi_cpentry_header cpeh;
+		struct cpi_cpinfo_header cpih;
+
+		if (cpeblk - vdata + sizeof(cpeh) >= vsize)
+			return -EINVAL;
 		memcpy(&cpeh, cpeblk, sizeof(cpeh));
 		cpeh.cpeh_size        = le16_to_cpu(cpeh.cpeh_size);
+		if (cpeh.cpeh_size != sizeof(cpeh))
+			return -EINVAL;
 		cpeh.next_cpeh_offset = le32_to_cpu(cpeh.next_cpeh_offset);
 		cpeh.device_type      = le16_to_cpu(cpeh.device_type);
 		cpeh.codepage         = le16_to_cpu(cpeh.codepage);
 		cpeh.cpih_offset      = le32_to_cpu(cpeh.cpih_offset);
 		cpeblk                = vdata + cpeh.next_cpeh_offset;
 
-		if (cpeh.cpeh_size != sizeof(cpeh))
-			return -EINVAL;
 		printf("CPEH #%u: Name: %.*s, Codepage: %u, Device: %.*s, DType: %u\n",
 		       i, static_cast<int>(sizeof(cpeh.device_name)),
 		       cpeh.device_name, cpeh.codepage,
 		       static_cast<int>(std::size(cpeh.device_name)),
 		       cpeh.device_name, cpeh.device_type);
 
-		struct cpi_cpinfo_header cpih;
+		if (cpeh.next_cpeh_offset + sizeof(cpeh) >= vsize)
+			return -EINVAL;
+		if (cpeh.cpih_offset + sizeof(cpih) >= vsize)
+			return -EINVAL;
 		memcpy(&cpih, vdata + cpeh.cpih_offset, sizeof(cpih));
 		cpih.version   = le16_to_cpu(cpih.version);
 		cpih.num_fonts = le16_to_cpu(cpih.num_fonts);
@@ -511,7 +522,8 @@ static bool vf_xcpi(font &f, char **args)
 		return false;
 	}
 	auto mapclean = make_scope_success([&]() { munmap(mapping, sb.st_size); });
-	auto ret = vf_extract_cpi2(static_cast<const char *>(mapping), args[1]);
+	auto ret = vf_extract_cpi2(static_cast<const char *>(mapping),
+	           sb.st_size, args[1]);
 	if (ret == -EINVAL) {
 		fprintf(stderr, "xcpi: file \"%s\" not recognized\n", args[0]);
 		return false;
