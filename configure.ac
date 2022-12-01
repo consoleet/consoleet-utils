@@ -15,6 +15,6 @@ AC_SUBST([regular_CPPFLAGS])
 AC_SUBST([regular_CFLAGS])
 AC_SUBST([regular_CXXFLAGS])
 
-PKG_CHECK_MODULES([libHX], [libHX >= 4.2])
+PKG_CHECK_MODULES([libHX], [libHX >= 2.0])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
