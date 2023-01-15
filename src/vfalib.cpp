@@ -168,6 +168,10 @@ int unicode_map::load(const char *file)
 			if (*ptr == '\0' || *ptr == '\n' || *ptr == '#')
 				break;
 			if (strcmp(ptr, "idem") == 0) {
+				/*
+				 * Nothing needed; missing entries in the i2u
+				 * map imply idempotency.
+				 */
 				break;
 			} else if (ptr[0] != 'U') {
 				fprintf(stderr, "Warning: Unexpected char '%c' in unicode map line %zu.\n", ptr[0], lnum);
