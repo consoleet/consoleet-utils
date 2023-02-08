@@ -208,9 +208,9 @@ static bool vf_loadfnt(font &f, char **args)
 	return false;
 }
 
-static bool vf_loadfnth(font &f, char **args)
+static bool vf_loadraw(font &f, char **args)
 {
-	auto ret = f.load_fnt(args[0], atoi(args[1]));
+	auto ret = f.load_fnt(args[0], atoi(args[1]), atoi(args[2]));
 	if (ret >= 0)
 		return true;
 	fprintf(stderr, "Error loading %s: %s\n", args[0], strerror(-ret));
@@ -565,10 +565,10 @@ static const struct vf_command {
 	{"loadbdf", 1, vf_loadbdf},
 	{"loadclt", 1, vf_loadclt},
 	{"loadfnt", 1, vf_loadfnt},
-	{"loadfnth", 2, vf_loadfnth},
 	{"loadhex", 1, vf_loadhex},
 	{"loadmap", 1, vf_loadmap},
 	{"loadpsf", 1, vf_loadpsf},
+	{"loadraw", 3, vf_loadraw},
 	{"move", 2, vf_move},
 	{"savebdf", 1, vf_savebdf},
 	{"saveclt", 1, vf_saveclt},

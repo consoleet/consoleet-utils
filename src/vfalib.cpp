@@ -520,12 +520,13 @@ int font::load_clt_glyph(FILE *fp, glyph &ng)
 	return 0;
 }
 
-int font::load_fnt(const char *file, unsigned int height)
+int font::load_fnt(const char *file, unsigned int width, unsigned int height)
 {
 	std::unique_ptr<FILE, deleter> fp(vfopen(file, "rb"));
 	if (fp == nullptr)
 		return -errno;
-	unsigned int width = 8;
+	if (width == static_cast<unsigned int>(-1))
+		width = 8;
 	if (height == static_cast<unsigned int>(-1)) {
 		height = 16;
 		struct stat sb;

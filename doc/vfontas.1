@@ -38,6 +38,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-loadpsf\fP \fIter-v32b.psfu\fP
 .PP
+\fB\-loadraw\fP \fImu.fnt\fP \fIwidth\fP \fIheight\fP
+.PP
 \fB\-move\fP \fIshiftx\fP \fIshifty\fP
 .PP
 \fB\-savebdf\fP \fIout.bdf\fP
@@ -388,9 +390,6 @@ format to facilitate visual editing with a text console editor.
 Reads a headerless bitmap font file, as typically used for CGA/EGA/VGA/MDA
 hardware, from the specified file into memory. 8x8x256 (width/height/glyphs),
 8x12x256, 8x14x256, 8x16x256 and 8x16x512 are supported.
-.SS loadfnth
-Reads a headerless bitmap font file, using the specified height N and width 8.
-The number of characters is then autoderived from the filesize.
 .SS loadhex
 Reads a Unifont .hex encoded file.
 .SS loadmap
@@ -403,6 +402,9 @@ cumulate mappings from multiple files.
 Reads a PC Screen Font PSF 2 version 0. If the psf file comes with a mapping
 table, the current in-memory table will be discarded and replaced with the one
 from the PSF.
+.SS loadraw
+Reads a headerless bitmap font file, using the specified height and width.
+The number of characters is then autoderived from the filesize.
 .SS move
 Shift all glyphs by the given x/y offsets within their existing glyph box
 (possibly truncating them).
