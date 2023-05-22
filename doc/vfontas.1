@@ -38,6 +38,8 @@ vfontas \(em a bitmap font file transformation utility
 .PP
 \fB\-loadpsf\fP \fIter-v32b.psfu\fP
 .PP
+\fB\-loadpsf <(gzip -cd\fP \fIabc.psfu.gz\fP\fB)\fP
+.PP
 \fB\-loadraw\fP \fImu.fnt\fP \fIwidth\fP \fIheight\fP
 .PP
 \fB\-move\fP \fIshiftx\fP \fIshifty\fP
@@ -401,7 +403,8 @@ cumulate mappings from multiple files.
 .SS loadpsf
 Reads a PC Screen Font PSF 2 version 0. If the psf file comes with a mapping
 table, the current in-memory table will be discarded and replaced with the one
-from the PSF.
+from the PSF. The file is read linearly, so a unseekable fd like a pipe may be
+specified, facilitating reading from stream-compressed file formats.
 .SS loadraw
 Reads a headerless bitmap font file, using the specified height and width.
 The number of characters is then autoderived from the filesize.
