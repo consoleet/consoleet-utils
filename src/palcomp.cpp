@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SPDX-FileCopyrightText: 2022 Jan Engelhardt
+// SPDX-FileCopyrightText: 2022,2023 Jan Engelhardt
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -42,11 +42,10 @@ static std::string to_hex(const srgb888 &e)
 
 static srgb888 to_srgb888(const srgb &e)
 {
-	return {
-		static_cast<uint8_t>(round(e.r * 255.0)),
-		static_cast<uint8_t>(round(e.g * 255.0)),
-		static_cast<uint8_t>(round(e.b * 255.0)),
-	};
+	auto r = std::max(std::min(round(e.r * 255.0), 255.0), 0.0);
+	auto g = std::max(std::min(round(e.g * 255.0), 255.0), 0.0);
+	auto b = std::max(std::min(round(e.b * 255.0), 255.0), 0.0);
+	return {static_cast<uint8_t>(r), static_cast<uint8_t>(g), static_cast<uint8_t>(b)};
 }
 
 static double gamma_expand(double c)
