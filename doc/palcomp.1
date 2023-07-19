@@ -3,11 +3,14 @@
 palcomp \(em palette composer
 .SH Syntax
 \fBpalcomp\fP [commands...]
-.SS Commands
-\fBdebug\fP, \fBemit\fP, \fBlch\fP, \fBrgb\fP, \fBsatmul=\fP\fIr\fP, \fBvga\fP,
-\fBvgs\fP, \fBxterm\fP
 .SH Description
-palcomp modifies a color palette in certain ways.
+palcomp can be used to generate palettes for terminals. The most important
+realization is that programs running within a terminal and which use
+console_codes(4) to set colors rely on the \fBcontrast\fP of the colors
+produced by a color pairing to be proportional to the contrast those two codes
+have when using the VGA color palette. For this reason, a mainstay of this
+program is to operate using a colorspace with perceptual uniformity, i.e.
+CIELAB/LCh.
 .SH Commands
 .SS bg
 Emit a -bg parameter upon xterm, and use color 0.
@@ -40,6 +43,16 @@ Multiplies the C channel of the LCH palette's colors with factor \fIr\fP. In
 effect, with r<1, this causes a desaturation of colors; r=0 leads to gray.
 .SS satset=r
 Set the LCh palette's C values to a fixed value.
+.SS hsltint=h,s,l
+Multiply {h,s,l} (0 <= h < 360; 0 <= s < 1; 0 <= l <= 1) by the Lch palette's L
+channel (/100.0). The result is stored in the RGB palette.
+.PP
+hsltint produces a somewhat more contrasty result than manipulating hue and
+saturation in LCh. Compare:
+.IP \(bu 4
+palcomp vgs lch satset=100 hueset=120 rgb emit
+.IP \(bu 4
+palcomp vgs lch hsltint=90,1,0.5 emit
 .SS vga
 Loads the standard VGA palette into the RGB slot.
 .SS vgs

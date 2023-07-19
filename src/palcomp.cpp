@@ -16,6 +16,7 @@ struct lrgb { double r, g, b; };
 struct xyz { double x, y, z; };
 struct lab { double l, a, b; };
 struct lch { double l, c, h; };
+struct hsl { double h, s, l; };
 }
 
 static constexpr srgb888 vga_palette[] = {
@@ -32,6 +33,13 @@ static constexpr srgb888 vgasat_palette[] = {
 };
 
 static unsigned int debug_cvt, xterm_fg, xterm_bg;
+
+static hsl parse_hsl(const char *str)
+{
+	hsl c;
+	sscanf(str, "%lf,%lf,%lf", &c.h, &c.s, &c.l);
+	return c;
+}
 
 static std::string to_hex(const srgb888 &e)
 {
@@ -68,6 +76,31 @@ static double gamma_compress(double c)
 {
 	return c <= (0.04045 / 12.92) ? c * 12.92 :
 	       pow(c, 5 / 12.0) * 1.055 - 0.055;
+}
+
+static double huetorgb(double p, double q, double t)
+{
+	if (t < 0)
+		t += 360;
+	if (t > 360)
+		t -= 360;
+	if (t < 60)
+		return p + (q - p) * t / 60;
+	if (t < 180)
+		return q;
+	if (t < 240)
+		return p + (q - p) * (4 - t / 60);
+	return p;
+}
+
+static srgb to_srgb(const hsl &in)
+{
+	if (in.s <= 0.0)
+		return {in.l, in.l, in.l};
+	auto q = in.l < 0.5 ? in.l * (1 + in.s) : in.l + in.s - in.l * in.s;
+	auto p = 2 * in.l - q;
+	return {huetorgb(p, q, in.h + 120),
+		huetorgb(p, q, in.h), huetorgb(p, q, in.h - 120)};
 }
 
 static srgb to_srgb(const srgb888 &e)
@@ -222,6 +255,17 @@ static void xterm(const std::vector<srgb888> &pal)
 	printf("\n");
 }
 
+static std::vector<srgb888> hsltint(const hsl &base, const std::vector<lch> &light)
+{
+	std::vector<srgb888> out;
+	for (const auto &e : light) {
+		auto color = base;
+		color.l *= e.l / 100.0;
+		out.push_back(to_srgb888(to_srgb(color)));
+	}
+	return out;
+}
+
 int main(int argc, const char **argv)
 {
 	std::vector<srgb888> ra;
@@ -266,6 +310,8 @@ int main(int argc, const char **argv)
 			arg1 = fmod(arg1, 360);
 			for (auto &e : la)
 				e.h = arg1;
+		} else if (strncmp(*argv, "hsltint=", 8) == 0) {
+			ra = hsltint(parse_hsl(&argv[0][8]), la);
 		} else if (strcmp(*argv, "emit") == 0) {
 			emit(ra);
 		} else if (strcmp(*argv, "xterm") == 0) {
