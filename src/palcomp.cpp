@@ -213,9 +213,8 @@ static void emit(const std::vector<srgb888> &pal)
 
 static void xterm(const std::vector<srgb888> &pal)
 {
-	printf("xterm -fa monospace:size=24");
 	for (unsigned int idx = 0; idx < 16; ++idx)
-		printf(" -xrm '*VT100*color%u: %s'", idx, to_hex(pal[idx]).c_str());
+		printf(" -xrm *VT100*color%u:%s", idx, to_hex(pal[idx]).c_str());
 	printf("\n");
 }
 
