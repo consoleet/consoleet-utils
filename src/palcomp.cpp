@@ -31,7 +31,7 @@ static constexpr srgb888 vgasat_palette[] = {
 	{0x00,0x00,0xff}, {0xff,0x00,0xff}, {0x00,0xff,0xff}, {0xff,0xff,0xff},
 };
 
-static unsigned int debug_cvt;
+static unsigned int debug_cvt, xterm_fg;
 
 static std::string to_hex(const srgb888 &e)
 {
@@ -215,6 +215,8 @@ static void xterm(const std::vector<srgb888> &pal)
 {
 	for (unsigned int idx = 0; idx < 16; ++idx)
 		printf(" -xrm *VT100*color%u:%s", idx, to_hex(pal[idx]).c_str());
+	if (xterm_fg)
+		printf(" -fg %s", to_hex(pal[7]).c_str());
 	printf("\n");
 }
 
@@ -266,6 +268,8 @@ int main(int argc, const char **argv)
 			emit(ra);
 		} else if (strcmp(*argv, "xterm") == 0) {
 			xterm(ra);
+		} else if (strcmp(*argv, "fg") == 0) {
+			xterm_fg = 1;
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
