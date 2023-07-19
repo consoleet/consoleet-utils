@@ -20,14 +20,22 @@ Set the LCh palette's h values to a fixed value (0 <= h < 360).
 .SS lch
 Computes the LCh-based palette from the current in-memory RGB palette, and
 stores the result in the LCH slot.
+.SS litadd=r
+Add an offset to the LCh palette's L values.
 .SS litmul=r
 Multiply the h values in the LCh palette by r.
+.SS litset=r
+Set the LCh palette's L values to a fixed value.
 .SS rgb
 Computes the RGB-based palette from the current in-memory LCh palette, and
 stores the result in the RGB slot.
+.SS satadd=r
+Add an offset to the LCh palette's C values.
 .SS satmul=r
 Multiplies the C channel of the LCH palette's colors with factor \fIr\fP. In
 effect, with r<1, this causes a desaturation of colors; r=0 leads to gray.
+.SS satset=r
+Set the LCh palette's C values to a fixed value.
 .SS vga
 Loads the standard VGA palette into the RGB slot.
 .SS vgs

@@ -237,13 +237,25 @@ int main(int argc, const char **argv)
 			la = to_lch(ra);
 		} else if (strcmp(*argv, "rgb") == 0) {
 			ra = to_srgb888(la);
+		} else if (strncmp(*argv, "litadd=", 7) == 0) {
+			for (auto &e : la)
+				e.l += arg1;
 		} else if (strncmp(*argv, "litmul=", 7) == 0) {
 			for (auto &e : la)
 				e.l *= arg1;
+		} else if (strncmp(*argv, "litset=", 7) == 0) {
+			for (auto &e : la)
+				e.l = arg1;
+		} else if (strncmp(*argv, "satadd=", 7) == 0) {
+			for (auto &e : la)
+				e.c += arg1;
 		} else if (strncmp(*argv, "satmul=", 7) == 0) {
 			std::transform(la.begin(), la.end(), la.begin(), [=](const lch &e) {
 				return lch{e.l, e.c * arg1, e.h};
 			});
+		} else if (strncmp(*argv, "satset=", 7) == 0) {
+			for (auto &e : la)
+				e.c = arg1;
 		} else if (strncmp(*argv, "hueadd=", 7) == 0) {
 			for (auto &e : la)
 				e.h = fmod(e.h + arg1, 360);
