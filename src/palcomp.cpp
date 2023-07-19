@@ -257,7 +257,6 @@ int main(int argc, const char **argv)
 			xterm(ra);
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
-			return EXIT_FAILURE;
 		}
 	}
 	return EXIT_SUCCESS;
