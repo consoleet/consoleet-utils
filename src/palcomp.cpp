@@ -250,9 +250,8 @@ int main(int argc, const char **argv)
 			for (auto &e : la)
 				e.c += arg1;
 		} else if (strncmp(*argv, "satmul=", 7) == 0) {
-			std::transform(la.begin(), la.end(), la.begin(), [=](const lch &e) {
-				return lch{e.l, e.c * arg1, e.h};
-			});
+			for (auto &e : la)
+				e.c *= arg1;
 		} else if (strncmp(*argv, "satset=", 7) == 0) {
 			for (auto &e : la)
 				e.c = arg1;
