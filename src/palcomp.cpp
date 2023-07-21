@@ -55,31 +55,18 @@ static uint8_t fromhex(const char *s)
 	return v;
 }
 
-static hsl parse_hsl(const char *str)
+static hsl to_hsl(const srgb &i)
 {
 	hsl c;
-	if (*str != '#') {
-		sscanf(str, "%lf,%lf,%lf", &c.h, &c.s, &c.l);
-		return c;
-	}
-	if (strlen(str) < 7) {
-		fprintf(stderr, "Illegal RGB(,L) value: \"%s\"\n", str);
-		return c;
-	}
-	uint8_t r8 = fromhex(&str[1]), g8 = fromhex(&str[3]), b8 = fromhex(&str[5]);
-	double r = r8 / 255.0, g = g8 / 255.0, b = b8 / 255.0;
-	double vmin = std::min({r, g, b}), vmax = std::max({r, g, b});
+	double vmin = std::min({i.r, i.g, i.b}), vmax = std::max({i.r, i.g, i.b});
 	c.l = (vmin + vmax) / 2;
-	str += 7;
-	if (*str == ',')
-		c.l = strtod(&str[1], nullptr);
 	if (vmax == vmin)
 		return c;
 	auto d = vmax - vmin;
 	c.s = c.l > 0.5 ? d / (2 - vmax - vmin) : d / (vmax + vmin);
-	if (vmax == r) c.h = (g - b) / d + (g < b ? 6 : 0);
-	if (vmax == g) c.h = (b - r) / d + 2;
-	if (vmax == b) c.h = (r - g) / d + 4;
+	if (vmax == i.r) c.h = (i.g - i.b) / d + (i.g < i.b ? 6 : 0);
+	if (vmax == i.g) c.h = (i.b - i.r) / d + 2;
+	if (vmax == i.b) c.h = (i.r - i.g) / d + 4;
 	c.h *= 60;
 	return c;
 }
@@ -159,6 +146,24 @@ static srgb to_srgb(const lrgb &e)
 static lrgb to_lrgb(const srgb &e)
 {
 	return {gamma_expand(e.r), gamma_expand(e.g), gamma_expand(e.b)};
+}
+
+static hsl parse_hsl(const char *str)
+{
+	hsl c;
+	if (*str != '#') {
+		sscanf(str, "%lf,%lf,%lf", &c.h, &c.s, &c.l);
+		return c;
+	}
+	if (strlen(str) < 7) {
+		fprintf(stderr, "Illegal RGB(,L) value: \"%s\"\n", str);
+		return c;
+	}
+	c = to_hsl(to_srgb(srgb888{fromhex(&str[1]), fromhex(&str[3]), fromhex(&str[5])}));
+	str += 7;
+	if (*str == ',')
+		c.l = strtod(&str[1], nullptr);
+	return c;
 }
 
 static xyz white_point = {0.9504492182750991, 1, 1.0889166484304715};
