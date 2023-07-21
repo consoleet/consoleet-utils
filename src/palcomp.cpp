@@ -397,6 +397,20 @@ int main(int argc, const char **argv)
 		} else if (strcmp(*argv, "b0") == 0) {
 			la[0] = {0,0,0};
 			ra[0] = {0,0,0};
+		} else if (strcmp(*argv, "inv16") == 0) {
+			decltype(ra) new_ra(ra.size());
+			for (size_t i = 0; i < ra.size(); ++i)
+				new_ra[i] = std::move(ra[~i % ra.size()]);
+			ra = std::move(new_ra);
+			/*
+			 * A computational method (only produces exact results
+			 * for the "win" palette):
+			 *
+			 * auto h = to_hsl(to_srgb(e));
+			 * h.h += 180;
+			 * h.l = 1 - 0.25 * h.s - h.l;
+			 * e = to_srgb888(to_srgb(h));
+			 */
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
