@@ -44,8 +44,11 @@ effect, with r<1, this causes a desaturation of colors; r=0 leads to gray.
 .SS satset=r
 Set the LCh palette's C values to a fixed value.
 .SS hsltint=h,s,l
-Multiply {h,s,l} (0 <= h < 360; 0 <= s < 1; 0 <= l <= 1) by the Lch palette's L
-channel (/100.0). The result is stored in the RGB palette.
+Map the LCh palette brightnesses onto a color line through the HSL cylinder
+that goes from black to the chosen color. Parameter ranges are (0 <= h < 360; 0
+<= s < 1; 0 <= l <= 1). The result of the operation is stored in the RGB
+palette. When using s<=0.5, this produces a black-to-{color} ramp; when using
+s==1, this produces a black-to-{color}-to-white ramp.
 .PP
 hsltint produces a somewhat more contrasty result than manipulating hue and
 saturation in LCh. Compare:
@@ -53,6 +56,10 @@ saturation in LCh. Compare:
 palcomp vgs lch satset=100 hueset=120 rgb emit
 .IP \(bu 4
 palcomp vgs lch hsltint=90,1,0.5 emit
+.SS hsltint=#rrggbb[,l]
+A different syntax for the hsltint operation. First, the RGB value for the tint
+color is converted to HSL. The so-computed L value can be overridden with the
+optional \fB,\fP\fIl\fP suffix. Afterwards, behaves like hsltint=h,s,l.
 .SS vga
 Loads the standard VGA palette into the RGB slot.
 .SS vgs
@@ -60,5 +67,18 @@ Loads a full-saturated VGA palette into the RGB slot.
 .SS xterm
 Emit the RGB palette as xterm command line options. Use e.g. `xterm $(palcomp
 vga lch hueset=120 rgb xterm)` to utilize.
+.SH Examples
+.PP
+Black-to-green ramp (tint via HSL color space):
+.IP \(bu 4
+palcomp vgs lch hsltint=120,1,0.5 emit
+.IP \(bu 4
+palcomp vgs lch hsltint=#00ff00 emit
+.PP
+Black-to-green-white ramp (tint via HSL color space):
+.IP \(bu 4
+palcomp vgs lch hsltint=120,1,1 emit
+.IP \(bu 4
+palcomp vgs lch hsltint=#00ff00,1 emit
 .SH See also
 \fBhxtools\fP(7)

@@ -34,10 +34,47 @@ static constexpr srgb888 vgasat_palette[] = {
 
 static unsigned int debug_cvt, xterm_fg, xterm_bg;
 
+static uint8_t fromhex(const char *s)
+{
+	auto a = tolower(s[0]), b = tolower(s[1]);
+	unsigned int v = 0;
+	if (a >= '0' && a <= '9')
+		v += (a - '0') << 4;
+	else if (a >= 'a' && a <= 'f')
+		v += (a - 'a' + 10) << 4;
+	if (b >= '0' && b <= '9')
+		v += b - '0';
+	else if (b >= 'a' && b <= 'f')
+		v += b - 'a' + 10;
+	return v;
+}
+
 static hsl parse_hsl(const char *str)
 {
 	hsl c;
-	sscanf(str, "%lf,%lf,%lf", &c.h, &c.s, &c.l);
+	if (*str != '#') {
+		sscanf(str, "%lf,%lf,%lf", &c.h, &c.s, &c.l);
+		return c;
+	}
+	if (strlen(str) < 7) {
+		fprintf(stderr, "Illegal RGB(,L) value: \"%s\"\n", str);
+		return c;
+	}
+	uint8_t r8 = fromhex(&str[1]), g8 = fromhex(&str[3]), b8 = fromhex(&str[5]);
+	double r = r8 / 255.0, g = g8 / 255.0, b = b8 / 255.0;
+	double vmin = std::min({r, g, b}), vmax = std::max({r, g, b});
+	c.l = (vmin + vmax) / 2;
+	str += 7;
+	if (*str == ',')
+		c.l = strtod(&str[1], nullptr);
+	if (vmax == vmin)
+		return c;
+	auto d = vmax - vmin;
+	c.s = c.l > 0.5 ? d / (2 - vmax - vmin) : d / (vmax + vmin);
+	if (vmax == r) c.h = (g - b) / d + (g < b ? 6 : 0);
+	if (vmax == g) c.h = (b - r) / d + 2;
+	if (vmax == b) c.h = (r - g) / d + 4;
+	c.h *= 60;
 	return c;
 }
 
