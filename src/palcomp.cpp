@@ -381,6 +381,9 @@ int main(int argc, const char **argv)
 			xterm_fg = 1;
 		} else if (strcmp(*argv, "bg") == 0) {
 			xterm_bg = 1;
+		} else if (strcmp(*argv, "b0") == 0) {
+			la[0] = {0,0,0};
+			ra[0] = {0,0,0};
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}

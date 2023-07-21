@@ -12,6 +12,10 @@ have when using the VGA color palette. For this reason, a mainstay of this
 program is to operate using a colorspace with perceptual uniformity, i.e.
 CIELAB/LCh.
 .SH Commands
+.SS b0
+Set color 0 to actual black. (This is done for both the LCh and RGB in-memory
+palettes, so that it does not matter whether "b0" is issued before or after a
+"rgb" command.)
 .SS bg
 Emit a -bg parameter upon xterm, and use color 0.
 .SS debug
@@ -78,7 +82,7 @@ vga lch hueset=120 rgb xterm)` to utilize.
 .PP
 Amber tint via LCh color space:
 .IP \(bu 4
-palcomp vgs lch lchtint=#95ef1d rgb emit
+palcomp vgs lch lchtint=#95ef1d b0 rgb emit
 .PP
 Black-to-green ramp (tint via HSL color space):
 .IP \(bu 4
@@ -102,5 +106,9 @@ actually reach black:
 palcomp vgs lch lchtint=#0000ff litadd=-42 litmul=1.74 stat rgb emit
 .IP \(bu 4
 palcomp vgs lch lchtint=#0080ff litadd=-25 litmul=1.49 stat rgb emit
+.PP
+Stretching the brightness this way has the side-effect that all colors get a
+bit darker, which may be undesirable. Instead of combining a tint with litadd
+and litmul, I can recommend to force color 0 to black using the b0 command.
 .SH See also
 \fBhxtools\fP(7)
