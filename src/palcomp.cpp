@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2022,2023 Jan Engelhardt
 #include <algorithm>
+#include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
-#include <cstring>
 #include <cstdlib>
-#include <cmath>
+#include <cstring>
+#include <string>
+#include <utility>
 #include <vector>
-#include <iostream>
 
 namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
