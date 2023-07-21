@@ -10,13 +10,13 @@
 #include <iostream>
 
 namespace {
-struct srgb888 { uint8_t r, g, b; };
-struct srgb { double r, g, b; };
-struct lrgb { double r, g, b; };
-struct xyz { double x, y, z; };
-struct lab { double l, a, b; };
-struct lch { double l, c, h; };
-struct hsl { double h, s, l; };
+struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
+struct srgb { double r = 0, g = 0, b = 0; };
+struct lrgb { double r = 0, g = 0, b = 0; };
+struct xyz { double x = 0, y = 0, z = 0; };
+struct lab { double l = 0, a = 0, b = 0; };
+struct lch { double l = 0, c = 0, h = 0; };
+struct hsl { double h = 0, s = 0, l = 0; };
 }
 
 static constexpr srgb888 vga_palette[] = {
