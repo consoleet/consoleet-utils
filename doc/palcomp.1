@@ -60,6 +60,11 @@ palcomp vgs lch hsltint=90,1,0.5 emit
 A different syntax for the hsltint operation. First, the RGB value for the tint
 color is converted to HSL. The so-computed L value can be overridden with the
 optional \fB,\fP\fIl\fP suffix. Afterwards, behaves like hsltint=h,s,l.
+.SS lchtint=h,s,l
+.SS lchtint=#rrggbb[,l]
+Replace the LCh palette hue and saturation by the base color given in HSL or
+RGB. The LCh L channel is retained as-is. The result of the operation is stored
+in the LCh palette.
 .SS vga
 Loads the standard VGA palette into the RGB slot.
 .SS vgs
@@ -68,6 +73,10 @@ Loads a full-saturated VGA palette into the RGB slot.
 Emit the RGB palette as xterm command line options. Use e.g. `xterm $(palcomp
 vga lch hueset=120 rgb xterm)` to utilize.
 .SH Examples
+.PP
+Amber tint via LCh color space:
+.IP \(bu 4
+palcomp vgs lch lchtint=#95ef1d rgb emit
 .PP
 Black-to-green ramp (tint via HSL color space):
 .IP \(bu 4

@@ -312,6 +312,14 @@ static std::vector<srgb888> hsltint(const hsl &base, const std::vector<lch> &lig
 	return out;
 }
 
+static std::vector<lch> lchtint(const lch &base, const std::vector<lch> &light)
+{
+	std::vector<lch> out;
+	for (const auto &e : light)
+		out.push_back(lch{e.l, base.c, base.h});
+	return out;
+}
+
 int main(int argc, const char **argv)
 {
 	std::vector<srgb888> ra;
@@ -358,6 +366,9 @@ int main(int argc, const char **argv)
 				e.h = arg1;
 		} else if (strncmp(*argv, "hsltint=", 8) == 0) {
 			ra = hsltint(parse_hsl(&argv[0][8]), la);
+		} else if (strncmp(*argv, "lchtint=", 8) == 0) {
+			auto base = parse_hsl(&argv[0][8]);
+			la = lchtint(to_lch(to_srgb(base)), la);
 		} else if (strcmp(*argv, "emit") == 0) {
 			emit(ra);
 		} else if (strcmp(*argv, "xterm") == 0) {
