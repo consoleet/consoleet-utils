@@ -17,7 +17,9 @@ Emit a -bg parameter upon xterm, and use color 0.
 .SS debug
 Turn on individual colorspace conversion reporting.
 .SS emit
-Emit the the RGB palette as a line for an XDG theme file.
+Emit the RGB palette as a line for an XDG theme file.
+.SS stat
+Emit the LCh palette (no particular formatting).
 .SS fg
 Emit a -fg parameter upon xterm, and use color 7.
 .SS hueadd=h
@@ -89,5 +91,16 @@ Black-to-green-white ramp (tint via HSL color space):
 palcomp vgs lch hsltint=120,1,1 emit
 .IP \(bu 4
 palcomp vgs lch hsltint=#00ff00,1 emit
+.SH Caveats
+Lightness in LCh space behaves a bit counterintuitive. When (saturation) c>0,
+then L=0 does not mean black; black is attained in the negative range (and it
+depends on the saturation/hue). As a consequence, one needs to manipulate
+(shift and stretch) the L channel values more, e.g. after a tint. Consider the
+following chain of commands to create some blue tints, and have that tint
+actually reach black:
+.IP \(bu 4
+palcomp vgs lch lchtint=#0000ff litadd=-42 litmul=1.74 stat rgb emit
+.IP \(bu 4
+palcomp vgs lch lchtint=#0080ff litadd=-25 litmul=1.49 stat rgb emit
 .SH See also
 \fBhxtools\fP(7)

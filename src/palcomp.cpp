@@ -339,6 +339,10 @@ int main(int argc, const char **argv)
 			la = to_lch(ra);
 		} else if (strcmp(*argv, "rgb") == 0) {
 			ra = to_srgb888(la);
+		} else if (strcmp(*argv, "stat") == 0) {
+			printf("#L,c,h\n");
+			for (auto &e : la)
+				printf("{%f,%f,%f}\n", e.l, e.c, e.h);
 		} else if (strncmp(*argv, "litadd=", 7) == 0) {
 			for (auto &e : la)
 				e.l += arg1;
