@@ -221,29 +221,38 @@ static lch to_lch(const lab &e)
 	return {e.l, c, h};
 }
 
+static lch to_lch(const srgb &a)
+{
+	auto b = to_lrgb(a);
+	if (debug_cvt)
+		fprintf(stderr, "\tlrgb = {%f, %f, %f}\n", b.r, b.g, b.b);
+	auto c = to_xyz(b);
+	if (debug_cvt)
+		fprintf(stderr, "\txyz = {%f, %f, %f}\n", c.x, c.y, c.z);
+	auto d = to_lab(c);
+	if (debug_cvt)
+		fprintf(stderr, "\tlab = {%f, %f, %f}\n", d.l, d.a, d.b);
+	auto e = to_lch(d);
+	if (debug_cvt)
+		fprintf(stderr, "\tlch = {%f, %f, %f}\n", e.l, e.c, e.h);
+	return e;
+}
+
+static lch to_lch(const srgb888 &color)
+{
+	if (debug_cvt)
+		fprintf(stderr, "to_lch(%s):\n", to_hex(color).c_str());
+	auto a = to_srgb(color);
+	if (debug_cvt)
+		fprintf(stderr, "\tsrgb = {%f, %f, %f}\n", a.r, a.g, a.b);
+	return to_lch(a);
+}
+
 static std::vector<lch> to_lch(const std::vector<srgb888> &in)
 {
 	std::vector<lch> out;
-	for (const auto &color : in) {
-		if (debug_cvt)
-			fprintf(stderr, "to_lch(%s):\n", to_hex(color).c_str());
-		auto a = to_srgb(color);
-		if (debug_cvt)
-			fprintf(stderr, "\tsrgb = {%f, %f, %f}\n", a.r, a.g, a.b);
-		auto b = to_lrgb(a);
-		if (debug_cvt)
-			fprintf(stderr, "\tlrgb = {%f, %f, %f}\n", b.r, b.g, b.b);
-		auto c = to_xyz(b);
-		if (debug_cvt)
-			fprintf(stderr, "\txyz = {%f, %f, %f}\n", c.x, c.y, c.z);
-		auto d = to_lab(c);
-		if (debug_cvt)
-			fprintf(stderr, "\tlab = {%f, %f, %f}\n", d.l, d.a, d.b);
-		auto e = to_lch(d);
-		if (debug_cvt)
-			fprintf(stderr, "\tlch = {%f, %f, %f}\n", e.l, e.c, e.h);
-		out.push_back(e);
-	}
+	for (const auto &color : in)
+		out.push_back(to_lch(color));
 	return out;
 }
 
