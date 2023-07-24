@@ -22,6 +22,13 @@ Emit a -bg parameter upon xterm, and use color 0.
 Print the 16-color table.
 .SS ct256
 Print 256-color cubes and tables.
+.SS cxl
+Print a contrast analysis of the palette based on brightness differences.
+.SS cxr
+Print a contrast analysis of the palette based on radiosity differences. This
+is useful because even if two colors have the same/a similar brightness in the
+LCh colorspace, it is possible for (sufficiently capable) humans to distinguish
+such two colors.
 .SS debug
 Turn on individual colorspace conversion reporting.
 .SS emit

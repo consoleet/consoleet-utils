@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2022,2023 Jan Engelhardt
 #include <algorithm>
+#include <functional>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -38,6 +39,13 @@ static constexpr srgb888 win_palette[] = {
 	{0x00,0x00,0x80}, {0x80,0x00,0x80}, {0x00,0x80,0x80}, {0xc0,0xc0,0xc0},
 	{0x80,0x80,0x80}, {0xff,0x00,0x00}, {0x00,0xff,0x00}, {0xff,0xff,0x00},
 	{0x00,0x00,0xff}, {0xff,0x00,0xff}, {0x00,0xff,0xff}, {0xff,0xff,0xff},
+};
+static constexpr srgb888 xpal_palette[] = {
+	/* experimental maximum-contrast palette (not good for rendition) */
+	{0x00,0x00,0x00}, {0x34,0x34,0x34}, {0x4e,0x4e,0x4e}, {0x67,0x67,0x67},
+	{0x83,0x83,0x83}, {0xa0,0xa0,0xa0}, {0xbf,0xbf,0xbf}, {0xdc,0xdc,0xdc},
+	{0x1d,0x1d,0x1d}, {0xff,0xff,0xff}, {0xff,0xff,0xff}, {0xff,0xff,0xff},
+	{0xff,0xff,0xff}, {0xff,0xff,0xff}, {0xff,0xff,0xff}, {0xff,0xff,0xff},
 };
 
 static unsigned int debug_cvt, xterm_fg, xterm_bg;
@@ -354,15 +362,10 @@ static void colortable_256()
 	}
 }
 
-static void colortable_16(void (*pr)(int, int) = nullptr)
+static void colortable_16(std::function<void(int, int, int)> pr = nullptr)
 {
 	if (pr == nullptr)
-		pr = [](int bg, int fg) {
-			if (bg == -1)
-				printf("0%x", fg);
-			else
-				printf("%x%x", bg, fg);
-		};
+		pr = [](int bg, int fg, int sp) { printf("%x%x", bg >= 0 ? bg : 0, fg); };
 
 	for (int bg = -1; bg < 8; ++bg) {
 		for (auto bit : {0, 1, 7}) {
@@ -378,7 +381,8 @@ static void colortable_16(void (*pr)(int, int) = nullptr)
 					printf("\e[0;%d;%dm", bit, fg);
 				else
 					printf("\e[0;%d;%d;4%dm", bit, fg, bg);
-				pr(lo_bg, lo_fg);
+				auto sp = bg == -1 || fg == 39 || bit == 7;
+				pr(lo_bg, lo_fg, sp);
 			}
 		}
 		printf("\e[0m\n");
@@ -386,6 +390,72 @@ static void colortable_16(void (*pr)(int, int) = nullptr)
 	printf("\e[0mdefault \e[37mgray \e[0;1mbold\e[0m \e[2mdim\e[0m "
 	       "\e[3mitalic\e[0m \e[4munderscore\e[0m \e[5mblink\e[0m "
 	       "\e[6mrapidblink\e[0m \e[7mreverse\e[0m\n");
+}
+
+static void cxl(const std::vector<srgb888> &srgb_pal,
+    const std::vector<lch> &lch_pal)
+{
+	printf("\e[1m════ Difference of the L components ════\e[0m\n");
+	double cx = 0, lhcx = 0;
+	unsigned int z = 0, lhz = 0, unusable = 0;
+	colortable_16([&](int bg, int fg, int special) {
+		if (special || fg == bg) {
+			printf("   ");
+			return;
+		}
+		auto delta = fabs(lch_pal[fg].l - lch_pal[bg].l);
+		printf("%3.0f", delta);
+		cx += delta;
+		++z;
+		if (delta < 7)
+			++unusable;
+		if (fg < 8) {
+			lhcx += delta;
+			++lhz;
+		}
+	});
+	printf("Contrast\tΣ %.0f\tø %.1f", cx, cx / z);
+	cx -= 100 * unusable;
+	printf("\t""with penalty: Σ %.0f  ø %.1f\n", cx, cx / z);
+	printf("Lower 8 \tΣ %.0f\tø %.1f", lhcx, lhcx / lhz);
+	lhcx -= 100 * unusable;
+	printf("\t""with penalty: Σ %.0f  ø %.1f\n", lhcx, lhcx / z);
+	printf("%u penalized pairs\n", unusable);
+}
+
+static void cxr(const std::vector<srgb888> &srgb_pal,
+    const std::vector<lch> &lch_pal)
+{
+	printf("\e[1m════ L component of the radiosity difference ════\e[0m\n");
+	double cx = 0, lhcx = 0;
+	unsigned int z = 0, lhz = 0, unusable = 0;
+	colortable_16([&](int bg, int fg, int special) {
+		if (special || fg == bg) {
+			printf("   ");
+			return;
+		}
+		srgb888 xr;
+		xr.r = abs(srgb_pal[fg].r - srgb_pal[bg].r);
+		xr.g = abs(srgb_pal[fg].g - srgb_pal[bg].g);
+		xr.b = abs(srgb_pal[fg].b - srgb_pal[bg].b);
+		auto delta = to_lch(xr).l;
+		printf("%3.0f", delta);
+		cx += delta;
+		++z;
+		if (delta <= 20)
+			++unusable;
+		if (fg < 8) {
+			lhcx += delta;
+			++lhz;
+		}
+	});
+	printf("Contrast\tΣ %.0f\tø %.1f", cx, cx / z);
+	cx -= 100 * unusable;
+	printf("\t""with penalty: Σ %.0f  ø %.1f\n", cx, cx / z);
+	printf("Lower 8 \tΣ %.0f\tø %.1f", lhcx, lhcx / lhz);
+	lhcx -= 100 * unusable;
+	printf("\t""with penalty: Σ %.0f  ø %.1f\n", lhcx, lhcx / z);
+	printf("%u penalized pairs\n", unusable);
 }
 
 int main(int argc, const char **argv)
@@ -406,6 +476,9 @@ int main(int argc, const char **argv)
 			mod_ra = true;
 		} else if (strcmp(*argv, "win") == 0) {
 			ra = {std::begin(win_palette), std::end(win_palette)};
+			mod_ra = true;
+		} else if (strcmp(*argv, "xpal") == 0) {
+			ra = {std::begin(xpal_palette), std::end(xpal_palette)};
 			mod_ra = true;
 		} else if (strcmp(*argv, "debug") == 0) {
 			debug_cvt = 1;
@@ -484,6 +557,10 @@ int main(int argc, const char **argv)
 			colortable_16();
 		} else if (strcmp(*argv, "ct") == 0) {
 			colortable_16();
+		} else if (strcmp(*argv, "cxl") == 0) {
+			cxl(ra, la);
+		} else if (strcmp(*argv, "cxr") == 0) {
+			cxr(ra, la);
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
