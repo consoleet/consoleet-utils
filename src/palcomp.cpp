@@ -391,19 +391,19 @@ int main(int argc, const char **argv)
 	while (*++argv != nullptr) {
 		auto ptr = strchr(*argv, '=');
 		auto arg1 = ptr != nullptr ? strtod(ptr + 1, nullptr) : 0;
+		bool mod_ra = false, mod_la = false;
 
 		if (strcmp(*argv, "vga") == 0) {
 			ra = {std::begin(vga_palette), std::end(vga_palette)};
+			mod_ra = true;
 		} else if (strcmp(*argv, "vgs") == 0) {
 			ra = {std::begin(vgasat_palette), std::end(vgasat_palette)};
+			mod_ra = true;
 		} else if (strcmp(*argv, "win") == 0) {
 			ra = {std::begin(win_palette), std::end(win_palette)};
+			mod_ra = true;
 		} else if (strcmp(*argv, "debug") == 0) {
 			debug_cvt = 1;
-		} else if (strcmp(*argv, "lch") == 0) {
-			la = to_lch(ra);
-		} else if (strcmp(*argv, "rgb") == 0) {
-			ra = to_srgb888(la);
 		} else if (strcmp(*argv, "stat") == 0) {
 			printf("#L,c,h\n");
 			for (auto &e : la)
@@ -411,33 +411,43 @@ int main(int argc, const char **argv)
 		} else if (strncmp(*argv, "litadd=", 7) == 0) {
 			for (auto &e : la)
 				e.l += arg1;
+			mod_la = true;
 		} else if (strncmp(*argv, "litmul=", 7) == 0) {
 			for (auto &e : la)
 				e.l *= arg1;
+			mod_la = true;
 		} else if (strncmp(*argv, "litset=", 7) == 0) {
 			for (auto &e : la)
 				e.l = arg1;
+			mod_la = true;
 		} else if (strncmp(*argv, "satadd=", 7) == 0) {
 			for (auto &e : la)
 				e.c += arg1;
+			mod_la = true;
 		} else if (strncmp(*argv, "satmul=", 7) == 0) {
 			for (auto &e : la)
 				e.c *= arg1;
+			mod_la = true;
 		} else if (strncmp(*argv, "satset=", 7) == 0) {
 			for (auto &e : la)
 				e.c = arg1;
+			mod_la = true;
 		} else if (strncmp(*argv, "hueadd=", 7) == 0) {
 			for (auto &e : la)
 				e.h = fmod(e.h + arg1, 360);
+			mod_la = true;
 		} else if (strncmp(*argv, "hueset=", 5) == 0) {
 			arg1 = fmod(arg1, 360);
 			for (auto &e : la)
 				e.h = arg1;
+			mod_la = true;
 		} else if (strncmp(*argv, "hsltint=", 8) == 0) {
 			ra = hsltint(parse_hsl(&argv[0][8]), la);
+			mod_ra = true;
 		} else if (strncmp(*argv, "lchtint=", 8) == 0) {
 			auto base = parse_hsl(&argv[0][8]);
 			la = lchtint(to_lch(to_srgb(base)), la);
+			mod_la = true;
 		} else if (strcmp(*argv, "emit") == 0) {
 			emit(ra);
 		} else if (strcmp(*argv, "xterm") == 0) {
@@ -454,6 +464,7 @@ int main(int argc, const char **argv)
 			for (size_t i = 0; i < ra.size(); ++i)
 				new_ra[i] = std::move(ra[~i % ra.size()]);
 			ra = std::move(new_ra);
+			mod_ra = true;
 			/*
 			 * A computational method (only produces exact results
 			 * for the "win" palette):
@@ -471,6 +482,10 @@ int main(int argc, const char **argv)
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
+		if (mod_ra)
+			la = to_lch(ra);
+		else if (mod_la)
+			ra = to_srgb888(la);
 	}
 	return EXIT_SUCCESS;
 }

@@ -25,38 +25,32 @@ Print 256-color cubes and tables.
 .SS debug
 Turn on individual colorspace conversion reporting.
 .SS emit
-Emit the RGB palette as a line for an XDG theme file.
+Emit the palette as a line for an XDG theme file.
 .SS stat
-Emit the LCh palette (no particular formatting).
+Emit the LCh form of the palette to stdout (no particular formatting).
 .SS fg
 Emit a -fg parameter upon xterm, and use color 7.
 .SS hueadd=h
-Add an offset (0 <= h < 360) to the LCh palette's h values.
+Rotate colors using LCh space. (0 <= h < 360)
 .SS hueset=h
-Set the LCh palette's h values to a fixed value (0 <= h < 360).
+Set the hue of all colors using LCh space.
 .SS inv16
 Perform color inversion the way Norton Icon Editor did it.
-.SS lch
-Computes the LCh-based palette from the current in-memory RGB palette, and
-stores the result in the LCH slot.
 .SS litadd=r
-Add an offset to the LCh palette's L values.
+Change colors' brightness using LCh space.
 .SS litmul=r
-Multiply the h values in the LCh palette by r.
+Multiply colors' brightness using LCh space.
 .SS litset=r
-Set the LCh palette's L values to a fixed value.
-.SS rgb
-Computes the RGB-based palette from the current in-memory LCh palette, and
-stores the result in the RGB slot.
+Set colors' brightness using LCh space.
 .SS satadd=r
-Add an offset to the LCh palette's C values.
+Change colors' saturation using LCh space.
 .SS satmul=r
-Multiplies the C channel of the LCH palette's colors with factor \fIr\fP. In
-effect, with r<1, this causes a desaturation of colors; r=0 leads to gray.
+Multiply colors' saturation using LCh space. In effect, with r<1, this causes a
+desaturation of colors; r=0 leads to gray.
 .SS satset=r
-Set the LCh palette's C values to a fixed value.
+Set colors' saturation using LCh space.
 .SS hsltint=h,s,l
-Map the LCh palette brightnesses onto a color line through the HSL cylinder
+Map the (LCh) brightnesses onto a color line through the HSL cylinder
 that goes from black to the chosen color. Parameter ranges are (0 <= h < 360; 0
 <= s < 1; 0 <= l <= 1). The result of the operation is stored in the RGB
 palette. When using s<=0.5, this produces a black-to-{color} ramp; when using
@@ -74,35 +68,34 @@ color is converted to HSL. The so-computed L value can be overridden with the
 optional \fB,\fP\fIl\fP suffix. Afterwards, behaves like hsltint=h,s,l.
 .SS lchtint=h,s,l
 .SS lchtint=#rrggbb[,l]
-Replace the LCh palette hue and saturation by the base color given in HSL or
-RGB. The LCh L channel is retained as-is. The result of the operation is stored
-in the LCh palette.
+Replace the LCh hue and saturation by the base color given in HSL or RGB. The
+LCh L value is retained as-is.
 .SS vga
-Loads the standard VGA palette into the RGB slot.
+Loads the standard VGA palette.
 .SS vgs
-Loads a full-saturated VGA palette into the RGB slot.
+Loads a full-saturated VGA palette.
 .SS win
-Loads the standard Windows palette into the RGB slot.
+Loads the standard Windows palette.
 .SS xterm
 Emit the RGB palette as xterm command line options. Use e.g. `xterm $(palcomp
-vga lch hueset=120 rgb xterm)` to utilize.
+vga hueset=120 xterm)` to utilize.
 .SH Examples
 .PP
 Amber tint via LCh color space:
 .IP \(bu 4
-palcomp vgs lch lchtint=#95ef1d b0 rgb emit
+palcomp vgs lchtint=#95ef1d b0 emit
 .PP
 Black-to-green ramp (tint via HSL color space):
 .IP \(bu 4
-palcomp vgs lch hsltint=120,1,0.5 emit
+palcomp vgs hsltint=120,1,0.5 emit
 .IP \(bu 4
-palcomp vgs lch hsltint=#00ff00 emit
+palcomp vgs hsltint=#00ff00 emit
 .PP
 Black-to-green-white ramp (tint via HSL color space):
 .IP \(bu 4
-palcomp vgs lch hsltint=120,1,1 emit
+palcomp vgs hsltint=120,1,1 emit
 .IP \(bu 4
-palcomp vgs lch hsltint=#00ff00,1 emit
+palcomp vgs hsltint=#00ff00,1 emit
 .SH Caveats
 Lightness in LCh space behaves a bit counterintuitive. When (saturation) c>0,
 then L=0 does not mean black; black is attained in the negative range (and it
@@ -111,9 +104,9 @@ depends on the saturation/hue). As a consequence, one needs to manipulate
 following chain of commands to create some blue tints, and have that tint
 actually reach black:
 .IP \(bu 4
-palcomp vgs lch lchtint=#0000ff litadd=-42 litmul=1.74 stat rgb emit
+palcomp vgs lchtint=#0000ff litadd=-42 litmul=1.74 stat emit
 .IP \(bu 4
-palcomp vgs lch lchtint=#0080ff litadd=-25 litmul=1.49 stat rgb emit
+palcomp vgs lchtint=#0080ff litadd=-25 litmul=1.49 stat emit
 .PP
 Stretching the brightness this way has the side-effect that all colors get a
 bit darker, which may be undesirable. Instead of combining a tint with litadd
