@@ -333,6 +333,56 @@ static std::vector<lch> lchtint(const lch &base, const std::vector<lch> &light)
 	return out;
 }
 
+static void colortable_256()
+{
+	for (unsigned int b = 0; b < 256; b += 32) {
+		for (unsigned int g = 0; g < 256; g += 32) {
+			for (unsigned int r = 0; r < 256; r += 16)
+				printf("\e[30;48;2;%u;%u;%um.", r, g, b);
+			printf("\e[0m\n");
+		}
+	}
+	for (unsigned int c = 0x0; c <= 0xFF; ++c) {
+		printf("\e[30;48;5;%um-%02x-", c, c);
+		if ((c - 3) % 6 == 0)
+			printf("\e[0m\n");
+	}
+}
+
+static void colortable_16(void (*pr)(int, int) = nullptr)
+{
+	if (pr == nullptr)
+		pr = [](int bg, int fg) {
+			if (bg == -1)
+				printf("0%x", fg);
+			else
+				printf("%x%x", bg, fg);
+		};
+
+	for (int bg = -1; bg < 8; ++bg) {
+		for (auto bit : {0, 1, 7}) {
+			for (int fg = 30; fg <= 39; ++fg) {
+				if (fg == 38)
+					continue;
+				int lo_fg = fg - 30, lo_bg = bg;
+				if (bit == 1)
+					lo_fg |= 8;
+				else if (bit == 7)
+					lo_bg |= 8;
+				if (bg == -1)
+					printf("\e[0;%d;%dm", bit, fg);
+				else
+					printf("\e[0;%d;%d;4%dm", bit, fg, bg);
+				pr(lo_bg, lo_fg);
+			}
+		}
+		printf("\e[0m\n");
+	}
+	printf("\e[0mdefault \e[37mgray \e[0;1mbold\e[0m \e[2mdim\e[0m "
+	       "\e[3mitalic\e[0m \e[4munderscore\e[0m \e[5mblink\e[0m "
+	       "\e[6mrapidblink\e[0m \e[7mreverse\e[0m\n");
+}
+
 int main(int argc, const char **argv)
 {
 	std::vector<srgb888> ra;
@@ -413,6 +463,11 @@ int main(int argc, const char **argv)
 			 * h.l = 1 - 0.25 * h.s - h.l;
 			 * e = to_srgb888(to_srgb(h));
 			 */
+		} else if (strcmp(*argv, "ct256") == 0) {
+			colortable_256();
+			colortable_16();
+		} else if (strcmp(*argv, "ct") == 0) {
+			colortable_16();
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
