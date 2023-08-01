@@ -77,6 +77,12 @@ optional \fB,\fP\fIl\fP suffix. Afterwards, behaves like hsltint=h,s,l.
 .SS lchtint=#rrggbb[,l]
 Replace the LCh hue and saturation by the base color given in HSL or RGB. The
 LCh L value is retained as-is.
+.SS loeq=b,g
+Equalize (equal-space) the brightnesses of the palette's low-intensity colors
+plus darkgray. The b parameter (0 <= b <= g) specifies the mandatory offset
+from the darkest to 2nd darkest color \(em often this is black to blue. The g
+parameter (b <= g <= 100) specifies the lightness that gray is to use. If g is
+absent, uses g=8/9. If b is absent, uses b=1/9.
 .SS vga
 Loads the standard VGA palette.
 .SS vgs

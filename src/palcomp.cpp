@@ -458,6 +458,26 @@ static void cxr(const std::vector<srgb888> &srgb_pal,
 	printf("%u penalized pairs\n", unusable);
 }
 
+static std::vector<lch> loeq(std::vector<lch> la, double blue, double gray)
+{
+	unsigned int sbl[9];
+	for (unsigned int idx = 0; idx < std::size(sbl); ++idx)
+		sbl[idx] = idx;
+	std::sort(std::begin(sbl), std::end(sbl),
+		[&](unsigned int x, unsigned int y) { return la[x].l < la[y].l; });
+
+	fprintf(stderr, "loeq in: ");
+	for (auto z : sbl)
+		fprintf(stderr, "%u(%f) ", z, la[z].l);
+	fprintf(stderr, "\nloeq out: ");
+	for (unsigned int idx = 1; idx < std::size(sbl); ++idx) {
+		la[sbl[idx]].l = (gray - blue) * (idx - 1) / 7 + blue + la[sbl[0]].l;
+		fprintf(stderr, "%u(%f) ", sbl[idx], la[sbl[idx]].l);
+	}
+	fprintf(stderr, "\n");
+	return la;
+}
+
 int main(int argc, const char **argv)
 {
 	std::vector<srgb888> ra;
@@ -561,6 +581,16 @@ int main(int argc, const char **argv)
 			cxl(ra, la);
 		} else if (strcmp(*argv, "cxr") == 0) {
 			cxr(ra, la);
+		} else if (strcmp(*argv, "loeq") == 0) {
+			double z = 100 / 9.0;
+			la = loeq(la, z, z * 8);
+			mod_la = true;
+		} else if (strncmp(*argv, "loeq=", 5) == 0) {
+			char *end = nullptr;
+			arg1 = strtod(&argv[0][5], &end);
+			double arg2 = *end == ',' ? strtod(end + 1, &end) : 100 / 9.0 * 8;
+			la = loeq(la, arg1, arg2);
+			mod_la = true;
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
