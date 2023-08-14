@@ -6,6 +6,7 @@ use warnings;
 use utf8;
 binmode(STDOUT, ":utf8");
 
+sub head {
 printf "U+nnnn | ";
 for (my $x = 0; $x < 64; $x += 4) {
 	if ($x % 16 == 0) {
@@ -22,7 +23,14 @@ for (my $x = 0; $x < 64; ++$x) {
 print "\n";
 print "-" x 74;
 print "\n";
-for (my $y = 64; $y < 0x300; $y += 64) {
+}
+
+&head();
+for (my $y = 64; $y < 0x2c00; $y += 64) {
+	if ($y % 0x400 == 0) {
+		printf("\n");
+		&head();
+	}
 	printf "U+%04x | ", $y;
 	for (my $x = 0; $x < 64; ++$x) {
 		print chr($y+$x);
