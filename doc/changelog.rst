@@ -1,3 +1,14 @@
+1.3 (2023-08-14)
+================
+
+This release contains command to analyze and adjust contrast.
+
+* palcomp: delete ``rgb`` and ``lch`` subcommands (make them implicit)
+* palcomp: add ``ct`` and ``ct256`` subcommands to display the color table
+* palcomp: add ``cxl`` and ``cxr`` subcommands for contrast analysis
+* palcomp: add ``loeq`` subcommand for contrast adjustment
+
+
 1.2 (2023-07-23)
 ================
 

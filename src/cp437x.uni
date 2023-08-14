@@ -1,3 +1,4 @@
+# For use with setfont(1) from kbd, or vfontas(1) from consoleet-utils.
 # Original 437 table with more U+ specifiers.
 0x00	U+0000
 0x01	U+263a
