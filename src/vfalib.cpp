@@ -35,6 +35,25 @@ using namespace vfalib;
 
 namespace {
 
+enum { /* see libXfont */
+	PCF_PROPERTIES       = 0x1U,
+	PCF_ACCELERATORS     = 0x2U,
+	PCF_METRICS          = 0x4U,
+	PCF_BITMAPS          = 0x8U,
+	PCF_INK_METRICS      = 0x10U,
+	PCF_BDF_ENCODINGS    = 0x20U,
+	PCF_SWIDTHS          = 0x40U,
+	PCF_GLYPH_NAMES      = 0x80U,
+	PCF_BDF_ACCELERATORS = 0x100U,
+};
+
+enum {
+	PCF_DEFAULT_FORMAT     = 0,
+	PCF_INKBOUNDS          = 0x200U,
+	PCF_ACCEL_W_INKBOUNDS  = 0x100U,
+	PCF_COMPRESSED_METRICS = 0x100U,
+};
+
 enum {
 	PSF1_MAGIC0 = 0x36,
 	PSF1_MAGIC1 = 0x04,
@@ -60,6 +79,10 @@ struct bitpos {
 struct deleter {
 	void operator()(FILE *f) { fclose(f); }
 	void operator()(HXdir *d) { HXdir_close(d); }
+};
+
+struct pcf_table {
+	uint32_t type, format, size, offset;
 };
 
 struct psf2_header {
@@ -611,6 +634,35 @@ int font::load_hex(const char *file)
 		m_unicode_map->add_i2u(m_glyph.size() - 1, cp);
 	}
 	HXmc_free(line);
+	return 0;
+}
+
+int font::load_pcf(const char *filename)
+{
+	std::unique_ptr<FILE, deleter> fp(vfopen(filename, "r"));
+	if (fp == nullptr)
+		return -errno;
+
+	uint32_t val = 0;
+	if (fread(&val, 4, 1, fp.get()) != 1)
+		return -EINVAL;
+	if (memcmp(&val, "\x01""fcp", 4) != 0)
+		return -EINVAL;
+	if (fread(&val, 4, 1, fp.get()) != 1)
+		return -EINVAL;
+	val = le32_to_cpu(val);
+	std::vector<pcf_table> table(val);
+	for (size_t i = 0; i < val; ++i) {
+		auto &t = table[i];
+		if (fread(&t, sizeof(t), 1, fp.get()) != 1)
+			return -EINVAL;
+		t.type   = le32_to_cpu(t.type);
+		t.format = le32_to_cpu(t.format);
+		t.size   = le32_to_cpu(t.size);
+		t.offset = le32_to_cpu(t.offset);
+		fprintf(stderr, "Table %zu: type %xh format %xh size %u offset %u\n",
+			i, t.type, t.format, t.size, t.offset);
+	}
 	return 0;
 }
 

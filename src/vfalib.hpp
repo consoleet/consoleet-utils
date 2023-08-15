@@ -118,6 +118,7 @@ class font {
 	int load_clt(const char *dir);
 	int load_fnt(const char *file, unsigned int width_hint = -1, unsigned int height_hint = -1);
 	int load_hex(const char *file);
+	int load_pcf(const char *file);
 	int load_psf(const char *file);
 	int save_bdf(const char *file);
 	int save_fnt(const char *file);
