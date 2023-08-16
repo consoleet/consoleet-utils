@@ -1,6 +1,10 @@
 .TH vfontas 1 "2019-04-21" "hxtools" "hxtools"
 .SH Name
 vfontas \(em a bitmap font file transformation utility
+.SH Introduction
+vfontas (originally "VGA font file assembler") can read/write bitmap fonts
+from/to a number of formats and transform the glyphs in various ways. vfontas
+is able to generate outline fonts from bitmapped fonts.
 .SH Syntax
 \fBvfontas\fP \fIcommands\fP...
 .SS Commands
@@ -73,11 +77,27 @@ vfontas \(em a bitmap font file transformation utility
 \fB\-xcpi\fP \fIega437.cpi\fP \fIoutdir/\fP
 .PP
 \fB\-xlat\fP \fIxoffset\fP \fIyoffset\fP
-.PP
-.SH Description
-vfontas (originally "VGA font file assembler") can read/write bitmap fonts
-from/to a number of formats and transform the glyphs in various ways. vfontas
-is able to generate outline fonts from bitmapped fonts.
+.SH Formats
+.IP \(bu 4
+X11 BDF (Bitmap Distribution Font): read/write
+.IP \(bu 4
+vfontas CLT (Graphical Plaintext): read/write
+.IP \(bu 4
+Raw fonts used by e.g. DOS utilities: read/write
+.IP \(bu 4
+GNU .hex used by e.g. gnu-unifont: read-only
+.IP \(bu 4
+Linux/kbd PSF1 bitmaps: read-only
+.IP \(bu 4
+Linux/kbd PSF2 bitmaps: read/write
+.IP \(bu 4
+Fontforge SFD vectors: write-only
+.IP \(bu 4
+kbd Unicode maps: read/write
+.IP \(bu 4
+PSF2 Unicode maps: read/write
+.IP \(bu 4
+MS-DOS CPI container: read-only
 .PP
 vfontas does not have a direct integration of or with FontForge, but thanks to
 the BDF read/write support on both sides, fonts in formats like FNT and PSF can
