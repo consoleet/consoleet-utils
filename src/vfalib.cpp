@@ -356,6 +356,37 @@ static glyph bdfcomplete(const bdfglystate &cchar)
 	return g.copy_to_blank(src_rect, dst_rect);
 }
 
+#include "glynames.cpp"
+
+static std::string translate_charname(const char *s)
+{
+	if (*s == 'C') {
+		const char *p;
+		for (p = s; HX_isdigit(*p) && *p != '\0'; ++p)
+			;
+		if (*p == '\0')
+			return s;
+	}
+	if (strncmp(s, "uni", 3) == 0) {
+		char *end = nullptr;
+		auto uc = strtoul(&s[1], &end, 16);
+		if (end != nullptr && *end == '\0') {
+			char buf[16];
+			snprintf(buf, sizeof(buf), "C%lu", uc);
+			return buf;
+		}
+	}
+	auto it = std::lower_bound(std::cbegin(ff_glyph_names), std::cend(ff_glyph_names), s,
+	          [](const std::pair<const char *, uint32_t> &p, const char *q) {
+	          	return strcmp(p.first, q) < 0;
+	          });
+	if (it == std::cend(ff_glyph_names) || strcmp(it->first, s) != 0)
+		return s;
+	char buf[16];
+	snprintf(buf, sizeof(buf), "C%u", it->second);
+	return buf;
+}
+
 int font::load_bdf(const char *filename)
 {
 	enum { BDF_NONE, BDF_FONT, BDF_CHAR, BDF_BITMAP, BDF_PASTBITMAP, BDF_DONE };
@@ -371,8 +402,9 @@ int font::load_bdf(const char *filename)
 	bdfglystate cchar;
 
 	while (HX_getl(&line, fp.get()) != nullptr) {
+		HX_chomp(line);
 		if (state == BDF_NONE) {
-			if (strncmp(line, "STARTFONT 2.1\n", 14) == 0) {
+			if (strcmp(line, "STARTFONT 2.1") == 0) {
 				state = BDF_FONT;
 				continue;
 			}
@@ -382,7 +414,7 @@ int font::load_bdf(const char *filename)
 			if (strncmp(line, "STARTCHAR ", 10) == 0) {
 				cchar.reset();
 				cchar.font_height = cchar.font_ascent + cchar.font_descent;
-				cchar.name = line + 10;
+				cchar.name = translate_charname(line + 10);
 				state = BDF_CHAR;
 				continue;
 			}
@@ -418,7 +450,7 @@ int font::load_bdf(const char *filename)
 				cchar.lr = cchar.h;
 				continue;
 			}
-			if (strcmp(line, "BITMAP\n") == 0) {
+			if (strcmp(line, "BITMAP") == 0) {
 				state = cchar.lr == 0 ? BDF_PASTBITMAP : BDF_BITMAP;
 				continue;
 			}
@@ -434,7 +466,7 @@ int font::load_bdf(const char *filename)
 				continue;
 			}
 		} else if (state == BDF_PASTBITMAP) {
-			if (strcmp(line, "ENDCHAR\n") == 0) {
+			if (strcmp(line, "ENDCHAR") == 0) {
 				if (cchar.uc != -1) {
 					m_unicode_map->add_i2u(m_glyph.size(), cchar.uc);
 					m_glyph.push_back(bdfcomplete(std::move(cchar)));
