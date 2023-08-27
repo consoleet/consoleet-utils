@@ -7,7 +7,7 @@ am__tar = tar --owner=0 --group=0 --numeric-owner --format=posix -chf - "$$tardi
 bin_PROGRAMS = palcomp vfontas
 dist_bin_SCRIPTS = cp437table unicode_table
 EXTRA_DIST = doc/changelog.rst doc/vfontas-formats.dot LICENSE.GPL3 LICENSE.MIT
-dist_pkgdata_DATA = src/cp437x.uni
+dist_pkgdata_DATA = cp437x.uni
 
 palcomp_SOURCES = src/palcomp.cpp
 palcomp_LDADD = -lm
