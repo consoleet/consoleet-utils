@@ -20,6 +20,7 @@
 #	define le16_to_cpu(x) __builtin_bswap16(x)
 #	define le32_to_cpu(x) __builtin_bswap32(x)
 #	define le64_to_cpu(x) __builtin_bswap64(x)
+#	define be32_to_cpu(x) (x)
 #	define be64_to_cpu(x) (x)
 #else
 #	define cpu_to_le16(x) (x)
@@ -29,6 +30,7 @@
 #	define le16_to_cpu(x) (x)
 #	define le32_to_cpu(x) (x)
 #	define le64_to_cpu(x) (x)
+#	define be32_to_cpu(x) __builtin_bswap32(x)
 #	define be64_to_cpu(x) __builtin_bswap64(x)
 #endif
 

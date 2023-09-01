@@ -52,6 +52,10 @@ enum {
 	PCF_INKBOUNDS          = 0x200U,
 	PCF_ACCEL_W_INKBOUNDS  = 0x100U,
 	PCF_COMPRESSED_METRICS = 0x100U,
+
+	PCF_GLYPH_PAD_MASK     = 0x3U,
+	PCF_BYTE_MASK          = 0x4U,
+	PCF_FORMAT_MASK        = 0xffffff00U,
 };
 
 enum {
@@ -637,6 +641,85 @@ int font::load_hex(const char *file)
 	return 0;
 }
 
+static int load_pcf_props(FILE *fp, std::map<std::string, std::string> &map)
+{
+	uint32_t val = 0;
+	if (fread(&val, 4, 1, fp) != 1)
+		return -EINVAL;
+	val = le32_to_cpu(val);
+	if ((val & PCF_FORMAT_MASK) != (PCF_DEFAULT_FORMAT & PCF_FORMAT_MASK))
+		return -EINVAL;
+	bool be = val & PCF_BYTE_MASK;
+	if (fread(&val, 4, 1, fp) != 1)
+		return -EINVAL;
+	auto numprop = be ? be32_to_cpu(val) : le32_to_cpu(val);
+	auto tbl_offset = ftell(fp);
+	fseek(fp, numprop * 9, SEEK_CUR);
+	fseek(fp, 4 - (ftell(fp) & 3), SEEK_CUR);
+	if (fread(&val, 4, 1, fp) != 1)
+		return -EINVAL;
+	val = be ? be32_to_cpu(val) : le32_to_cpu(val);
+	std::string sblk;
+	sblk.resize(val);
+	if (fread(&sblk[0], sblk.size(), 1, fp) != 1)
+		return -EINVAL;
+	fseek(fp, tbl_offset, SEEK_SET);
+	for (unsigned int i = 0; i < numprop; ++i) {
+		if (fread(&val, 4, 1, fp) != 1)
+			return -EINVAL;
+		auto name_idx = be ? be32_to_cpu(val) : le32_to_cpu(val);
+		uint8_t is_string = 0;
+		if (fread(&is_string, 1, 1, fp) != 1)
+			return -EINVAL;
+		if (fread(&val, 4, 1, fp) != 1)
+			return -EINVAL;
+		auto val_idx = be ? be32_to_cpu(val) : le32_to_cpu(val);
+		if (name_idx >= sblk.size() || val_idx >= sblk.size())
+			return -EINVAL;
+		if (is_string)
+			map[&sblk[name_idx]] = &sblk[val_idx];
+		else
+			map[&sblk[name_idx]] = std::to_string(val_idx);
+	}
+	return 0;
+}
+
+static int load_pcf_bitmaps(FILE *fp)
+{
+	uint32_t val;
+	if (fread(&val, 4, 1, fp) != 1)
+		return -EINVAL;
+	auto fmt = le32_to_cpu(val);
+	if ((fmt & PCF_FORMAT_MASK) != (PCF_DEFAULT_FORMAT & PCF_FORMAT_MASK))
+		return -EINVAL;
+	bool be = fmt & PCF_BYTE_MASK;
+	if (fread(&val, 4, 1, fp) != 1)
+		return -EINVAL;
+	auto numbitmaps = be ? be32_to_cpu(val) : le32_to_cpu(val);
+	static constexpr unsigned int glypadopts = 4;
+	std::vector<uint32_t> offsets(numbitmaps);
+	uint32_t bmpsize[glypadopts];
+	if (fread(&offsets[0], 4, numbitmaps, fp) != numbitmaps ||
+	    fread(&bmpsize[0], 4, glypadopts, fp) != glypadopts)
+		return -EINVAL;
+	for (unsigned int i = 0; i < numbitmaps; ++i) {
+		offsets[i] = be ? be32_to_cpu(offsets[i]) : le32_to_cpu(offsets[i]);
+		printf("bmp %u offset %u\n",
+			i, offsets[i]);
+	}
+	for (unsigned int i = 0; i < glypadopts; ++i) {
+		bmpsize[i] = be ? be32_to_cpu(bmpsize[i]) : le32_to_cpu(bmpsize[i]);
+		printf("padopt %u size %u\n", i, bmpsize[i]);
+	}
+	std::string bmapbuf;
+	#define PCF_GLYPH_PAD_INDEX(f) ((f) & PCF_GLYPH_PAD_MASK)
+	bmapbuf.resize(bmpsize[PCF_GLYPH_PAD_INDEX(fmt)]);
+	fprintf(stderr, "buf %zu\n", bmapbuf.size());
+	if (fread(&bmapbuf[0], bmapbuf.size(), 1, fp) != 1)
+		return -EINVAL;
+	return 0;
+}
+
 int font::load_pcf(const char *filename)
 {
 	std::unique_ptr<FILE, deleter> fp(vfopen(filename, "r"));
@@ -652,6 +735,7 @@ int font::load_pcf(const char *filename)
 		return -EINVAL;
 	val = le32_to_cpu(val);
 	std::vector<pcf_table> table(val);
+	const pcf_table *bmp_table = nullptr, *prop_table = nullptr;
 	for (size_t i = 0; i < val; ++i) {
 		auto &t = table[i];
 		if (fread(&t, sizeof(t), 1, fp.get()) != 1)
@@ -660,9 +744,27 @@ int font::load_pcf(const char *filename)
 		t.format = le32_to_cpu(t.format);
 		t.size   = le32_to_cpu(t.size);
 		t.offset = le32_to_cpu(t.offset);
+		if (t.type == PCF_PROPERTIES)
+			prop_table = &t;
+		else if (t.type == PCF_BITMAPS)
+			bmp_table = &t;
 		fprintf(stderr, "Table %zu: type %xh format %xh size %u offset %u\n",
 			i, t.type, t.format, t.size, t.offset);
 	}
+	if (prop_table == nullptr || fseek(fp.get(), prop_table->offset, SEEK_SET) != 0) {
+		fprintf(stderr, "pcf: no properties\n");
+		return -EINVAL;
+	}
+	std::map<std::string, std::string> propmap;
+	auto ret = load_pcf_props(fp.get(), propmap);
+	if (ret != 0)
+		return ret;
+	//y=PIXEL_SIZE,x=QUAD_WIDTH
+	if (bmp_table == nullptr || fseek(fp.get(), bmp_table->offset, SEEK_SET) != 0) {
+		fprintf(stderr, "pcf: no bitmaps\n");
+		return -EINVAL;
+	}
+	load_pcf_bitmaps(fp.get());
 	return 0;
 }
 
