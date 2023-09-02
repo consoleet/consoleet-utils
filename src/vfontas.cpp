@@ -265,6 +265,12 @@ static bool vf_move(font &f, char **args)
 	return true;
 }
 
+static bool vf_overstrike(font &f, char **args)
+{
+	f.overstrike(strtoul(args[0], nullptr, 0));
+	return true;
+}
+
 static bool vf_savebdf(font &f, char **args)
 {
 	auto ret = f.save_bdf(args[0]);
@@ -580,6 +586,7 @@ static const struct vf_command {
 	{"loadpsf", 1, vf_loadpsf},
 	{"loadraw", 3, vf_loadraw},
 	{"move", 2, vf_move},
+	{"overstrike", 1, vf_overstrike},
 	{"savebdf", 1, vf_savebdf},
 	{"saveclt", 1, vf_saveclt},
 	{"savefnt", 1, vf_savefnt},

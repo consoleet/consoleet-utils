@@ -102,6 +102,7 @@ class glyph {
 	void invert();
 	glyph upscale(const vfsize &factor) const;
 	void lge(unsigned int adj = 1);
+	glyph overstrike(unsigned int px) const;
 
 	private:
 	std::vector<uint32_t> as_rgba() const;
@@ -141,6 +142,7 @@ class font {
 	void lge();
 	void lgeu();
 	void lgeuf();
+	void overstrike(unsigned int px);
 
 	using propmap_t = std::map<std::string, std::string, std::less<>>;
 	propmap_t props;

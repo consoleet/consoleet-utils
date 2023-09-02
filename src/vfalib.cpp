@@ -319,6 +319,12 @@ void font::lgeuf()
 		m_glyph[it->second].lge();
 }
 
+void font::overstrike(unsigned int px)
+{
+	for (auto &g : m_glyph)
+		g = g.overstrike(px);
+}
+
 struct bdfglystate {
 	int uc = -1, w = 0, h = 0, of_left = 0, of_baseline = 0;
 	unsigned int dwidth = 0, lr = 0;
@@ -1881,6 +1887,15 @@ void glyph::lge(unsigned int adj)
 		else
 			m_data[opos.byte] &= ~opos.mask;
 	}
+}
+
+glyph glyph::overstrike(unsigned int px) const
+{
+	glyph composite(m_size);
+	for (unsigned int x = 0; x <= px; ++x)
+		composite = copy_rect_to(vfpos(0, 0) | m_size, composite,
+		            vfpos(x, 0) | m_size, false);
+	return composite;
 }
 
 std::string glyph::as_pbm() const

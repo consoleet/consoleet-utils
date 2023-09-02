@@ -48,6 +48,8 @@ is able to generate outline fonts from bitmapped fonts.
 .PP
 \fB\-move\fP \fIshiftx\fP \fIshifty\fP
 .PP
+\fB\-overstrike\fP \fIxoffset\fP
+.PP
 \fB\-savebdf\fP \fIout.bdf\fP
 .PP
 \fB\-saveclt\fP \fIoutdir/\fP
@@ -433,6 +435,10 @@ The number of characters is then autoderived from the filesize.
 .SS move
 Shift all glyphs by the given x/y offsets within their existing glyph box
 (possibly truncating them).
+.SS overstrike
+Produce a fake bold effect by superimposing a glyph onto itself with an offset.
+xoffset specifies how many shifted copies should be added. This can help make
+thin fonts (like GNU Unifont) somewhat more bearable.
 .SS savebdf
 Saves the font to a Glyph Bitmap Distribution Format file (BDF). This type of
 file can be processed further by other tools such as bdftopcf(1) or
