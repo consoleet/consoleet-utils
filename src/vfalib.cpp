@@ -380,7 +380,7 @@ static glyph bdfcomplete(const bdfglystate &cchar)
 	dst_rect.y = std::max(0, static_cast<int>(cchar.font_ascent) - cchar.of_baseline - cchar.h);
 	dst_rect.w = cchar.dwidth;
 	dst_rect.h = cchar.font_height;
-	return g.copy_to_blank(src_rect, dst_rect);
+	return g.copy_rect_to(src_rect, glyph(dst_rect), dst_rect);
 }
 
 #include "glynames.cpp"
@@ -1801,9 +1801,10 @@ glyph glyph::create_from_rpad(const vfsize &size, const char *buf, size_t z)
 	return ng;
 }
 
-glyph glyph::copy_rect(const vfrect &sof, const vfrect &pof) const
+glyph glyph::copy_rect_to(const vfrect &sof, const glyph &other,
+    const vfrect &pof, bool overwrite) const
 {
-	glyph ng = *this;
+	glyph out = other;
 
 	for (unsigned int y = sof.y; y < sof.y + sof.h && y < m_size.h; ++y) {
 		for (unsigned int x = sof.x; x < sof.x + sof.w && x < m_size.w; ++x) {
@@ -1813,34 +1814,14 @@ glyph glyph::copy_rect(const vfrect &sof, const vfrect &pof) const
 			    static_cast<unsigned int>(oy) >= pof.h)
 				continue;
 			bitpos ipos = y * m_size.w + x;
-			bitpos opos = oy * ng.m_size.w + ox;
+			bitpos opos = oy * out.m_size.w + ox;
 			if (m_data[ipos.byte] & ipos.mask)
-				ng.m_data[opos.byte] |= opos.mask;
-			else
-				ng.m_data[opos.byte] &= ~opos.mask;
+				out.m_data[opos.byte] |= opos.mask;
+			else if (overwrite)
+				out.m_data[opos.byte] &= ~opos.mask;
 		}
 	}
-	return ng;
-}
-
-glyph glyph::copy_to_blank(const vfrect &sof, const vfrect &pof) const
-{
-	glyph ng(pof);
-
-	for (unsigned int y = sof.y; y < sof.y + sof.h && y < m_size.h; ++y) {
-		for (unsigned int x = sof.x; x < sof.x + sof.w && x < m_size.w; ++x) {
-			int ox = pof.x + x - sof.x;
-			int oy = pof.y + y - sof.y;
-			if (ox < 0 || oy < 0 || static_cast<unsigned int>(ox) >= pof.w ||
-			    static_cast<unsigned int>(oy) >= pof.h)
-				continue;
-			bitpos ipos = y * m_size.w + x;
-			bitpos opos = oy * ng.m_size.w + ox;
-			if (m_data[ipos.byte] & ipos.mask)
-				ng.m_data[opos.byte] |= opos.mask;
-		}
-	}
-	return ng;
+	return out;
 }
 
 int glyph::find_baseline() const

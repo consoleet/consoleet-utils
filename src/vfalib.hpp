@@ -96,8 +96,7 @@ class glyph {
 	std::string as_pbm() const;
 	std::string as_pclt() const;
 	std::string as_rowpad() const;
-	glyph copy_rect(const vfrect &src, const vfrect &dst) const;
-	glyph copy_to_blank(const vfrect &src, const vfrect &dst) const;
+	glyph copy_rect_to(const vfrect &src, const glyph &other, const vfrect &dst, bool overwrite = true) const;
 	int find_baseline() const;
 	glyph flip(bool x, bool y) const;
 	void invert();
@@ -130,9 +129,9 @@ class font {
 	int save_sfd(const char *file, enum vectoalg);
 	int save_clt(const char *dir);
 	void copy_rect(const vfrect &src, const vfrect &dst)
-		{ for (auto &g : m_glyph) g = g.copy_rect(src, dst); }
+		{ for (auto &g : m_glyph) g = g.copy_rect_to(src, g, dst); }
 	void copy_to_blank(const vfrect &src, const vfrect &dst)
-		{ for (auto &g : m_glyph) g = g.copy_to_blank(src, dst); }
+		{ for (auto &g : m_glyph) g = g.copy_rect_to(src, glyph(dst), dst); }
 	void flip(bool x, bool y)
 		{ for (auto &g : m_glyph) g = g.flip(x, y); }
 	void invert()
