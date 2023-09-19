@@ -364,25 +364,43 @@ static void colortable_256()
 
 static void colortable_16(std::function<void(int, int, int)> pr = nullptr)
 {
-	if (pr == nullptr)
-		pr = [](int bg, int fg, int sp) { printf("%x%x", bg >= 0 ? bg : 0, fg); };
+	std::vector<int> modes = {0, 90};
+	if (pr == nullptr) {
+		printf("                  ┌─ bright ───────┐┌─ bold ─────────┐┌─ reverse ──────┐\n");
+		pr = [](int bg, int fg, int sp) {
+			printf("%x%c", bg >= 0 ? bg : 0, fg < 10 ? '0' + fg : 'a' + fg - 10);
+		};
+		modes = {0, 90, 1, 7};
+	}
 
-	for (int bg = -1; bg < 8; ++bg) {
-		for (auto bit : {0, 1, 7}) {
+	for (int bg = -1; bg < 16; ++bg) {
+		for (auto mode : modes) {
 			for (int fg = 0; fg <= 9; ++fg) {
 				if (fg == 8)
 					continue;
-				int emit_fg = fg + 30;
 				int report_fg = fg, report_bg = bg;
-				if (bit == 1)
-					report_fg |= 8;
-				else if (bit == 7)
-					report_bg |= 8;
-				if (bg == -1)
-					printf("\e[0;%d;%dm", bit, emit_fg);
-				else
-					printf("\e[0;%d;%d;4%dm", bit, emit_fg, bg);
-				auto sp = bg == -1 || fg == 9 || bit == 7;
+				std::string emit_str = "\e[";
+				if (mode == 0) {
+					emit_str += "0;" + std::to_string(30 + fg);
+				} else if (mode == 1) {
+					emit_str += "0;1;" + std::to_string(30 + fg);
+					report_fg += 16;
+				} else if (mode == 7) {
+					emit_str += "0;7;" + std::to_string(30 + fg);
+					report_bg ^= 0x8;
+				} else if (mode == 90) {
+					emit_str += "0;" + std::to_string(90 + fg);
+					report_fg += 8;
+				}
+				if (fg == 9)
+					report_fg = 9;
+				if (bg >= 8)
+					emit_str += ";" + std::to_string(100 + bg - 8);
+				else if (bg >= 0)
+					emit_str += ";" + std::to_string(40 + bg);
+				emit_str += "m";
+				printf("%s", emit_str.c_str());
+				auto sp = bg == -1 || fg == 9 || mode == 7;
 				pr(report_bg, report_fg, sp);
 			}
 		}
@@ -390,10 +408,11 @@ static void colortable_16(std::function<void(int, int, int)> pr = nullptr)
 	}
 	printf("\e[0mdefault \e[37mgray \e[0;1mbold\e[0m \e[2mdim\e[0m "
 	       "\e[3mitalic\e[0m \e[4munderscore\e[0m \e[5mblink\e[0m "
-	       "\e[6mrapidblink\e[0m \e[7mreverse\e[0m\n");
+	       "\e[6mrapidblink\e[0m \e[7mreverse\e[0m "
+	       "\e[8mhidden\e[0m \e[9mstrikethrough\e[0m\n");
 }
 
-template<typename F> static void analyze(const double (&delta)[8][16],
+template<typename F> static void analyze(const double (&delta)[16][16],
     F &&penalize, unsigned int xlim, unsigned int ylim, const char *desc)
 {
 	double c = 0;
@@ -416,9 +435,9 @@ static void cxl(const std::vector<srgb888> &srgb_pal,
     const std::vector<lch> &lch_pal)
 {
 	printf("\e[1m════ Difference of the L components ════\e[0m\n");
-	double delta[8][16]{};
+	double delta[16][16]{};
 	colortable_16([&](int bg, int fg, int special) {
-		if (special || fg >= 16 || bg >= 8 || fg == bg) {
+		if (special || fg >= 16 || bg >= 16 || fg == bg) {
 			printf("   ");
 			return;
 		}
@@ -426,17 +445,18 @@ static void cxl(const std::vector<srgb888> &srgb_pal,
 		printf("%3.0f", delta[bg][fg]);
 	});
 	auto pf = [](double x) { return x < 7.0; };
-	analyze(delta, pf, 16,  8, "16x8");
-	analyze(delta, pf,  8,  8, " 8x8");
+	analyze(delta, pf, 16, 16, "16x16");
+	analyze(delta, pf, 16,  8, "16x8 ");
+	analyze(delta, pf,  8,  8, " 8x8 ");
 }
 
 static void cxr(const std::vector<srgb888> &srgb_pal,
     const std::vector<lch> &lch_pal)
 {
 	printf("\e[1m════ L component of the radiosity difference ════\e[0m\n");
-	double delta[8][16]{};
+	double delta[16][16]{};
 	colortable_16([&](int bg, int fg, int special) {
-		if (special || fg >= 16 || bg >= 8 || fg == bg) {
+		if (special || fg >= 16 || bg >= 16 || fg == bg) {
 			printf("   ");
 			return;
 		}
@@ -444,12 +464,13 @@ static void cxr(const std::vector<srgb888> &srgb_pal,
 		xr.r = abs(srgb_pal[fg].r - srgb_pal[bg].r);
 		xr.g = abs(srgb_pal[fg].g - srgb_pal[bg].g);
 		xr.b = abs(srgb_pal[fg].b - srgb_pal[bg].b);
-		delta[bg][fg] = fabs(lch_pal[fg].l - lch_pal[bg].l);
+		delta[bg][fg] = to_lch(xr).l;
 		printf("%3.0f", delta[bg][fg]);
 	});
 	auto pf = [](double x) { return x <= 20.0; };
-	analyze(delta, pf, 16,  8, "16x8");
-	analyze(delta, pf,  8,  8, " 8x8");
+	analyze(delta, pf, 16, 16, "16x16");
+	analyze(delta, pf, 16,  8, "16x8 ");
+	analyze(delta, pf,  8,  8, " 8x8 ");
 }
 
 static std::vector<lch> loeq(std::vector<lch> la, double blue, double gray)
