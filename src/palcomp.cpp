@@ -393,45 +393,50 @@ static void colortable_16(std::function<void(int, int, int)> pr = nullptr)
 	       "\e[6mrapidblink\e[0m \e[7mreverse\e[0m\n");
 }
 
+template<typename F> static void analyze(const double (&delta)[8][16],
+    F &&penalize, unsigned int xlim, unsigned int ylim, const char *desc)
+{
+	double c = 0;
+	unsigned int u = 0;
+	for (unsigned int y = 0; y < ylim; ++y) {
+		for (unsigned int x = 0; x < xlim; ++x) {
+			if (x == y)
+				continue;
+			c += delta[y][x];
+			if (penalize(delta[y][x]))
+				++u;
+		}
+	}
+	printf("[%-5s] contrast Σ %.0f ø %.1f", desc, c, c / xlim / ylim);
+	c -= 100 * u;
+	printf(" // minus %u penalties:\tΣ %.0f ø %.1f\n", u, c, c / xlim / ylim);
+}
+
 static void cxl(const std::vector<srgb888> &srgb_pal,
     const std::vector<lch> &lch_pal)
 {
 	printf("\e[1m════ Difference of the L components ════\e[0m\n");
-	double cx = 0, lhcx = 0;
-	unsigned int z = 0, lhz = 0, unusable = 0;
+	double delta[8][16]{};
 	colortable_16([&](int bg, int fg, int special) {
-		if (special || fg == bg) {
+		if (special || fg >= 16 || bg >= 8 || fg == bg) {
 			printf("   ");
 			return;
 		}
-		auto delta = fabs(lch_pal[fg].l - lch_pal[bg].l);
-		printf("%3.0f", delta);
-		cx += delta;
-		++z;
-		if (delta < 7)
-			++unusable;
-		if (fg < 8) {
-			lhcx += delta;
-			++lhz;
-		}
+		delta[bg][fg] = fabs(lch_pal[fg].l - lch_pal[bg].l);
+		printf("%3.0f", delta[bg][fg]);
 	});
-	printf("Contrast\tΣ %.0f\tø %.1f", cx, cx / z);
-	cx -= 100 * unusable;
-	printf("\t""with penalty: Σ %.0f  ø %.1f\n", cx, cx / z);
-	printf("Lower 8 \tΣ %.0f\tø %.1f", lhcx, lhcx / lhz);
-	lhcx -= 100 * unusable;
-	printf("\t""with penalty: Σ %.0f  ø %.1f\n", lhcx, lhcx / z);
-	printf("%u penalized pairs\n", unusable);
+	auto pf = [](double x) { return x < 7.0; };
+	analyze(delta, pf, 16,  8, "16x8");
+	analyze(delta, pf,  8,  8, " 8x8");
 }
 
 static void cxr(const std::vector<srgb888> &srgb_pal,
     const std::vector<lch> &lch_pal)
 {
 	printf("\e[1m════ L component of the radiosity difference ════\e[0m\n");
-	double cx = 0, lhcx = 0;
-	unsigned int z = 0, lhz = 0, unusable = 0;
+	double delta[8][16]{};
 	colortable_16([&](int bg, int fg, int special) {
-		if (special || fg == bg) {
+		if (special || fg >= 16 || bg >= 8 || fg == bg) {
 			printf("   ");
 			return;
 		}
@@ -439,24 +444,12 @@ static void cxr(const std::vector<srgb888> &srgb_pal,
 		xr.r = abs(srgb_pal[fg].r - srgb_pal[bg].r);
 		xr.g = abs(srgb_pal[fg].g - srgb_pal[bg].g);
 		xr.b = abs(srgb_pal[fg].b - srgb_pal[bg].b);
-		auto delta = to_lch(xr).l;
-		printf("%3.0f", delta);
-		cx += delta;
-		++z;
-		if (delta <= 20)
-			++unusable;
-		if (fg < 8) {
-			lhcx += delta;
-			++lhz;
-		}
+		delta[bg][fg] = fabs(lch_pal[fg].l - lch_pal[bg].l);
+		printf("%3.0f", delta[bg][fg]);
 	});
-	printf("Contrast\tΣ %.0f\tø %.1f", cx, cx / z);
-	cx -= 100 * unusable;
-	printf("\t""with penalty: Σ %.0f  ø %.1f\n", cx, cx / z);
-	printf("Lower 8 \tΣ %.0f\tø %.1f", lhcx, lhcx / lhz);
-	lhcx -= 100 * unusable;
-	printf("\t""with penalty: Σ %.0f  ø %.1f\n", lhcx, lhcx / z);
-	printf("%u penalized pairs\n", unusable);
+	auto pf = [](double x) { return x <= 20.0; };
+	analyze(delta, pf, 16,  8, "16x8");
+	analyze(delta, pf,  8,  8, " 8x8");
 }
 
 static std::vector<lch> loeq(std::vector<lch> la, double blue, double gray)
