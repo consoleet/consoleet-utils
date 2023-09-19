@@ -369,20 +369,21 @@ static void colortable_16(std::function<void(int, int, int)> pr = nullptr)
 
 	for (int bg = -1; bg < 8; ++bg) {
 		for (auto bit : {0, 1, 7}) {
-			for (int fg = 30; fg <= 39; ++fg) {
-				if (fg == 38)
+			for (int fg = 0; fg <= 9; ++fg) {
+				if (fg == 8)
 					continue;
-				int lo_fg = fg - 30, lo_bg = bg;
+				int emit_fg = fg + 30;
+				int report_fg = fg, report_bg = bg;
 				if (bit == 1)
-					lo_fg |= 8;
+					report_fg |= 8;
 				else if (bit == 7)
-					lo_bg |= 8;
+					report_bg |= 8;
 				if (bg == -1)
-					printf("\e[0;%d;%dm", bit, fg);
+					printf("\e[0;%d;%dm", bit, emit_fg);
 				else
-					printf("\e[0;%d;%d;4%dm", bit, fg, bg);
-				auto sp = bg == -1 || fg == 39 || bit == 7;
-				pr(lo_bg, lo_fg, sp);
+					printf("\e[0;%d;%d;4%dm", bit, emit_fg, bg);
+				auto sp = bg == -1 || fg == 9 || bit == 7;
+				pr(report_bg, report_fg, sp);
 			}
 		}
 		printf("\e[0m\n");
