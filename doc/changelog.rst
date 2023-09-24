@@ -1,3 +1,12 @@
+1.4 (2023-09-24)
+================
+
+* vfontas: add an -overstrike option
+* palcomp: have the "ct" command exercise AIX color codes too
+* palcomp: compute "cxl" and "cxr" tables for bright background colors
+  as well
+
+
 1.3 (2023-08-14)
 ================
 
