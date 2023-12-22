@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -511,6 +512,63 @@ static std::vector<lch> loeq(std::vector<lch> la, double blue, double gray)
 	return la;
 }
 
+template<typename T> static inline void advspace(T *&p)
+{
+	while (HX_isspace(*p))
+		++p;
+}
+
+static int loadpal_xf4(const char *p, std::vector<srgb888> &ra)
+{
+	auto orig = p;
+	for (unsigned int n = 0; n < ra.size(); ++n) {
+		advspace(p);
+		if (*p == '\0')
+			break;
+		auto len = hexcolor_split(p, ra[n]);
+		if (len < 0) {
+			fprintf(stderr, "Error in ColorPalette=\"%s\" line near \"%s\"\n", orig, p);
+			return EXIT_FAILURE;
+		}
+		p += len;
+		if (*p == ';')
+			++p;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int loadpal_sc(const char *frag, std::vector<srgb888> &ra)
+{
+	char *p = nullptr;
+	unsigned int n = strtoul(frag, &p, 0);
+	if (n >= 16)
+		return 0;
+	if (p == nullptr || p[0] != '=')
+		return -EINVAL;
+	++p;
+	advspace(p);
+	return hexcolor_split(p, ra[n]);
+}
+
+static int loadpal(const char *file, std::vector<srgb888> &ra)
+{
+	std::ifstream strm;
+	strm.open(file != nullptr ? file : "");
+	if (!strm.is_open()) {
+		fprintf(stderr, "Could not load %s: %s\n", file, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	ra = std::vector<srgb888>(16);
+	std::string line;
+	while (std::getline(strm, line)) {
+		if (strncasecmp(line.c_str(), "ColorPalette=", 13) == 0)
+			loadpal_xf4(&line[13], ra);
+		else if (strncasecmp(line.c_str(), "color", 5) == 0)
+			loadpal_sc(&line[5], ra);
+	}
+	return EXIT_SUCCESS;
+}
+
 int main(int argc, const char **argv)
 {
 	std::vector<srgb888> ra;
@@ -532,6 +590,10 @@ int main(int argc, const char **argv)
 			mod_ra = true;
 		} else if (strcmp(*argv, "xpal") == 0) {
 			ra = {std::begin(xpal_palette), std::end(xpal_palette)};
+			mod_ra = true;
+		} else if (strncmp(*argv, "loadpal=", 8) == 0) {
+			if (loadpal(&argv[0][8], ra) != 0)
+				return EXIT_FAILURE;
 			mod_ra = true;
 		} else if (strcmp(*argv, "debug") == 0) {
 			debug_cvt = 1;
