@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <cctype>
+#include <cerrno>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -11,6 +12,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <libHX/ctype_helper.h>
 
 namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
@@ -68,6 +70,21 @@ static uint8_t fromhex(const char *s)
 	else if (b >= 'a' && b <= 'f')
 		v += b - 'a' + 10;
 	return v;
+}
+
+static int hexcolor_split(const char *p, srgb888 &o)
+{
+	bool zaun = *p == '#';
+	if (zaun)
+		++p;
+	if (!HX_isxdigit(p[0]) || !HX_isxdigit(p[1]) ||
+	    !HX_isxdigit(p[2]) || !HX_isxdigit(p[3]) ||
+	    !HX_isxdigit(p[4]) || !HX_isxdigit(p[5]))
+		return -1;
+	o.r = fromhex(&p[0]);
+	o.g = fromhex(&p[2]);
+	o.b = fromhex(&p[4]);
+	return 6 + zaun;
 }
 
 static hsl to_hsl(const srgb &i)
@@ -170,11 +187,12 @@ static hsl parse_hsl(const char *str)
 		sscanf(str, "%lf,%lf,%lf", &c.h, &c.s, &c.l);
 		return c;
 	}
-	if (strlen(str) < 7) {
+	srgb888 r;
+	if (hexcolor_split(str, r) < 0) {
 		fprintf(stderr, "Illegal RGB(,L) value: \"%s\"\n", str);
 		return c;
 	}
-	c = to_hsl(to_srgb(srgb888{fromhex(&str[1]), fromhex(&str[3]), fromhex(&str[5])}));
+	c = to_hsl(to_srgb(std::move(r)));
 	str += 7;
 	if (*str == ',')
 		c.l = strtod(&str[1], nullptr);
