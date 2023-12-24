@@ -450,8 +450,7 @@ template<typename F> static void analyze(const double (&delta)[16][16],
 	printf(" // minus %u penalties:\tΣ %.0f ø %.1f\n", u, c, c / xlim / ylim);
 }
 
-static void cxl(const std::vector<srgb888> &srgb_pal,
-    const std::vector<lch> &lch_pal)
+static void cxl_command(const std::vector<lch> &lch_pal)
 {
 	printf("\e[1m════ Difference of the L components ════\e[0m\n");
 	double delta[16][16]{};
@@ -469,8 +468,7 @@ static void cxl(const std::vector<srgb888> &srgb_pal,
 	analyze(delta, pf,  8,  8, " 8x8 ");
 }
 
-static void cxr(const std::vector<srgb888> &srgb_pal,
-    const std::vector<lch> &lch_pal)
+static void cxr_command(const std::vector<srgb888> &srgb_pal)
 {
 	printf("\e[1m════ L component of the radiosity difference ════\e[0m\n");
 	double delta[16][16]{};
@@ -673,9 +671,9 @@ int main(int argc, const char **argv)
 		} else if (strcmp(*argv, "ct") == 0) {
 			colortable_16();
 		} else if (strcmp(*argv, "cxl") == 0) {
-			cxl(ra, la);
+			cxl_command(la);
 		} else if (strcmp(*argv, "cxr") == 0) {
-			cxr(ra, la);
+			cxr_command(ra);
 		} else if (strcmp(*argv, "loeq") == 0) {
 			double z = 100 / 9.0;
 			la = loeq(la, z, z * 8);
