@@ -22,6 +22,34 @@ struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
 struct srgb { double r = 0, g = 0, b = 0; };
 struct lch { double l = 0, c = 0, h = 0; };
 struct hsl { double h = 0, s = 0, l = 0; };
+
+/**
+ * Statistics for one grid view (e.g. 8x8 / 8x16 / ...).
+ *
+ * @pairs:      pairs that have contributed to @sum
+ * @penalized:  number of penalized pairs
+ * @sum:        sum of deltas
+ * @avg:        @sum divided by @pairs
+ * @adj_sum:    @sum adjusted for penalized pairs
+ * @adj_avg:    adjusted average
+ */
+struct gvstat {
+	unsigned int pairs = 0, penalized = 0;
+	double sum = 0, avg = 0, adj_sum = 0, adj_avg = 0;
+};
+
+struct palstat {
+	public:
+	bool (*penalize)(double) = nullptr;
+	double delta[16][16]{};
+	gvstat x1616{}, x816{}, x88{};
+
+	void compute_sums();
+
+	protected:
+	void compute_sums(unsigned int xlim, unsigned int ylim, gvstat &);
+};
+
 }
 
 static constexpr srgb888 vga_palette[] = {
@@ -304,63 +332,100 @@ static void colortable_16(std::function<void(int, int, int)> pr = nullptr)
 	       "\e[8mhidden\e[0m \e[9mstrikethrough\e[0m\n");
 }
 
-template<typename F> static void analyze(const double (&delta)[16][16],
-    F &&penalize, unsigned int xlim, unsigned int ylim, const char *desc)
+void palstat::compute_sums(unsigned int xlim, unsigned int ylim, gvstat &gs)
 {
-	double c = 0;
-	unsigned int u = 0;
+	gs.pairs = gs.penalized = 0;
+	gs.sum = gs.avg = 0;
 	for (unsigned int y = 0; y < ylim; ++y) {
 		for (unsigned int x = 0; x < xlim; ++x) {
 			if (x == y)
 				continue;
-			c += delta[y][x];
-			if (penalize(delta[y][x]))
-				++u;
+			++gs.pairs;
+			gs.sum += delta[y][x];
+			if (penalize != nullptr && penalize(delta[y][x]))
+				++gs.penalized;
+			else
+				gs.adj_sum += delta[y][x];
 		}
 	}
-	printf("[%-5s] contrast Σ %.0f ø %.1f", desc, c, c / xlim / ylim);
-	c -= 100 * u;
-	printf(" // minus %u penalties:\tΣ %.0f ø %.1f\n", u, c, c / xlim / ylim);
+	gs.avg = gs.sum / gs.pairs;
+	gs.adj_avg = gs.adj_sum / (gs.pairs - gs.penalized);
+}
+
+void palstat::compute_sums()
+{
+	compute_sums(16, 16, x1616);
+	compute_sums(8, 16, x816);
+	compute_sums(8, 8, x88);
+}
+
+static palstat cxl_compute(const std::vector<lch> &pal)
+{
+	palstat o;
+	o.penalize = [](double x) { return x < 7.0; };
+	for (unsigned int bg = 0; bg < 16; ++bg)
+		for (unsigned int fg = 0; fg < 16; ++fg)
+			o.delta[bg][fg] = fabs(pal[fg].l - pal[bg].l);
+	o.compute_sums();
+	return o;
+}
+
+static palstat cxr_compute(const std::vector<srgb888> &pal)
+{
+	palstat o;
+	o.penalize = [](double d) { return d <= 20.0; };
+	for (unsigned int bg = 0; bg < 16; ++bg) {
+		for (unsigned int fg = 0; fg < 16; ++fg) {
+			srgb888 xr;
+			xr.r = abs(pal[fg].r - pal[bg].r);
+			xr.g = abs(pal[fg].g - pal[bg].g);
+			xr.b = abs(pal[fg].b - pal[bg].b);
+			o.delta[bg][fg] = to_lch(xr).l;
+		}
+	}
+	o.compute_sums();
+	return o;
+}
+
+static void cx_report(const gvstat &o, const char *desc)
+{
+	printf("[%-5s] contrast Σ %.0f ø %.1f", desc, o.sum, o.avg);
+	printf(" // minus %u penalties:\tΣ %.0f ø %.1f\n",
+		o.penalized, o.adj_sum, o.adj_avg);
+}
+
+static void cx_report(const palstat &o)
+{
+	cx_report(o.x1616, "16x16");
+	cx_report(o.x816, " 8x16");
+	cx_report(o.x88, " 8x8 ");
 }
 
 static void cxl_command(const std::vector<lch> &lch_pal)
 {
 	printf("\e[1m════ Difference of the L components ════\e[0m\n");
-	double delta[16][16]{};
+	auto sb = cxl_compute(lch_pal);
 	colortable_16([&](int bg, int fg, int special) {
-		if (special || fg >= 16 || bg >= 16 || fg == bg) {
+		if (special || fg >= 16 || bg >= 16 || fg == bg)
 			printf("   ");
-			return;
-		}
-		delta[bg][fg] = fabs(lch_pal[fg].l - lch_pal[bg].l);
-		printf("%3.0f", delta[bg][fg]);
+		else
+			printf("%3.0f", sb.delta[bg][fg]);
 	});
-	auto pf = [](double x) { return x < 7.0; };
-	analyze(delta, pf, 16, 16, "16x16");
-	analyze(delta, pf, 16,  8, "16x8 ");
-	analyze(delta, pf,  8,  8, " 8x8 ");
+	cx_report(sb);
 }
 
 static void cxr_command(const std::vector<srgb888> &srgb_pal)
 {
 	printf("\e[1m════ L component of the radiosity difference ════\e[0m\n");
-	double delta[16][16]{};
+	auto sb = cxr_compute(srgb_pal);
 	colortable_16([&](int bg, int fg, int special) {
 		if (special || fg >= 16 || bg >= 16 || fg == bg) {
 			printf("   ");
 			return;
 		}
-		srgb888 xr;
-		xr.r = abs(srgb_pal[fg].r - srgb_pal[bg].r);
-		xr.g = abs(srgb_pal[fg].g - srgb_pal[bg].g);
-		xr.b = abs(srgb_pal[fg].b - srgb_pal[bg].b);
-		delta[bg][fg] = to_lch(xr).l;
-		printf("%3.0f", delta[bg][fg]);
+		printf("%3.0f", sb.delta[bg][fg]);
 	});
-	auto pf = [](double x) { return x <= 20.0; };
-	analyze(delta, pf, 16, 16, "16x16");
-	analyze(delta, pf, 16,  8, "16x8 ");
-	analyze(delta, pf,  8,  8, " 8x8 ");
+	cx_report(sb);
 }
 
 static std::vector<lch> loeq(std::vector<lch> la, double blue, double gray)
