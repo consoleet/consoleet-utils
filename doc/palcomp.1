@@ -41,6 +41,10 @@ Emit a -fg parameter upon xterm, and use color 7.
 Rotate colors using LCh space. (0 <= h < 360)
 .SS hueset=h
 Set the hue of all colors using LCh space.
+.SS ild=t
+Set the white point to be a series D illuminant at color temperature t. (t
+should be in the range 4000..25000 K). The default white point used by palcomp
+if no other is loaded is D65, i.e. ild=6500.
 .SS inv16
 Perform color inversion the way Norton Icon Editor did it.
 .SS litadd=r

@@ -206,7 +206,20 @@ static constexpr xyz to_xyz(const xy0 &e)
 	return {e.x / e.y, 1, (1 - e.x - e.y) / e.y};
 }
 
-static constexpr xyz white_point = to_xyz(xy0{0.312713, 0.329016});
+/**
+ * @t: black-body temperature in Kelvin (e.g. 5000, 5500, 6500)
+ */
+static constexpr xy0 illuminant_d(double t)
+{
+	double x = t <= 7000 ?
+		0.244063 + 0.09911 * 1000 / t + 2.9678 * 1000000 / (t * t) -
+		4.6070 * 1000000000 / (t * t * t) :
+		0.237040 + 0.24748 * 1000 / t + 1.9018 * 1000000 / (t * t) -
+		2.0064 * 1000000000 / (t * t * t);
+	return {x, -3.0 * x * x + 2.87 * x - 0.275};
+}
+
+static xyz white_point = to_xyz(illuminant_d(6500));
 
 static lrgb to_lrgb(const xyz &e)
 {
@@ -599,6 +612,12 @@ int main(int argc, const char **argv)
 			if (loadpal(&argv[0][8], ra) != 0)
 				return EXIT_FAILURE;
 			mod_ra = true;
+		} else if (strncmp(*argv, "ild=", 4) == 0) {
+			fprintf(stderr, "New white_point D_%.2f:\n", arg1 / 100);
+			auto a = illuminant_d(arg1);
+			fprintf(stderr, "{x=%.15f, y=%.15f}\n", a.x, a.y);
+			white_point = to_xyz(a);
+			fprintf(stderr, "{X=%.15f, Y=%.15f, Z=%.15f}\n", white_point.x, white_point.y, white_point.z);
 		} else if (strcmp(*argv, "debug") == 0) {
 			debug_cvt = 1;
 		} else if (strcmp(*argv, "stat") == 0) {
