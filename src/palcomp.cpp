@@ -19,7 +19,8 @@ namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
 struct srgb { double r = 0, g = 0, b = 0; };
 struct lrgb { double r = 0, g = 0, b = 0; };
-struct xyz { double x = 0, y = 0, z = 0; };
+struct xy0 { double x = 0, y = 0; }; // xyY (but without Y)
+struct xyz { double x = 0, y = 0, z = 0; }; // XYZ
 struct lab { double l = 0, a = 0, b = 0; };
 struct lch { double l = 0, c = 0, h = 0; };
 struct hsl { double h = 0, s = 0, l = 0; };
@@ -200,7 +201,12 @@ static hsl parse_hsl(const char *str)
 	return c;
 }
 
-static xyz white_point = {0.9504492182750991, 1, 1.0889166484304715};
+static constexpr xyz to_xyz(const xy0 &e)
+{
+	return {e.x / e.y, 1, (1 - e.x - e.y) / e.y};
+}
+
+static constexpr xyz white_point = to_xyz(xy0{0.312713, 0.329016});
 
 static lrgb to_lrgb(const xyz &e)
 {
