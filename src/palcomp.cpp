@@ -15,6 +15,7 @@
 #include <vector>
 #include <babl/babl.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/misc.h>
 
 namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
@@ -51,11 +52,6 @@ static constexpr srgb888 xpal_palette[] = {
 
 static unsigned int xterm_fg, xterm_bg;
 static const Babl *lch_space, *srgb_space, *srgb888_space;
-
-static double flpr(double x, double y)
-{
-	return fmod(fmod(x, y) + y, y);
-}
 
 static uint8_t fromhex(const char *s)
 {
@@ -521,7 +517,7 @@ int main(int argc, const char **argv)
 			mod_la = true;
 		} else if (strncmp(*argv, "hueadd=", 7) == 0) {
 			for (auto &e : la)
-				e.h = flpr(e.h + arg1, 360);
+				e.h = HX_flpr(e.h + arg1, 360);
 			mod_la = true;
 		} else if (strncmp(*argv, "hueset=", 5) == 0) {
 			arg1 = fmod(arg1, 360);

@@ -10,7 +10,7 @@ EXTRA_DIST = doc/changelog.rst doc/vfontas-formats.dot src/glynames.cpp LICENSE.
 dist_pkgdata_DATA = cp437x.uni cp1090f.uni
 
 palcomp_SOURCES = src/palcomp.cpp
-palcomp_LDADD = -lm ${babl_LIBS}
+palcomp_LDADD = -lm ${babl_LIBS} ${libHX_LIBS}
 vfontas_SOURCES = src/vfontas.cpp src/vfalib.cpp src/vfalib.hpp
 vfontas_LDADD = ${libHX_LIBS}
 dist_man1_MANS = doc/palcomp.1 doc/vfontas.1
