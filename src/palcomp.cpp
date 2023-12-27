@@ -554,8 +554,9 @@ int main(int argc, const char **argv)
 			mod_ra = true;
 		} else if (strcmp(*argv, "stat") == 0) {
 			printf("#L,c,h\n");
+			unsigned int cnt = 0;
 			for (auto &e : la)
-				printf("{%f,%f,%f}\n", e.l, e.c, e.h);
+				printf("%d: {%f,%f,%f}\n", cnt++, e.l, e.c, e.h);
 		} else if (strncmp(*argv, "litadd=", 7) == 0) {
 			for (auto &e : la)
 				e.l += arg1;
