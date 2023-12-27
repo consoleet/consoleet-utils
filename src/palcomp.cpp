@@ -13,15 +13,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <babl/babl.h>
 #include <libHX/ctype_helper.h>
 
 namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
 struct srgb { double r = 0, g = 0, b = 0; };
-struct lrgb { double r = 0, g = 0, b = 0; };
-struct xy0 { double x = 0, y = 0; }; // xyY (but without Y)
-struct xyz { double x = 0, y = 0, z = 0; }; // XYZ
-struct lab { double l = 0, a = 0, b = 0; };
 struct lch { double l = 0, c = 0, h = 0; };
 struct hsl { double h = 0, s = 0, l = 0; };
 }
@@ -52,7 +49,8 @@ static constexpr srgb888 xpal_palette[] = {
 	{0xff,0xff,0xff}, {0xff,0xff,0xff}, {0xff,0xff,0xff}, {0xff,0xff,0xff},
 };
 
-static unsigned int debug_cvt, xterm_fg, xterm_bg;
+static unsigned int xterm_fg, xterm_bg;
+static const Babl *lch_space, *srgb_space, *srgb888_space;
 
 static double flpr(double x, double y)
 {
@@ -120,28 +118,6 @@ static srgb888 to_srgb888(const srgb &e)
 	return {static_cast<uint8_t>(r), static_cast<uint8_t>(g), static_cast<uint8_t>(b)};
 }
 
-static double gamma_expand(double c)
-{
-	/*
-	 * To avoid zero slope, part of the range gets a linear mapping /
-	 * gamma of 1.0.
-	 */
-	if (c <= 0.04045)
-		return c / 12.92;
-	/*
-	 * The rest of the curve is a 2.4 gamma (instead of 2.2) to compensate
-	 * for the prior linear section. The 2.4 curve approximates the 2.2
-	 * curve in the input value range that is of interest.
-	 */
-	return pow((c + 0.055) / 1.055, 12 / 5.0);
-}
-
-static double gamma_compress(double c)
-{
-	return c <= (0.04045 / 12.92) ? c * 12.92 :
-	       pow(c, 5 / 12.0) * 1.055 - 0.055;
-}
-
 static double huetorgb(double p, double q, double t)
 {
 	if (t < 0)
@@ -172,16 +148,6 @@ static srgb to_srgb(const srgb888 &e)
 	return {e.r / 255.0, e.g / 255.0, e.b / 255.0};
 }
 
-static srgb to_srgb(const lrgb &e)
-{
-	return {gamma_compress(e.r), gamma_compress(e.g), gamma_compress(e.b)};
-}
-
-static lrgb to_lrgb(const srgb &e)
-{
-	return {gamma_expand(e.r), gamma_expand(e.g), gamma_expand(e.b)};
-}
-
 static hsl parse_hsl(const char *str)
 {
 	hsl c;
@@ -201,115 +167,25 @@ static hsl parse_hsl(const char *str)
 	return c;
 }
 
-static constexpr xyz to_xyz(const xy0 &e)
+static srgb888 to_srgb888(const lch &i)
 {
-	return {e.x / e.y, 1, (1 - e.x - e.y) / e.y};
+	srgb888 o{};
+	babl_process(babl_fish(lch_space, srgb888_space), &i, &o, 1);
+	return o;
 }
 
-/**
- * @t: black-body temperature in Kelvin (e.g. 5000, 5500, 6500)
- */
-static constexpr xy0 illuminant_d(double t)
+static lch to_lch(const srgb888 &i)
 {
-	double x = t <= 7000 ?
-		0.244063 + 0.09911 * 1000 / t + 2.9678 * 1000000 / (t * t) -
-		4.6070 * 1000000000 / (t * t * t) :
-		0.237040 + 0.24748 * 1000 / t + 1.9018 * 1000000 / (t * t) -
-		2.0064 * 1000000000 / (t * t * t);
-	return {x, -3.0 * x * x + 2.87 * x - 0.275};
+	lch o{};
+	babl_process(babl_fish(srgb888_space, lch_space), &i, &o, 1);
+	return o;
 }
 
-static xyz white_point = to_xyz(illuminant_d(6500));
-
-static lrgb to_lrgb(const xyz &e)
+static lch to_lch(const srgb &i)
 {
-	return {
-		e.x * 4277208 / 1319795    + e.y * -2028932 / 1319795   + e.z * -658032 / 1319795,
-		e.x * -70985202 / 73237775 + e.y * 137391598 / 73237775 + e.z * 3043398 / 73237775,
-		e.x * 164508 / 2956735     + e.y * -603196 / 2956735    + e.z * 3125652 / 2956735,
-	};
-}
-
-static xyz to_xyz(const lrgb &e)
-{
-	/* https://mina86.com/2019/srgb-xyz-matrix/ */
-	return {
-		e.r * 33786752 / 81924984 + e.g * 29295110 / 81924984  + e.b * 14783675 / 81924984,
-	        e.r * 8710647 / 40962492  + e.g * 29295110 / 40962492  + e.b * 2956735 / 40962492,
-	        e.r * 4751262 / 245774952 + e.g * 29295110 / 245774952 + e.b * 233582065 / 245774952,
-	};
-}
-
-static constexpr double epsilon = 216 / 24389.0, epsilon_inverse = 6 / 29.0;
-static constexpr double kappa = 24389 / 27.0;
-
-static double lab_fwd(double v)
-{
-	return v > epsilon ? pow(v, 1 / 3.0) : (kappa * v + 16) / 116;
-}
-
-static double lab_inv(double v)
-{
-	return v > epsilon_inverse ? pow(v, 3) : (v * 116 - 16) / kappa;
-}
-
-static xyz to_xyz(const lab &e)
-{
-	auto y = (e.l + 16) / 116;
-	auto x = (e.a / 500) + y;
-	auto z = y - (e.b / 200);
-	return {lab_inv(x) * white_point.x, e.l > 8 ? pow(y, 3) : e.l / kappa,
-	        lab_inv(z) * white_point.z};
-}
-
-static lab to_lab(const xyz &e)
-{
-	auto x = lab_fwd(e.x / white_point.x);
-	auto y = lab_fwd(e.y / white_point.y);
-	auto z = lab_fwd(e.z / white_point.z);
-	return lab{116 * y - 16.0, 500 * (x - y), 200 * (y - z)};
-}
-
-static lab to_lab(const lch &e)
-{
-	auto rad = e.h * 2 * M_PI / 360;
-	return {e.l, e.c * cos(rad), e.c * sin(rad)};
-}
-
-static lch to_lch(const lab &e)
-{
-	auto c = sqrt(pow(e.a, 2) + pow(e.b, 2));
-	auto h = atan2(e.b, e.a) * 360 / M_PI / 2;
-	if (h < 0)
-		h += 360;
-	return {e.l, c, h};
-}
-
-static lch to_lch(const srgb &a)
-{
-	auto b = to_lrgb(a);
-	if (debug_cvt)
-		fprintf(stderr, "\tlrgb = {%f, %f, %f}\n", b.r, b.g, b.b);
-	auto c = to_xyz(b);
-	if (debug_cvt)
-		fprintf(stderr, "\txyz = {%f, %f, %f}\n", c.x, c.y, c.z);
-	auto d = to_lab(c);
-	if (debug_cvt)
-		fprintf(stderr, "\tlab = {%f, %f, %f}\n", d.l, d.a, d.b);
-	auto e = to_lch(d);
-	if (debug_cvt)
-		fprintf(stderr, "\tlch = {%f, %f, %f}\n", e.l, e.c, e.h);
-	return e;
-}
-
-static lch to_lch(const srgb888 &color)
-{
-	if (debug_cvt)
-		fprintf(stderr, "to_lch(%s):\n", to_hex(color).c_str());
-	auto a = to_srgb(color);
-	if (debug_cvt)
-		fprintf(stderr, "\tsrgb = {%f, %f, %f}\n", a.r, a.g, a.b);
-	return to_lch(a);
+	lch o{};
+	babl_process(babl_fish(srgb_space, lch_space), &i, &o, 1);
+	return o;
 }
 
 static std::vector<lch> to_lch(const std::vector<srgb888> &in)
@@ -323,26 +199,8 @@ static std::vector<lch> to_lch(const std::vector<srgb888> &in)
 static std::vector<srgb888> to_srgb888(const std::vector<lch> &in)
 {
 	std::vector<srgb888> out;
-	for (const auto &color : in) {
-		if (debug_cvt)
-			fprintf(stderr, "to_srgb888(lch{%f, %f, %f}):\n", color.l, color.c, color.h);
-		auto a = to_lab(color);
-		if (debug_cvt)
-			fprintf(stderr, "\tlab = {%f, %f, %f}\n", a.l, a.a, a.b);
-		auto b = to_xyz(a);
-		if (debug_cvt)
-			fprintf(stderr, "\txyz = {%f, %f, %f}\n", b.x, b.y, b.z);
-		auto c = to_lrgb(b);
-		if (debug_cvt)
-			fprintf(stderr, "\tlrgb = {%f, %f, %f}\n", c.r, c.g, c.b);
-		auto d = to_srgb(c);
-		if (debug_cvt)
-			fprintf(stderr, "\tsrgb = {%f, %f, %f}\n", d.r, d.g, d.b);
-		auto e = to_srgb888(d);
-		if (debug_cvt)
-			fprintf(stderr, "\thex = %s\n", to_hex(e).c_str());
-		out.push_back(e);
-	}
+	for (const auto &color : in)
+		out.push_back(to_srgb888(color));
 	return out;
 }
 
@@ -590,6 +448,27 @@ int main(int argc, const char **argv)
 {
 	std::vector<srgb888> ra;
 	std::vector<lch> la;
+	struct bb_guard {
+		bb_guard() { ::babl_init(); }
+		~bb_guard() { ::babl_exit(); }
+	};
+	bb_guard bbg;
+
+	srgb888_space = babl_format_with_space("R'G'B' u8", babl_space("sRGB"));
+	if (srgb888_space == nullptr) {
+		fprintf(stderr, "BABL does not know sRGB888\n");
+		return EXIT_FAILURE;
+	}
+	srgb_space = babl_format_with_space("R'G'B' double", babl_space("sRGB"));
+	if (srgb_space == nullptr) {
+		fprintf(stderr, "BABL does not know sRGB\n");
+		return EXIT_FAILURE;
+	}
+	lch_space = babl_format_with_space("CIE LCH(ab) double", babl_space("sRGB"));
+	if (lch_space == nullptr) {
+		fprintf(stderr, "BABL does not know LCh\n");
+		return EXIT_FAILURE;
+	}
 
 	while (*++argv != nullptr) {
 		auto ptr = strchr(*argv, '=');
@@ -612,14 +491,6 @@ int main(int argc, const char **argv)
 			if (loadpal(&argv[0][8], ra) != 0)
 				return EXIT_FAILURE;
 			mod_ra = true;
-		} else if (strncmp(*argv, "ild=", 4) == 0) {
-			fprintf(stderr, "New white_point D_%.2f:\n", arg1 / 100);
-			auto a = illuminant_d(arg1);
-			fprintf(stderr, "{x=%.15f, y=%.15f}\n", a.x, a.y);
-			white_point = to_xyz(a);
-			fprintf(stderr, "{X=%.15f, Y=%.15f, Z=%.15f}\n", white_point.x, white_point.y, white_point.z);
-		} else if (strcmp(*argv, "debug") == 0) {
-			debug_cvt = 1;
 		} else if (strcmp(*argv, "stat") == 0) {
 			printf("#L,c,h\n");
 			for (auto &e : la)
