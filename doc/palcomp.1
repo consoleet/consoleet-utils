@@ -27,8 +27,6 @@ Print a contrast analysis of the palette based on radiosity differences. This
 is useful because even if two colors have the same/a similar brightness in the
 LCh colorspace, it is possible for (sufficiently capable) humans to distinguish
 such two colors.
-.SS debug
-Turn on individual colorspace conversion reporting.
 .SS emit
 Emit the palette as a line for an XDG theme file.
 .SS eq[=b]
@@ -44,10 +42,6 @@ Emit a -fg parameter upon xterm, and use color 7.
 Rotate colors using LCh space. (0 <= h < 360)
 .SS hueset=h
 Set the hue of all colors using LCh space.
-.SS ild=t
-Set the white point to be a series D illuminant at color temperature t. (t
-should be in the range 4000..25000 K). The default white point used by palcomp
-if no other is loaded is D65, i.e. ild=6500.
 .SS inv16
 Perform color inversion the way Norton Icon Editor did it.
 .SS litadd=r
