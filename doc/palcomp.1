@@ -31,6 +31,11 @@ such two colors.
 Turn on individual colorspace conversion reporting.
 .SS emit
 Emit the palette as a line for an XDG theme file.
+.SS eq[=b]
+Equalize (equal-space) the lightness values of the palette's colors. The b
+parameter (0 <= b <= 100) specifies the mandatory offset from the darkest to
+2nd darkest color \(em often this is black to blue. If b is absent, uses
+b=1/16.
 .SS stat
 Emit the LCh form of the palette to stdout (no particular formatting).
 .SS fg
@@ -81,12 +86,14 @@ optional \fB,\fP\fIl\fP suffix. Afterwards, behaves like hsltint=h,s,l.
 .SS lchtint=#rrggbb[,l]
 Replace the LCh hue and saturation by the base color given in HSL or RGB. The
 LCh L value is retained as-is.
-.SS loeq=b,g
-Equalize (equal-space) the brightnesses of the palette's low-intensity colors
-plus darkgray. The b parameter (0 <= b <= g) specifies the mandatory offset
-from the darkest to 2nd darkest color \(em often this is black to blue. The g
-parameter (b <= g <= 100) specifies the lightness that gray is to use. If g is
-absent, uses g=8/9. If b is absent, uses b=1/9.
+.SS loeq[=b[,g]]
+Equalize (equal-space) the lightness values of the palette's low-intensity
+colors plus darkgray. The b parameter (0 <= b <= g) specifies the mandatory
+offset from the darkest to 2nd darkest color \(em often this is black to blue.
+The g parameter (b <= g <= 100) specifies the lightness that the brightest
+color of the low-intensity section is to use. If g is absent, defaults to
+g=8/9; this is so that gray is still a little less intense than white. If b is
+absent, uses b=1/9.
 .SS vga
 Loads the standard VGA palette.
 .SS vgs

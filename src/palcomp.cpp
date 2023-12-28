@@ -428,20 +428,21 @@ static void cxr_command(const std::vector<srgb888> &srgb_pal)
 	cx_report(sb);
 }
 
-static std::vector<lch> loeq(std::vector<lch> la, double blue, double gray)
+static std::vector<lch> equalize(std::vector<lch> la, unsigned int sbl_size,
+    double blue, double gray)
 {
-	unsigned int sbl[9];
-	for (unsigned int idx = 0; idx < std::size(sbl); ++idx)
+	std::vector<unsigned int> sbl(sbl_size);
+	for (unsigned int idx = 0; idx < sbl.size(); ++idx)
 		sbl[idx] = idx;
-	std::sort(std::begin(sbl), std::end(sbl),
+	std::sort(sbl.begin(), sbl.end(),
 		[&](unsigned int x, unsigned int y) { return la[x].l < la[y].l; });
 
-	fprintf(stderr, "loeq in: ");
+	fprintf(stderr, "equalize(%zu) in: ", sbl.size());
 	for (auto z : sbl)
 		fprintf(stderr, "%u(%f) ", z, la[z].l);
-	fprintf(stderr, "\nloeq out: ");
-	for (unsigned int idx = 1; idx < std::size(sbl); ++idx) {
-		la[sbl[idx]].l = (gray - blue) * (idx - 1) / 7 + blue + la[sbl[0]].l;
+	fprintf(stderr, "\nequalize out: ");
+	for (unsigned int idx = 1; idx < sbl.size(); ++idx) {
+		la[sbl[idx]].l = (gray - blue) * (idx - 1) / (sbl.size() - 2) + blue + la[sbl[0]].l;
 		fprintf(stderr, "%u(%f) ", sbl[idx], la[sbl[idx]].l);
 	}
 	fprintf(stderr, "\n");
@@ -633,14 +634,16 @@ int main(int argc, const char **argv)
 		} else if (strcmp(*argv, "cxr") == 0) {
 			cxr_command(ra);
 		} else if (strcmp(*argv, "loeq") == 0) {
-			double z = 100 / 9.0;
-			la = loeq(la, z, z * 8);
+			la = equalize(la, 9, 100 / 9.0, 100 * 8 / 9.0);
 			mod_la = true;
 		} else if (strncmp(*argv, "loeq=", 5) == 0) {
 			char *end = nullptr;
 			arg1 = strtod(&argv[0][5], &end);
 			double arg2 = *end == ',' ? strtod(end + 1, &end) : 100 / 9.0 * 8;
-			la = loeq(la, arg1, arg2);
+			la = equalize(la, 9, arg1, arg2);
+			mod_la = true;
+		} else if (strcmp(*argv, "eq") == 0) {
+			la = equalize(la, 16, 100 / 16.0, 100);
 			mod_la = true;
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
