@@ -556,8 +556,12 @@ int main(int argc, const char **argv)
 		} else if (strcmp(*argv, "lch") == 0) {
 			printf("#L,c,h\n");
 			unsigned int cnt = 0;
-			for (auto &e : la)
-				printf("%x: {%f,%f,%f}\n", cnt++, e.l, e.c, e.h);
+			for (auto &e : la) {
+				printf("\e[%u;3%um%x\e[0m: {%10.6f, %10.6f, %10.6f}\n",
+					!!(cnt & 0x8), cnt & 0x7,
+					cnt, e.l, e.c, e.h);
+				++cnt;
+			}
 		} else if (strncmp(*argv, "litadd=", 7) == 0) {
 			for (auto &e : la)
 				e.l += arg1;
