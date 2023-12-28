@@ -228,7 +228,7 @@ static std::vector<srgb888> to_srgb888(const std::vector<lch> &in)
 	return out;
 }
 
-static void emit(const std::vector<srgb888> &pal)
+static void emit_xfce(const std::vector<srgb888> &pal)
 {
 	printf("ColorPalette=");
 	for (const auto &e : pal)
@@ -236,7 +236,7 @@ static void emit(const std::vector<srgb888> &pal)
 	printf("\n");
 }
 
-static void xterm(const std::vector<srgb888> &pal)
+static void emit_xterm(const std::vector<srgb888> &pal)
 {
 	for (unsigned int idx = 0; idx < 16; ++idx)
 		printf(" -xrm *VT100*color%u:%s", idx, to_hex(pal[idx]).c_str());
@@ -553,11 +553,11 @@ int main(int argc, const char **argv)
 			if (loadpal(&argv[0][8], ra) != 0)
 				return EXIT_FAILURE;
 			mod_ra = true;
-		} else if (strcmp(*argv, "stat") == 0) {
+		} else if (strcmp(*argv, "lch") == 0) {
 			printf("#L,c,h\n");
 			unsigned int cnt = 0;
 			for (auto &e : la)
-				printf("%d: {%f,%f,%f}\n", cnt++, e.l, e.c, e.h);
+				printf("%x: {%f,%f,%f}\n", cnt++, e.l, e.c, e.h);
 		} else if (strncmp(*argv, "litadd=", 7) == 0) {
 			for (auto &e : la)
 				e.l += arg1;
@@ -598,10 +598,10 @@ int main(int argc, const char **argv)
 			auto base = parse_hsl(&argv[0][8]);
 			la = lchtint(to_lch(to_srgb(base)), la);
 			mod_la = true;
-		} else if (strcmp(*argv, "emit") == 0) {
-			emit(ra);
+		} else if (strcmp(*argv, "emit") == 0 || strcmp(*argv, "xfce") == 0) {
+			emit_xfce(ra);
 		} else if (strcmp(*argv, "xterm") == 0) {
-			xterm(ra);
+			emit_xterm(ra);
 		} else if (strcmp(*argv, "fg") == 0) {
 			xterm_fg = 1;
 		} else if (strcmp(*argv, "bg") == 0) {
