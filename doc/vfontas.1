@@ -14,6 +14,8 @@ is able to generate outline fonts from bitmapped fonts.
 .PP
 \fB\-clearmap\fP
 .PP
+\fB\-copy\fP \fIsrcx srcy width height dstx dsty\fP
+.PP
 \fB\-cpisep\fP \fIsep\fP
 .PP
 \fB\-crop\fP \fIxpos\fP \fIypos\fP \fIwidth\fP \fIheight\fP
@@ -383,6 +385,8 @@ differently-sized canvas, combine with \fB\-crop\fP or \fB\-canvas\fP.
 Enlarges the glyph box to the specified size. (It never shrinks it.)
 .SS clearmap
 Discards the in-memory glyph index <-> Unicode mapping table.
+.SS copy
+Copy a portion of the bitmap from one place to another, overwriting pixels.
 .SS cpisep
 Switches to flat hierarchy extraction for \-xcpi, using the specified character
 for delimiter.
