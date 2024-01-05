@@ -15,7 +15,7 @@ CIELAB/LCh.
 .SS b0
 Set color 0 to actual black.
 .SS bg
-Emit a -bg parameter upon xterm, and use color 0.
+Emit a \-bg parameter upon xterm, and use color 0.
 .SS ct
 Print the 16-color table.
 .SS ct256
@@ -33,7 +33,7 @@ parameter (0 <= b <= 100) specifies the mandatory lightness difference from the
 darkest to 2nd darkest color. In practice, b specifies the lightness value that
 blue is to be assigned. If b is absent, uses b=1/16.
 .SS fg
-Emit a -fg parameter upon xterm, and use color 7.
+Emit a \-fg parameter upon xterm, and use color 7.
 .SS hueadd=h
 Rotate colors using LCh space. (0 <= h < 360)
 .SS hueset=h
@@ -121,7 +121,7 @@ Lightness in LCh space behaves a bit counterintuitive. When (saturation) c>0,
 then L=0 does not mean black, e.g.:
 .nf
 $ palcomp vgs lchtint=#0000ff stat
-{-0.000000,131.208094,301.364692}
+{\-0.000000,131.208094,301.364692}
 ...
 ColorPalette=#0000a9;...
 .fi
@@ -129,9 +129,9 @@ ColorPalette=#0000a9;...
 As a consequence, one needs to manipulate (shift and stretch) the L channel
 values more after lchtint, for example by using litadd and litmul commands:
 .IP \(bu 4
-palcomp vgs lchtint=#0000ff litadd=-42 litmul=1.74 lch xfce
+palcomp vgs lchtint=#0000ff litadd=\-42 litmul=1.74 lch xfce
 .IP \(bu 4
-palcomp vgs lchtint=#0080ff litadd=-25 litmul=1.49 lch xfce
+palcomp vgs lchtint=#0080ff litadd=\-25 litmul=1.49 lch xfce
 .PP
 Stretching the brightness this way has the side-effect that all colors get a
 bit darker, which may be undesirable. Instead of combining a tint with litadd
