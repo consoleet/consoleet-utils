@@ -580,7 +580,7 @@ int main(int argc, const char **argv)
 			for (auto &e : la)
 				e.h = HX_flpr(e.h + arg1, 360);
 			mod_la = true;
-		} else if (strncmp(*argv, "hueset=", 5) == 0) {
+		} else if (strncmp(*argv, "hueset=", 7) == 0) {
 			arg1 = fmod(arg1, 360);
 			for (auto &e : la)
 				e.h = arg1;
