@@ -649,6 +649,9 @@ int main(int argc, const char **argv)
 		} else if (strcmp(*argv, "eq") == 0) {
 			la = equalize(la, 16, 100 / 16.0, 100);
 			mod_la = true;
+		} else if (strncmp(*argv, "eq=", 3) == 0) {
+			la = equalize(la, 16, arg1, 100);
+			mod_la = true;
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
