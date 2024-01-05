@@ -29,9 +29,9 @@ LCh colorspace, it is possible for (sufficiently capable) humans to distinguish
 such two colors.
 .SS eq[=b]
 Equalize (equal-space) the lightness values of the palette's colors. The b
-parameter (0 <= b <= 100) specifies the mandatory offset from the darkest to
-2nd darkest color \(em often this is black to blue. If b is absent, uses
-b=1/16.
+parameter (0 <= b <= 100) specifies the mandatory lightness difference from the
+darkest to 2nd darkest color. In practice, b specifies the lightness value that
+blue is to be assigned. If b is absent, uses b=1/16.
 .SS fg
 Emit a -fg parameter upon xterm, and use color 7.
 .SS hueadd=h
@@ -81,9 +81,11 @@ LCh L value is retained as-is.
 .SS loeq[=b[,g]]
 Equalize (equal-space) the lightness values of the palette's low-intensity
 colors plus darkgray. The b parameter (0 <= b <= g) specifies the mandatory
-offset from the darkest to 2nd darkest color \(em often this is black to blue.
+lightness difference from the darkest to 2nd darkest color. In practice,
+b specifies the lightness value that blue is to be assigned.
 The g parameter (b <= g <= 100) specifies the lightness that the brightest
-color of the low-intensity section is to use. If g is absent, defaults to
+color of the low-intensity section is to use (in practice, the lightness
+for grey). If g is absent, defaults to
 g=8/9; this is so that gray is still a little less intense than white. If b is
 absent, uses b=1/9.
 .SS vga
