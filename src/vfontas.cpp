@@ -454,7 +454,7 @@ static void vf_extract_pfh(const char *pfhblk)
 }
 
 static int vf_extract_cpi2(const char *vdata, size_t vsize,
-    const char *directory)
+    const char *directory, bool seg_mode)
 {
 	struct cpi_fontfile_header ffh;
 	struct cpi_fontinfo_header fih;
@@ -483,10 +483,14 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 		cpeh.cpeh_size        = le16_to_cpu(cpeh.cpeh_size);
 		if (cpeh.cpeh_size != sizeof(cpeh))
 			return -EINVAL;
-		cpeh.next_cpeh_offset = xlate_segoff(le32_to_cpu(cpeh.next_cpeh_offset));
+		cpeh.next_cpeh_offset = seg_mode ?
+		                        xlate_segoff(le32_to_cpu(cpeh.next_cpeh_offset)) :
+		                        le32_to_cpu(cpeh.next_cpeh_offset);
 		cpeh.device_type      = le16_to_cpu(cpeh.device_type);
 		cpeh.codepage         = le16_to_cpu(cpeh.codepage);
-		cpeh.cpih_offset      = xlate_segoff(le32_to_cpu(cpeh.cpih_offset));
+		cpeh.cpih_offset      = seg_mode ?
+		                        xlate_segoff(le32_to_cpu(cpeh.cpih_offset)) :
+		                        le32_to_cpu(cpeh.cpih_offset);
 		cpeblk = vdata + cpeh.next_cpeh_offset;
 
 		printf("CPEH #%u: Name: %.*s, Codepage: %u, Device: %.*s, DType: %u\n",
@@ -522,7 +526,7 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 	return true;
 }
 
-static bool vf_xcpi(font &f, char **args)
+static bool vf_xcpi(font &f, char **args, bool seg_mode)
 {
 	auto in_fd = open(args[0], O_RDONLY);
 	if (in_fd < 0) {
@@ -543,12 +547,22 @@ static bool vf_xcpi(font &f, char **args)
 	}
 	auto mapclean = make_scope_success([&]() { munmap(mapping, sb.st_size); });
 	auto ret = vf_extract_cpi2(static_cast<const char *>(mapping),
-	           sb.st_size, args[1]);
+	           sb.st_size, args[1], seg_mode);
 	if (ret == -EINVAL) {
 		fprintf(stderr, "xcpi: file \"%s\" not recognized\n", args[0]);
 		return false;
 	}
 	return ret >= 0;
+}
+
+static bool vf_xcpi_flat(font &f, char **args)
+{
+	return vf_xcpi(f, args, false);
+}
+
+static bool vf_xcpi_seg(font &f, char **args)
+{
+	return vf_xcpi(f, args, true);
 }
 
 static bool vf_xlat(font &f, char **args)
@@ -601,7 +615,8 @@ static const struct vf_command {
 	{"setname", 1, vf_setname},
 	{"setprop", 2, vf_setprop},
 	{"upscale", 2, vf_upscale},
-	{"xcpi", 2, vf_xcpi},
+	{"xcpi", 2, vf_xcpi_flat},
+	{"xcpi.ice", 2, vf_xcpi_seg},
 	{"xlat", 2, vf_xlat},
 };
 

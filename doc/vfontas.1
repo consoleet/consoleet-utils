@@ -78,7 +78,9 @@ is able to generate outline fonts from bitmapped fonts.
 .PP
 \fB\-upscale\fP \fIxscale\fP \fIyscale\fP
 .PP
-\fB\-xcpi\fP \fIega437.cpi\fP \fIoutdir/\fP
+\fB\-xcpi\fP \fIega.cpi\fP \fIoutdir/\fP
+.PP
+\fB\-xcpi.ice\fP \fIega.ice\fP \fIoutdir/\fP
 .PP
 \fB\-xlat\fP \fIxoffset\fP \fIyoffset\fP
 .SH Formats
@@ -388,7 +390,7 @@ Discards the in-memory glyph index <-> Unicode mapping table.
 .SS copy
 Copy a portion of the bitmap from one place to another, overwriting pixels.
 .SS cpisep
-Switches to flat hierarchy extraction for \-xcpi, using the specified character
+Switches to flat hierarchy extraction for \-xcpi*, using the specified character
 for delimiter.
 .SS crop
 Removes an outer area from the glyph images, shrinking the image in the process.
@@ -555,10 +557,13 @@ BDF: The values is used for the WEIGHT_NAME attribute.
 SFD: A non-empty variant name, in lower case. ("medium", "bold", ...)
 .SS upscale
 Performs a linear upscale by an integral factor for all glyphs.
-.SS xcpi
+.SS xcpi, xcpi.ice
 Extracts a multi-font .cpi file (as was typically used on DOS) as separate .fnt
 files into the specified directory. This operation does not touch the in-memory
 glyph buffers or Unicode mapping table.
+.PP
+Use \-xcpi for most .cpi files from MS-DOS, but \-xcpi.ice for the
+MS-DOS 6.0 Icelandic extension file, ega.ice.
 .SS xlat
 Moves all glyphs around within their canvases by the specified amount.
 vfontas's coordinate system has (0,0) in the upper left corner, with positive x
