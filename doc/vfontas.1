@@ -564,7 +564,10 @@ Moves all glyphs around within their canvases by the specified amount.
 vfontas's coordinate system has (0,0) in the upper left corner, with positive x
 going to the right, and positive y going down.
 .SH Known limits
-The Linux kernel accepts console font glyphs of at most 32x32 in size.
+The fbdev driver in the Linux kernel accepts console font glyphs of at most
+32x32 in size. Starting with commit 152609795dbf [expected to be included in
+Linux 6.9-rc2], the limit is 64x128.
+.\" https://lore.kernel.org/lkml/Zfx8hg0RRDmKbJ0O@carbonx1/
 .SH The Consoleet bitmap format
 The Consoleet text bitmap format is very similar to PBM itself. Instead of "P1"
 as in PBM, a CLT file begins with "PCLT" on the first line. In the second line,
