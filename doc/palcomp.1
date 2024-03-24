@@ -80,14 +80,14 @@ Replace the LCh hue and saturation by the base color given in HSL or RGB. The
 LCh L value is retained as-is.
 .SS loeq[=b[,g]]
 Equalize (equal-space) the lightness values of the palette's low-intensity
-colors plus darkgray. The b parameter (0 <= b <= g) specifies the mandatory
-lightness difference from the darkest to 2nd darkest color. In practice,
-b specifies the lightness value that blue is to be assigned.
+colors plus darkgray. The b parameter (0 <= b <= g <= 100) specifies the
+mandatory lightness difference from the darkest to 2nd darkest color. In
+practice, b specifies the lightness value that blue is to be assigned.
 The g parameter (b <= g <= 100) specifies the lightness that the brightest
 color of the low-intensity section is to use (in practice, the lightness
 for grey). If g is absent, defaults to
-g=8/9; this is so that gray is still a little less intense than white. If b is
-absent, uses b=1/9.
+g=88.88; this is so that gray is still a little less intense than white. If b
+is absent, uses b=11.11.
 .SS vga
 Loads the standard VGA palette.
 .SS vgs
