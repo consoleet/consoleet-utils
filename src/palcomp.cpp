@@ -432,11 +432,12 @@ static std::vector<lch> equalize(std::vector<lch> la, unsigned int sbl_size,
 
 	fprintf(stderr, "equalize(%zu) in: ", sbl.size());
 	for (auto z : sbl)
-		fprintf(stderr, "%u(%f) ", z, la[z].l);
+		fprintf(stderr, "%f(\e[%u;3%um%x\e[0m) ", la[z].l, !!(z & 0x8), z & 0x7, z);
 	fprintf(stderr, "\nequalize out: ");
 	for (unsigned int idx = 1; idx < sbl.size(); ++idx) {
-		la[sbl[idx]].l = (gray - blue) * (idx - 1) / (sbl.size() - 2) + blue + la[sbl[0]].l;
-		fprintf(stderr, "%u(%f) ", sbl[idx], la[sbl[idx]].l);
+		unsigned int z = sbl[idx];
+		la[z].l = (gray - blue) * (idx - 1) / (sbl.size() - 2) + blue + la[sbl[0]].l;
+		fprintf(stderr, "%f(\e[%u;3%um%x\e[0m) ", la[z].l, !!(z & 0x8), z & 0x7, z);
 	}
 	fprintf(stderr, "\n");
 	return la;
