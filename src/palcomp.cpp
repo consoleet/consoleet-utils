@@ -20,6 +20,7 @@
 namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
 struct srgb { double r = 0, g = 0, b = 0; };
+struct lrgb { double r = 0, g = 0, b = 0; };
 struct lch { double l = 0, c = 0, h = 0; };
 struct hsl { double h = 0, s = 0, l = 0; };
 
@@ -363,19 +364,72 @@ static palstat cxl_compute(const std::vector<lch> &pal)
 	return o;
 }
 
-static palstat cxr_compute(const std::vector<srgb888> &pal)
+static double gamma_expand(double c)
 {
-	palstat o;
-	o.penalize = [](double d) { return d <= 20.0; };
-	for (unsigned int bg = 0; bg < 16; ++bg) {
-		for (unsigned int fg = 0; fg < 16; ++fg) {
-			srgb888 xr;
-			xr.r = abs(pal[fg].r - pal[bg].r);
-			xr.g = abs(pal[fg].g - pal[bg].g);
-			xr.b = abs(pal[fg].b - pal[bg].b);
-			o.delta[bg][fg] = to_lch(xr).l;
-		}
+	/*
+	 * To avoid zero slope, part of the range gets a linear mapping /
+	 * gamma of 1.0.
+	 */
+	if (c <= 0.04045)
+		return c / 12.92;
+	/*
+	 * The rest of the curve is a 2.4 gamma (instead of 2.2) to compensate
+	 * for the prior linear section. The 2.4 curve approximates the 2.2
+	 * curve in the input value range that is of interest.
+	 */
+	return pow((c + 0.055) / 1.055, 12 / 5.0);
+}
+
+static lrgb to_lrgb(const srgb &e)
+{
+	return {gamma_expand(e.r), gamma_expand(e.g), gamma_expand(e.b)};
+}
+
+static double trivial_lightness(const lrgb &k)
+{
+	return 0.2126729 * k.r + 0.7151522 * k.g + 0.0721750 * k.b; // D65 luminance
+}
+
+static constexpr struct {
+	double normbg = 0.56, normtxt = 0.57, revtxt = 0.62, revbg = 0.65,
+		black_thresh = 0.022, black_clamp = 1.414,
+		scale_bow = 1.14, scale_wob = 1.14,
+		lo_bow_offset = 0.027, lo_wob_offset = 0.027,
+		delta_y_min = 0.0005, lo_clip = 0.1;
+} sa98g;
+
+static double apca_contrast(double ytx, double ybg)
+{
+	if (ytx <= sa98g.black_thresh)
+		ytx += pow(sa98g.black_thresh - ytx, sa98g.black_clamp);
+	if (ybg <= sa98g.black_thresh)
+		ybg += pow(sa98g.black_thresh - ybg, sa98g.black_clamp);
+	if (fabs(ybg - ytx) < sa98g.delta_y_min)
+		return 0;
+	double oc;
+	if (ybg > ytx) {
+		auto sapc = (pow(ybg, sa98g.normbg) - pow(ytx, sa98g.normtxt)) * sa98g.scale_bow;
+		oc = sapc < sa98g.lo_clip ? 0 : sapc - sa98g.lo_bow_offset;
+	} else {
+		auto sapc = (pow(ybg, sa98g.revbg) - pow(ytx, sa98g.revtxt)) * sa98g.scale_wob;
+		oc = sapc > -sa98g.lo_clip ? 0 : sapc + sa98g.lo_wob_offset;
 	}
+	return 100 * fabs(oc);
+}
+
+static palstat cxa_compute(const std::vector<srgb888> &pal)
+{
+	/* APCA W3 contrast calculation */
+	/* History: https://github.com/w3c/wcag/issues/695 */
+	/* Implementation: https://git.apcacontrast.com/documentation/README */
+	palstat o;
+	o.penalize = [](double d) { return d <= 4.5; };
+	std::vector<double> ell(pal.size());
+	for (unsigned int i = 0; i < pal.size(); ++i)
+		ell[i] = trivial_lightness(to_lrgb(to_srgb(pal[i])));
+	for (unsigned int bg = 0; bg < 16; ++bg)
+		for (unsigned int fg = 0; fg < 16; ++fg)
+			o.delta[bg][fg] = apca_contrast(ell[fg], ell[bg]);
 	o.compute_sums();
 	return o;
 }
@@ -407,16 +461,16 @@ static void cxl_command(const std::vector<lch> &lch_pal)
 	cx_report(sb);
 }
 
-static void cxr_command(const std::vector<srgb888> &srgb_pal)
+static void cxa_command(const std::vector<srgb888> &pal)
 {
-	printf("\e[1m════ L component of the radiosity difference ════\e[0m\n");
-	auto sb = cxr_compute(srgb_pal);
+	printf("\e[1m════ APCA lightness contrast ════\e[0m\n");
+	auto sb = cxa_compute(pal);
 	colortable_16([&](int bg, int fg, int special) {
 		if (special || fg >= 16 || bg >= 16 || fg == bg) {
-			printf("   ");
+			printf("    ");
 			return;
 		}
-		printf("%3.0f", sb.delta[bg][fg]);
+		printf("%3.0f ", sb.delta[bg][fg]);
 	});
 	cx_report(sb);
 }
@@ -626,8 +680,8 @@ int main(int argc, const char **argv)
 			colortable_16();
 		} else if (strcmp(*argv, "cxl") == 0) {
 			cxl_command(la);
-		} else if (strcmp(*argv, "cxr") == 0) {
-			cxr_command(ra);
+		} else if (strcmp(*argv, "cxa") == 0) {
+			cxa_command(ra);
 		} else if (strcmp(*argv, "loeq") == 0) {
 			la = equalize(la, 9, 100 / 9.0, 100 * 8 / 9.0);
 			mod_la = true;
