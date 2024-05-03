@@ -73,6 +73,7 @@ static constexpr srgb888 win_palette[] = {
 };
 
 static unsigned int xterm_fg, xterm_bg;
+static double g_continuous_gamma;
 static const Babl *lch_space, *srgb_space, *srgb888_space;
 
 static uint8_t fromhex(const char *s)
@@ -366,6 +367,8 @@ static palstat cxl_compute(const std::vector<lch> &pal)
 
 static double gamma_expand(double c)
 {
+	if (g_continuous_gamma != 0)
+		return pow(c, g_continuous_gamma);
 	/*
 	 * To avoid zero slope, part of the range gets a linear mapping /
 	 * gamma of 1.0.
@@ -377,7 +380,7 @@ static double gamma_expand(double c)
 	 * for the prior linear section. The 2.4 curve approximates the 2.2
 	 * curve in the input value range that is of interest.
 	 */
-	return pow((c + 0.055) / 1.055, 12 / 5.0);
+	return std::min(1.0, pow((c + 0.055) / 1.055, 12 / 5.0));
 }
 
 static lrgb to_lrgb(const srgb &e)
@@ -682,6 +685,8 @@ int main(int argc, const char **argv)
 			cxl_command(la);
 		} else if (strcmp(*argv, "cxa") == 0) {
 			cxa_command(ra);
+		} else if (strncmp(*argv, "cfgamma=", 8) == 0) {
+			g_continuous_gamma = arg1;
 		} else if (strcmp(*argv, "loeq") == 0) {
 			la = equalize(la, 9, 100 / 9.0, 100 * 8 / 9.0);
 			mod_la = true;
