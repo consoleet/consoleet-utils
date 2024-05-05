@@ -399,23 +399,24 @@ static constexpr struct {
 		scale_bow = 1.14, scale_wob = 1.14,
 		lo_bow_offset = 0.027, lo_wob_offset = 0.027,
 		delta_y_min = 0.0005, lo_clip = 0.1;
-} sa98g;
+} sa_param; /* SAPC/APCA ver 0.0.98G */
 
 static double apca_contrast(double ytx, double ybg)
 {
-	if (ytx <= sa98g.black_thresh)
-		ytx += pow(sa98g.black_thresh - ytx, sa98g.black_clamp);
-	if (ybg <= sa98g.black_thresh)
-		ybg += pow(sa98g.black_thresh - ybg, sa98g.black_clamp);
-	if (fabs(ybg - ytx) < sa98g.delta_y_min)
+	if (ytx <= sa_param.black_thresh)
+		ytx += pow(sa_param.black_thresh - ytx, sa_param.black_clamp);
+	if (ybg <= sa_param.black_thresh)
+		ybg += pow(sa_param.black_thresh - ybg, sa_param.black_clamp);
+	if (fabs(ybg - ytx) < sa_param.delta_y_min)
 		return 0;
 	double oc;
+	/* SAPC = S-LUV Advanced Predictive Colour */
 	if (ybg > ytx) {
-		auto sapc = (pow(ybg, sa98g.normbg) - pow(ytx, sa98g.normtxt)) * sa98g.scale_bow;
-		oc = sapc < sa98g.lo_clip ? 0 : sapc - sa98g.lo_bow_offset;
+		auto sapc = (pow(ybg, sa_param.normbg) - pow(ytx, sa_param.normtxt)) * sa_param.scale_bow;
+		oc = sapc < sa_param.lo_clip ? 0 : sapc - sa_param.lo_bow_offset;
 	} else {
-		auto sapc = (pow(ybg, sa98g.revbg) - pow(ytx, sa98g.revtxt)) * sa98g.scale_wob;
-		oc = sapc > -sa98g.lo_clip ? 0 : sapc + sa98g.lo_wob_offset;
+		auto sapc = (pow(ybg, sa_param.revbg) - pow(ytx, sa_param.revtxt)) * sa_param.scale_wob;
+		oc = sapc > -sa_param.lo_clip ? 0 : sapc + sa_param.lo_wob_offset;
 	}
 	return 100 * fabs(oc);
 }

@@ -24,9 +24,10 @@ Print 256-color cubes and tables.
 Print a contrast analysis of the palette based on brightness differences.
 .SS cxa
 Print a contrast analysis of the palette based on Myndex Advanced Perceptual
-Contrast Algorithm (APCA W3). This is useful because even if two colors have
-the same/a similar brightness in the LCh colorspace, it is possible for
-(sufficiently capable) humans to distinguish such two colors.
+Contrast Algorithm (APCA W3). Be aware of the Helmholtz\(enKohlrausch effect,
+where certain highly saturated colors appear brighter than their measured
+luminance would imply; in other words, a color pair might appear more legible
+than the computed contrast value indicates.
 .SS eq[=b]
 Equalize (equal-space) the lightness values of the palette's colors. The b
 parameter (0 <= b <= 100) specifies the mandatory lightness difference from the
