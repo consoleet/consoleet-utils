@@ -397,7 +397,7 @@ static constexpr struct {
 	double normbg = 0.56, normtxt = 0.57, revtxt = 0.62, revbg = 0.65,
 		black_thresh = 0.022, black_clamp = 1.414,
 		scale_bow = 1.14, scale_wob = 1.14,
-		lo_bow_offset = 0.027, lo_wob_offset = 0.027,
+		lo_offset = 0.027,
 		delta_y_min = 0.0005, lo_clip = 0.1;
 } sa_param; /* SAPC/APCA ver 0.0.98G */
 
@@ -413,10 +413,10 @@ static double apca_contrast(double ytx, double ybg)
 	/* SAPC = S-LUV Advanced Predictive Colour */
 	if (ybg > ytx) {
 		auto sapc = (pow(ybg, sa_param.normbg) - pow(ytx, sa_param.normtxt)) * sa_param.scale_bow;
-		oc = sapc < sa_param.lo_clip ? 0 : sapc - sa_param.lo_bow_offset;
+		oc = std::max(sapc - sa_param.lo_offset, 0.0);
 	} else {
 		auto sapc = (pow(ybg, sa_param.revbg) - pow(ytx, sa_param.revtxt)) * sa_param.scale_wob;
-		oc = sapc > -sa_param.lo_clip ? 0 : sapc + sa_param.lo_wob_offset;
+		oc = std::min(sapc + sa_param.lo_offset, 0.0);
 	}
 	return 100 * fabs(oc);
 }
@@ -427,7 +427,7 @@ static palstat cxa_compute(const std::vector<srgb888> &pal)
 	/* History: https://github.com/w3c/wcag/issues/695 */
 	/* Implementation: https://git.apcacontrast.com/documentation/README */
 	palstat o;
-	o.penalize = [](double d) { return d <= 4.5; };
+	o.penalize = [](double d) { return d < sa_param.lo_clip; };
 	std::vector<double> ell(pal.size());
 	for (unsigned int i = 0; i < pal.size(); ++i)
 		ell[i] = trivial_lightness(to_lrgb(to_srgb(pal[i])));
