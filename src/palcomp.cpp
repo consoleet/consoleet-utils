@@ -532,7 +532,8 @@ static int loadpal_sc(const char *frag, std::vector<srgb888> &ra)
 	unsigned int n = strtoul(frag, &p, 0);
 	if (n >= 16)
 		return 0;
-	if (p == nullptr || p[0] != '=')
+	advspace(p);
+	if (*p != '=' && *p != ':')
 		return -EINVAL;
 	++p;
 	advspace(p);
