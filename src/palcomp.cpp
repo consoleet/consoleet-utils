@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SPDX-FileCopyrightText: 2022,2023 Jan Engelhardt
+// SPDX-FileCopyrightText: 2022–2024 Jan Engelhardt
 #include <algorithm>
 #include <functional>
 #include <cctype>
@@ -11,9 +11,11 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include <babl/babl.h>
+#include <Eigen/LU>
 #include <libHX/ctype_helper.h>
 #include <libHX/misc.h>
 
@@ -21,6 +23,8 @@ namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
 struct srgb { double r = 0, g = 0, b = 0; };
 struct lrgb { double r = 0, g = 0, b = 0; };
+struct xy0 { double x = 0, y = 0; }; // CIE1391 xyY colorspace (but without Y) [chromaticity plane]
+struct xyz { double x = 0, y = 0, z = 0; }; // CIE1391 XYZ colorspace [tristimulus]
 struct lch { double l = 0, c = 0, h = 0; };
 struct hsl { double h = 0, s = 0, l = 0; };
 
@@ -75,6 +79,7 @@ static constexpr srgb888 win_palette[] = {
 static unsigned int xterm_fg, xterm_bg;
 static double g_continuous_gamma;
 static const Babl *lch_space, *srgb_space, *srgb888_space;
+static Eigen::Matrix3d xyz_to_lrgb_matrix;
 
 static uint8_t fromhex(const char *s)
 {
@@ -383,6 +388,33 @@ static double gamma_expand(double c)
 	return std::min(1.0, pow((c + 0.055) / 1.055, 12 / 5.0));
 }
 
+static double gamma_compress(double c)
+{
+	return c <= (0.04045 / 12.92) ? c * 12.92 :
+	       pow(c, 5 / 12.0) * 1.055 - 0.055;
+}
+
+/* This function only makes sense for white */
+static constexpr xyz to_xyz(const xy0 &e)
+{
+	return {e.x / e.y, 1, (1 - e.x - e.y) / e.y};
+}
+
+/**
+ * Cf. https://en.wikipedia.org/wiki/Standard_illuminant#Computation
+ *
+ * @t: black-body temperature in Kelvin (e.g. 5000, 5500, 6500)
+ */
+static constexpr xy0 illuminant_d(double t)
+{
+	double x = t <= 7000 ?
+	           0.244063 + 0.09911 * 1000 / t + 2.9678 * 1000000 / (t * t) -
+	           4.6070 * 1000000000 / (t * t * t) :
+	           0.237040 + 0.24748 * 1000 / t + 1.9018 * 1000000 / (t * t) -
+	           2.0064 * 1000000000 / (t * t * t);
+	return {x, -3.0 * x * x + 2.87 * x - 0.275};
+}
+
 static lrgb to_lrgb(const srgb &e)
 {
 	return {gamma_expand(e.r), gamma_expand(e.g), gamma_expand(e.b)};
@@ -390,7 +422,21 @@ static lrgb to_lrgb(const srgb &e)
 
 static double trivial_lightness(const lrgb &k)
 {
-	return 0.2126729 * k.r + 0.7151522 * k.g + 0.0721750 * k.b; // D65 luminance
+	const auto &dm = xyz_to_lrgb_matrix;
+	return dm(1, 0) * k.r + dm(1, 1) * k.g + dm(1, 2) * k.b;
+}
+
+static Eigen::Matrix3d make_lrgb_matrix(const xyz &white_raw)
+{
+	/* https://mina86.com/2019/srgb-xyz-matrix/ */
+	static constexpr xy0 red = {0.64, 0.33}, green = {0.30, 0.60}, blue = {0.15, 0.06};
+	const Eigen::Matrix3d M_prime{
+		{red.x / red.y, green.x / green.y, blue.x / blue.y},
+		{1, 1, 1},
+		{(1 - red.x - red.y) / red.y, (1 - green.x - green.y) / green.y, (1 - blue.x - blue.y) / blue.y},
+	};
+	const Eigen::Vector3d W{white_raw.x, white_raw.y, white_raw.z};
+	return M_prime * (M_prime.inverse() * W).asDiagonal();
 }
 
 static constexpr struct {
@@ -569,6 +615,7 @@ int main(int argc, const char **argv)
 	};
 	bb_guard bbg;
 
+	xyz_to_lrgb_matrix = make_lrgb_matrix(to_xyz(illuminant_d(6500)));
 	srgb888_space = babl_format_with_space("R'G'B' u8", babl_space("sRGB"));
 	if (srgb888_space == nullptr) {
 		fprintf(stderr, "BABL does not know sRGB888\n");
@@ -603,6 +650,16 @@ int main(int argc, const char **argv)
 			if (loadpal(&argv[0][8], ra) != 0)
 				return EXIT_FAILURE;
 			mod_ra = true;
+		} else if (strncmp(*argv, "ild=", 4) == 0) {
+			fprintf(stderr, "New white_point D_%.2f:\n", arg1 / 100);
+			auto a = illuminant_d(arg1);
+			fprintf(stderr, "{x=%.15f, y=%.15f}\n", a.x, a.y);
+			auto b = to_xyz(a);
+			fprintf(stderr, "{X=%.15f, Y=%.15f, Z=%.15f}\n", b.x, b.y, b.z);
+			xyz_to_lrgb_matrix = make_lrgb_matrix(b);
+			std::stringstream ss;
+			ss << xyz_to_lrgb_matrix;
+			fprintf(stderr, "XYZ-to-LRGB matrix:\n%s\n", ss.str().c_str());
 		} else if (strcmp(*argv, "lch") == 0) {
 			printf("#L,c,h\n");
 			unsigned int cnt = 0;
