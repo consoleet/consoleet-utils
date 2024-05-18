@@ -440,9 +440,9 @@ static palstat cxa_compute(const std::vector<srgb888> &pal)
 
 static void cx_report(const gvstat &o, const char *desc)
 {
-	printf("[%-5s] contrast Σ %.0f ø %.1f", desc, o.sum, o.avg);
-	printf(" // minus %u penalties:\tΣ %.0f ø %.1f\n",
-		o.penalized, o.adj_sum, o.adj_avg);
+	printf("[%-5s] contrast Σ %.0f", desc, o.sum);
+	printf(" // minus %u penalties:\tΣ %.0f\n",
+		o.penalized, o.adj_sum);
 }
 
 static void cx_report(const palstat &o)
