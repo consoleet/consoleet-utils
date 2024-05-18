@@ -427,7 +427,7 @@ static palstat cxa_compute(const std::vector<srgb888> &pal)
 	/* History: https://github.com/w3c/wcag/issues/695 */
 	/* Implementation: https://git.apcacontrast.com/documentation/README */
 	palstat o;
-	o.penalize = [](double d) { return d < sa_param.lo_clip; };
+	o.penalize = [](double d) { return d < 7.3; };
 	std::vector<double> ell(pal.size());
 	for (unsigned int i = 0; i < pal.size(); ++i)
 		ell[i] = trivial_lightness(to_lrgb(to_srgb(pal[i])));
