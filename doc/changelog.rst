@@ -1,3 +1,15 @@
+1.5 (2024-05-18)
+================
+
+* palcomp: add XFCE4/Termux palette file loader
+  (`palcomp loadpal=somexfce4.theme`)
+* palcomp: rename commands "emit"->"xfce", "stat"->"lch"
+* palcomp: add "eq" and "loeq" commands for brightness equalization
+* palcomp: replace "cxr" command by a APCA-based contrast derivation
+  ("cxa" command)
+* cp437x: delete wrong mapping from U+25B6,25B7 to 0x1e
+
+
 1.4 (2023-09-24)
 ================
 
