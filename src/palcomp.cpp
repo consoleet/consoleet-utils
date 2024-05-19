@@ -29,7 +29,7 @@ struct lch { double l = 0, c = 0, h = 0; };
 struct hsl { double h = 0, s = 0, l = 0; };
 
 /**
- * Statistics for one grid view (e.g. 8x8 / 8x16 / ...).
+ * Statistics for one grid view (e.g. 8x8 / 16x8 / ...).
  *
  * @pairs:      pairs that have contributed to @sum
  * @penalized:  number of penalized pairs
@@ -494,7 +494,7 @@ static void cx_report(const gvstat &o, const char *desc)
 static void cx_report(const palstat &o)
 {
 	cx_report(o.x1616, "16x16");
-	cx_report(o.x816, " 8x16");
+	cx_report(o.x816, "16x8 ");
 	cx_report(o.x88, " 8x8 ");
 }
 
