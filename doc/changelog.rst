@@ -1,3 +1,8 @@
+1.6 (2024-06-27)
+================
+
+* palcomp: support more file formats from Termux
+
 1.5 (2024-05-18)
 ================
 
