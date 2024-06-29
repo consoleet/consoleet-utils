@@ -619,9 +619,23 @@ static int loadpal(const char *file, std::vector<srgb888> &ra)
 	return EXIT_SUCCESS;
 }
 
+template<typename T> T do_blend(const T &a, double amult, const T &b, double bmult)
+{
+	auto max = std::max(a.size(), b.size());
+	T out(max);
+	for (size_t x = 0; x < max; ++x) {
+		out[x].r = a[x].r * amult + b[x].r * bmult;
+		out[x].g = a[x].g * amult + b[x].g * bmult;
+		out[x].b = a[x].b * amult + b[x].b * bmult;
+	}
+	return out;
+}
+
 int main(int argc, const char **argv)
 {
-	mpalette mpal;
+	std::unordered_map<std::string, mpalette> allpal;
+	auto xter = allpal.emplace("0", mpalette{});
+	mpalette &mpal = xter.first->second;
 	struct bb_guard {
 		bb_guard() { ::babl_init(); }
 		~bb_guard() { ::babl_exit(); }
@@ -663,6 +677,23 @@ int main(int argc, const char **argv)
 			if (loadpal(&argv[0][8], mpal.ra) != 0)
 				return EXIT_FAILURE;
 			mod_ra = true;
+		} else if (strncmp(*argv, "loadreg=", 8) == 0) {
+			mpal = allpal[&argv[0][8]];
+		} else if (strncmp(*argv, "savereg=", 8) == 0) {
+			allpal[&argv[0][8]] = mpal;
+		} else if (strncmp(*argv, "blend=", 6) == 0) {
+			char *end = nullptr;
+			auto pct = strtod(&argv[0][6], &end);
+			if (*end == ',') {
+				++end;
+				auto bi = allpal.find(end);
+				if (bi == allpal.cend()) {
+					fprintf(stderr, "Register \"%s\" not defined yet\n", end);
+				} else {
+					mpal.ra = do_blend(mpal.ra, 1-pct/100, allpal[end].ra, pct/100);
+					mod_ra = true;
+				}
+			}
 		} else if (strncmp(*argv, "ild=", 4) == 0) {
 			fprintf(stderr, "New white_point D_%.2f:\n", arg1 / 100);
 			auto a = illuminant_d(arg1);
