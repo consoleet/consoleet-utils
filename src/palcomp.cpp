@@ -28,6 +28,17 @@ struct xyz { double x = 0, y = 0, z = 0; }; // CIE1391 XYZ colorspace [tristimul
 struct lch { double l = 0, c = 0, h = 0; };
 struct hsl { double h = 0, s = 0, l = 0; };
 
+/***
+ * Keep multiple numeric representations of the palette, to reduce accumulation
+ * of conversion errors.
+ */
+struct mpalette {
+	std::vector<srgb888> ra;
+	std::vector<lch> la;
+	void mod_la();
+	void mod_ra();
+};
+
 /**
  * Statistics for one grid view (e.g. 8x8 / 16x8 / ...).
  *
@@ -235,6 +246,9 @@ static void emit_xfce(const std::vector<srgb888> &pal)
 		printf("%s;", to_hex(e).c_str());
 	printf("\n");
 }
+
+void mpalette::mod_la() { ra = to_srgb888(la); }
+void mpalette::mod_ra() { la = to_lch(ra); }
 
 static void emit_xterm(const std::vector<srgb888> &pal)
 {
@@ -607,8 +621,7 @@ static int loadpal(const char *file, std::vector<srgb888> &ra)
 
 int main(int argc, const char **argv)
 {
-	std::vector<srgb888> ra;
-	std::vector<lch> la;
+	mpalette mpal;
 	struct bb_guard {
 		bb_guard() { ::babl_init(); }
 		~bb_guard() { ::babl_exit(); }
@@ -638,16 +651,16 @@ int main(int argc, const char **argv)
 		bool mod_ra = false, mod_la = false;
 
 		if (strcmp(*argv, "vga") == 0) {
-			ra = {std::begin(vga_palette), std::end(vga_palette)};
+			mpal.ra = {std::begin(vga_palette), std::end(vga_palette)};
 			mod_ra = true;
 		} else if (strcmp(*argv, "vgs") == 0) {
-			ra = {std::begin(vgasat_palette), std::end(vgasat_palette)};
+			mpal.ra = {std::begin(vgasat_palette), std::end(vgasat_palette)};
 			mod_ra = true;
 		} else if (strcmp(*argv, "win") == 0) {
-			ra = {std::begin(win_palette), std::end(win_palette)};
+			mpal.ra = {std::begin(win_palette), std::end(win_palette)};
 			mod_ra = true;
 		} else if (strncmp(*argv, "loadpal=", 8) == 0) {
-			if (loadpal(&argv[0][8], ra) != 0)
+			if (loadpal(&argv[0][8], mpal.ra) != 0)
 				return EXIT_FAILURE;
 			mod_ra = true;
 		} else if (strncmp(*argv, "ild=", 4) == 0) {
@@ -663,68 +676,68 @@ int main(int argc, const char **argv)
 		} else if (strcmp(*argv, "lch") == 0) {
 			printf("#L,c,h\n");
 			unsigned int cnt = 0;
-			for (auto &e : la) {
+			for (auto &e : mpal.la) {
 				printf("\e[%u;3%um%x\e[0m: {%10.6f, %10.6f, %10.6f}\n",
 					!!(cnt & 0x8), cnt & 0x7,
 					cnt, e.l, e.c, e.h);
 				++cnt;
 			}
 		} else if (strncmp(*argv, "litadd=", 7) == 0) {
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.l += arg1;
 			mod_la = true;
 		} else if (strncmp(*argv, "litmul=", 7) == 0) {
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.l *= arg1;
 			mod_la = true;
 		} else if (strncmp(*argv, "litset=", 7) == 0) {
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.l = arg1;
 			mod_la = true;
 		} else if (strncmp(*argv, "satadd=", 7) == 0) {
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.c += arg1;
 			mod_la = true;
 		} else if (strncmp(*argv, "satmul=", 7) == 0) {
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.c *= arg1;
 			mod_la = true;
 		} else if (strncmp(*argv, "satset=", 7) == 0) {
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.c = arg1;
 			mod_la = true;
 		} else if (strncmp(*argv, "hueadd=", 7) == 0) {
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.h = HX_flpr(e.h + arg1, 360);
 			mod_la = true;
 		} else if (strncmp(*argv, "hueset=", 7) == 0) {
 			arg1 = fmod(arg1, 360);
-			for (auto &e : la)
+			for (auto &e : mpal.la)
 				e.h = arg1;
 			mod_la = true;
 		} else if (strncmp(*argv, "hsltint=", 8) == 0) {
-			ra = hsltint(parse_hsl(&argv[0][8]), la);
+			mpal.ra = hsltint(parse_hsl(&argv[0][8]), mpal.la);
 			mod_ra = true;
 		} else if (strncmp(*argv, "lchtint=", 8) == 0) {
 			auto base = parse_hsl(&argv[0][8]);
-			la = lchtint(to_lch(to_srgb(base)), la);
+			mpal.la = lchtint(to_lch(to_srgb(base)), mpal.la);
 			mod_la = true;
 		} else if (strcmp(*argv, "emit") == 0 || strcmp(*argv, "xfce") == 0) {
-			emit_xfce(ra);
+			emit_xfce(mpal.ra);
 		} else if (strcmp(*argv, "xterm") == 0) {
-			emit_xterm(ra);
+			emit_xterm(mpal.ra);
 		} else if (strcmp(*argv, "fg") == 0) {
 			xterm_fg = 1;
 		} else if (strcmp(*argv, "bg") == 0) {
 			xterm_bg = 1;
 		} else if (strcmp(*argv, "b0") == 0) {
-			la[0] = {0,0,0};
-			ra[0] = {0,0,0};
+			mpal.la[0] = {0,0,0};
+			mpal.ra[0] = {0,0,0};
 		} else if (strcmp(*argv, "inv16") == 0) {
-			decltype(ra) new_ra(ra.size());
-			for (size_t i = 0; i < ra.size(); ++i)
-				new_ra[i] = std::move(ra[~i % ra.size()]);
-			ra = std::move(new_ra);
+			decltype(mpal.ra) new_ra(mpal.ra.size());
+			for (size_t i = 0; i < mpal.ra.size(); ++i)
+				new_ra[i] = std::move(mpal.ra[~i % mpal.ra.size()]);
+			mpal.ra = std::move(new_ra);
 			mod_ra = true;
 			/*
 			 * A computational method (only produces exact results
@@ -741,33 +754,33 @@ int main(int argc, const char **argv)
 		} else if (strcmp(*argv, "ct") == 0) {
 			colortable_16();
 		} else if (strcmp(*argv, "cxl") == 0) {
-			cxl_command(la);
+			cxl_command(mpal.la);
 		} else if (strcmp(*argv, "cxa") == 0) {
-			cxa_command(ra);
+			cxa_command(mpal.ra);
 		} else if (strncmp(*argv, "cfgamma=", 8) == 0) {
 			g_continuous_gamma = arg1;
 		} else if (strcmp(*argv, "loeq") == 0) {
-			la = equalize(la, 9, 100 / 9.0, 100 * 8 / 9.0);
+			mpal.la = equalize(mpal.la, 9, 100 / 9.0, 100 * 8 / 9.0);
 			mod_la = true;
 		} else if (strncmp(*argv, "loeq=", 5) == 0) {
 			char *end = nullptr;
 			arg1 = strtod(&argv[0][5], &end);
 			double arg2 = *end == ',' ? strtod(end + 1, &end) : 100 / 9.0 * 8;
-			la = equalize(la, 9, arg1, arg2);
+			mpal.la = equalize(mpal.la, 9, arg1, arg2);
 			mod_la = true;
 		} else if (strcmp(*argv, "eq") == 0) {
-			la = equalize(la, 16, 100 / 16.0, 100);
+			mpal.la = equalize(mpal.la, 16, 100 / 16.0, 100);
 			mod_la = true;
 		} else if (strncmp(*argv, "eq=", 3) == 0) {
-			la = equalize(la, 16, arg1, 100);
+			mpal.la = equalize(mpal.la, 16, arg1, 100);
 			mod_la = true;
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
 		if (mod_ra)
-			la = to_lch(ra);
+			mpal.mod_ra();
 		else if (mod_la)
-			ra = to_srgb888(la);
+			mpal.mod_la();
 	}
 	return EXIT_SUCCESS;
 }
