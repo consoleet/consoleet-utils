@@ -1158,8 +1158,10 @@ static void name_reminder(font::propmap_t &props)
 	auto z = c.empty() || c == "vfontas output";
 	if (x && y && z) {
 		fprintf(stderr, "Hint: Consider -setname <name>, "
-		        "or the detailed version, "
-		        "-setprop {FontName|FamilyName|FullName}.\n");
+		        "or the detailed version, e.g.\n"
+		        "\t-setprop FontName aerial_20  # PostScript name\n"
+		        "\t-setprop FamilyName \"Aerial 2.0\"\n"
+		        "\t-setprop FullName \"Aerial 2.0 Bold\"\n");
 		return;
 	}
 	if (x)
