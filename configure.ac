@@ -1,4 +1,4 @@
-AC_INIT([consoleet-utils], [1.6])
+AC_INIT([consoleet-utils], [1.7])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([config.h])
 AC_PROG_INSTALL
