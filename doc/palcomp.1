@@ -135,6 +135,14 @@ Black-to-green-white ramp (tint via HSL color space):
 palcomp vgs hsltint=120,1,1 emit
 .IP \(bu 4
 palcomp vgs hsltint=#00ff00,1 emit
+.PP
+Transmissive LCD effect, e.g. full command:
+.IP \(bu 4
+xterm $(palcomp vgs hsltint='#afc759' fg xterm) -bg '#102e2c'
+.PP
+Reflective LCD effect:
+.IP \(bu 4
+xterm $(palcomp vgs satset=0 litmul=0.5 xterm) -bg '#8fa99e' -fg '#0a091b'
 .SH Caveats
 Lightness in LCh space behaves a bit counterintuitive. When (saturation) c>0,
 then L=0 does not mean black, e.g.:
