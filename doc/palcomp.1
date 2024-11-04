@@ -14,7 +14,9 @@ CIELAB/LCh.
 .PP
 Most commands operate on a single palette, but it is possible to store multiple
 palettes in memory. The current working palette is called "0" (cf.
-loadreg/savereg).
+loadreg/savereg). Each palette is kept in multiple colorspaces (currently sRGB
+and LCh), so as to avoid e.g. RGB-to-LCh-to-RGB conversion round-trips when
+modifying the lightness.
 .SH Commands
 .SS b0
 Set color 0 to actual black.
@@ -107,6 +109,11 @@ desaturation of colors; r=0 leads to gray.
 Set colors' saturation using LCh space.
 .SS savereg=name
 Save the current working palette ("0") to a new name.
+.SS syncfromlch
+.SS syncfromrgb
+Explicitly synchronize palette representations. This can be used to experiment
+with value clippings (e.g. `palcomp vgs litmul=2 syncfromrgb litmul=0.5`; the
+result of litmul=2 normally cannot be represented in RGB and causes clipping).
 .SS vga
 Loads the standard VGA palette.
 .SS vgs

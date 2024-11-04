@@ -805,6 +805,10 @@ int main(int argc, const char **argv)
 		} else if (strncmp(*argv, "eq=", 3) == 0) {
 			mpal.la = equalize(mpal.la, 16, arg1, 100);
 			mod_la = true;
+		} else if (strcmp(*argv, "syncfromrgb") == 0) {
+			mpal.mod_ra();
+		} else if (strcmp(*argv, "syncfromlch") == 0) {
+			mpal.mod_la();
 		} else {
 			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
 		}
