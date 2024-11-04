@@ -42,41 +42,6 @@ darkest to 2nd darkest color. In practice, b specifies the lightness value that
 blue is to be assigned. If b is absent, uses b=1/16.
 .SS fg
 Emit a \-fg parameter upon xterm, and use color 7.
-.SS hueadd=h
-Rotate colors using LCh space. (0 <= h < 360)
-.SS hueset=h
-Set the hue of all colors using LCh space.
-.SS ild=t
-Set the white point to be a series D illuminant at color temperature t. (t
-should be in the range 4000..25000 K). This only has an effect for the "cxa"
-command. (Commands like hueadd/set/litadd/mul etc. all use libbabl, which
-hardcodes D65.) The default white point used by palcomp is ild=6500. Note that
-D65 is not exactly 6500 K, due to changes of the Planck constant between when
-Illuminant D was first defined and 2019.
-.SS inv16
-Perform color inversion the way Norton Icon Editor did it.
-.SS lch
-Emit the LCh form of the palette to stdout (no particular formatting).
-.SS litadd=r
-Change colors' brightness using LCh space.
-.SS litmul=r
-Multiply colors' brightness using LCh space.
-.SS litset=r
-Set colors' brightness using LCh space.
-.SS loadpal=
-Load RGB palette from a file. xfce4-terminal *.theme files and termux
-*.properties files are understood.
-.SS loadreg=name
-Set the working palette ("0") to the contents of the named palette.
-.SS satadd=r
-Change colors' saturation using LCh space.
-.SS satmul=r
-Multiply colors' saturation using LCh space. In effect, with r<1, this causes a
-desaturation of colors; r=0 leads to gray.
-.SS satset=r
-Set colors' saturation using LCh space.
-.SS savereg=name
-Save the current working palette ("0") to a new name.
 .SS hsltint=h,s,l
 Map the (LCh) brightnesses onto a color line through the HSL cylinder that goes
 from black to the chosen color. Parameter ranges are (0 <= h < 360; 0 <= s < 1;
@@ -93,10 +58,36 @@ palcomp vgs hsltint=90,1,0.5 emit
 A different syntax for the hsltint operation. First, the RGB value for the tint
 color is converted to HSL. The so-computed L value can be overridden with the
 optional \fB,\fP\fIl\fP suffix. Afterwards, behaves like hsltint=h,s,l.
+.SS hueadd=h
+Rotate colors using LCh space. (0 <= h < 360)
+.SS hueset=h
+Set the hue of all colors using LCh space.
+.SS ild=t
+Set the white point to be a series D illuminant at color temperature t. (t
+should be in the range 4000..25000 K). This only has an effect for the "cxa"
+command. (Commands like hueadd/set/litadd/mul etc. all use libbabl, which
+hardcodes D65.) The default white point used by palcomp is ild=6500. Note that
+D65 is not exactly 6500 K, due to changes of the Planck constant between when
+Illuminant D was first defined and 2019.
+.SS inv16
+Perform color inversion the way Norton Icon Editor did it.
+.SS lch
+Emit the LCh form of the palette to stdout (no particular formatting).
 .SS lchtint=h,s,l
 .SS lchtint=#rrggbb[,l]
 Replace the LCh hue and saturation by the base color given in HSL or RGB. The
 LCh L value is retained as-is.
+.SS litadd=r
+Change colors' brightness using LCh space.
+.SS litmul=r
+Multiply colors' brightness using LCh space.
+.SS litset=r
+Set colors' brightness using LCh space.
+.SS loadpal=
+Load RGB palette from a file. xfce4-terminal *.theme files and termux
+*.properties files are understood.
+.SS loadreg=name
+Set the working palette ("0") to the contents of the named palette.
 .SS loeq[=b[,g]]
 Equalize (equal-space) the lightness values of the palette's low-intensity
 colors plus darkgray. The b parameter (0 <= b <= g <= 100) specifies the
@@ -107,6 +98,15 @@ color of the low-intensity section is to use (in practice, the lightness
 for grey). If g is absent, defaults to
 g=88.88; this is so that gray is still a little less intense than white. If b
 is absent, uses b=11.11.
+.SS satadd=r
+Change colors' saturation using LCh space.
+.SS satmul=r
+Multiply colors' saturation using LCh space. In effect, with r<1, this causes a
+desaturation of colors; r=0 leads to gray.
+.SS satset=r
+Set colors' saturation using LCh space.
+.SS savereg=name
+Save the current working palette ("0") to a new name.
 .SS vga
 Loads the standard VGA palette.
 .SS vgs
