@@ -1,3 +1,10 @@
+1.8 (2024-11-13)
+================
+
+* palcomp: add "eval" command
+* palcomp: retire "litadd", "litmul", "litset", "satadd, "satmul", "satset",
+  "hueadd", "hueset"
+
 1.7 (2024-10-01)
 ================
 
