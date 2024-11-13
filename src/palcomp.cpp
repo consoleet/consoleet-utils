@@ -101,7 +101,7 @@ static constexpr srgb888 win_palette[] = {
 	{0x00,0x00,0xff}, {0xff,0x00,0xff}, {0x00,0xff,0xff}, {0xff,0xff,0xff},
 };
 
-static unsigned int xterm_fg, xterm_bg, g_verbose;
+static unsigned int xterm_fg, xterm_bg, xterm_bd, g_verbose;
 static double g_continuous_gamma;
 static const Babl *lch_space, *srgb_space, *srgb888_space;
 static Eigen::Matrix3d xyz_to_lrgb_matrix;
@@ -278,6 +278,8 @@ static void emit_xterm(const std::vector<srgb888> &pal)
 		printf(" -fg %s", to_hex(pal[7]).c_str());
 	if (xterm_bg)
 		printf(" -bg %s", to_hex(pal[0]).c_str());
+	if (xterm_bd)
+		printf(" -xrm *VT100*colorBD:%s", to_hex(pal[15]).c_str());
 	printf("\n");
 }
 
@@ -1007,6 +1009,8 @@ int main(int argc, char **argv)
 			xterm_fg = 1;
 		} else if (strcmp(*argv, "bg") == 0) {
 			xterm_bg = 1;
+		} else if (strcmp(*argv, "bd") == 0) {
+			xterm_bd = 1;
 		} else if (strcmp(*argv, "b0") == 0) {
 			mpal.la[0] = {0,0,0};
 			mpal.ra[0] = {0,0,0};

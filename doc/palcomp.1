@@ -24,8 +24,12 @@ Generate debugging output.
 .SH Commands
 .SS b0
 Set color 0 to actual black.
+.SS bd
+When the palcomp xterm command is used, also emit a colorBD parameter and use
+color 15.
 .SS bg
-Emit a \-bg parameter upon xterm, and use color 0.
+When the palcomp xterm command is used, also emit a \-bg parameter and use
+color 0.
 .SS blend=pct,name
 RGB-blend the current palette with another; performs `output :=
 curpal*(100-pct) + secondpal*pct`. pct should be in the range 0..100.
@@ -59,7 +63,8 @@ As a shorthand, if \fIexpr\fP begins with an opening parenthesis or a
 one-letter identifier followed by =, the expression can also be used as a
 command without the need to type \fBeval=\fP.
 .SS fg
-Emit a \-fg parameter upon xterm, and use color 7.
+When the palcomp xterm command is used, also emit a \-fg parameter and use
+color 7.
 .SS hsltint=h,s,l
 Map the (LCh) brightnesses onto a color line through the HSL cylinder that goes
 from black to the chosen color. Parameter ranges are (0 <= h < 360; 0 <= s < 1;
