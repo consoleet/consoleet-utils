@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022–2024 Jan Engelhardt
 #include <algorithm>
 #include <functional>
@@ -13,11 +13,13 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 #include <babl/babl.h>
 #include <Eigen/LU>
 #include <libHX/ctype_helper.h>
 #include <libHX/misc.h>
+#include <libHX/option.h>
 
 namespace {
 struct srgb888 { uint8_t r = 0, g = 0, b = 0; };
@@ -35,6 +37,8 @@ struct hsl { double h = 0, s = 0, l = 0; };
 struct mpalette {
 	std::vector<srgb888> ra;
 	std::vector<lch> la;
+	double x = 0, y = 0, z = 0;
+
 	void mod_la();
 	void mod_ra();
 };
@@ -66,6 +70,16 @@ struct palstat {
 	void compute_sums(unsigned int xlim, unsigned int ylim, gvstat &);
 };
 
+enum class token_type { none, reg, imm, grp, op };
+struct token_entry;
+using token_value = std::variant<char, double, std::vector<token_entry>>;
+struct token_entry {
+	token_type type = token_type::none;
+	token_value val{};
+	std::string repr() const;
+};
+using token_vector = std::vector<token_entry>;
+
 }
 
 static constexpr srgb888 vga_palette[] = {
@@ -87,10 +101,16 @@ static constexpr srgb888 win_palette[] = {
 	{0x00,0x00,0xff}, {0xff,0x00,0xff}, {0x00,0xff,0xff}, {0xff,0xff,0xff},
 };
 
-static unsigned int xterm_fg, xterm_bg;
+static unsigned int xterm_fg, xterm_bg, g_verbose;
 static double g_continuous_gamma;
 static const Babl *lch_space, *srgb_space, *srgb888_space;
 static Eigen::Matrix3d xyz_to_lrgb_matrix;
+
+static constexpr HXoption g_options_table[] = {
+	{{}, 'v', HXTYPE_NONE, &g_verbose, {}, {}, {}, "Debugging"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static uint8_t fromhex(const char *s)
 {
@@ -631,7 +651,249 @@ template<typename T> T do_blend(const T &a, double amult, const T &b, double bmu
 	return out;
 }
 
-int main(int argc, const char **argv)
+std::string repr(const token_vector &tokens)
+{
+	std::string out = "(";
+	for (const auto &e : tokens)
+		out += e.repr();
+	return out += ")";
+}
+
+std::string token_entry::repr() const
+{
+	switch (type) {
+	case token_type::op:
+	case token_type::reg: { char x = std::get<char>(val); return std::string(&x, 1); }
+	case token_type::imm: return std::to_string(std::get<double>(val));
+	case token_type::grp: return ::repr(std::get<token_vector>(val));
+	default: return "?";
+	}
+}
+
+static int eval_help(const char *expr, const char *ptr, const char *reason)
+{
+	fprintf(stderr, "Evaluation of expression/subexpression failed at\n\t%s\n\t%-*s^\n%s\n",
+		expr, static_cast<int>(ptr - expr), "", reason);
+	return 1;
+}
+
+static int eval_help(const char *complaint, const token_vector &tokens)
+{
+	fprintf(stderr, "%s:\n\t%s\n", complaint, repr(tokens).c_str());
+	return 1;
+}
+
+static constexpr char EVAL_REGS[] = "bcghlrsxyz";
+static int eval_tokenize(const char *ptr, char **super_end, token_vector &tokens)
+{
+	auto cmd = ptr;
+	/* Section 1 */
+	token_type last_type = token_type::none;
+	while (true) {
+		while (HX_isspace(*ptr))
+			++ptr;
+		if (*ptr == '\0' || *ptr == ')')
+			break;
+		char *end = nullptr;
+		auto imm = strtod(ptr, &end);
+		if (end == nullptr) {
+			return eval_help(cmd, ptr, "strtod failed hard");
+		} else if (strchr("*/+,-=^", *ptr) != nullptr) {
+			if (last_type == token_type::none || last_type == token_type::op)
+				return eval_help(cmd, ptr, "Cannot use operator here (note: no unary operators supported)");
+			tokens.push_back(token_entry{token_type::op, token_value{*ptr}});
+			++ptr;
+		} else if (strchr(EVAL_REGS, *ptr) != nullptr) {
+			if (last_type != token_type::none && last_type != token_type::op)
+				return eval_help(cmd, ptr, "Cannot use identifier here");
+			auto reg = *ptr;
+			if (reg == 's')
+				reg = 'c';
+			tokens.push_back(token_entry{token_type::reg, token_value{reg}});
+			++ptr;
+		} else if (*ptr == '(') {
+			if (last_type != token_type::none && last_type != token_type::op)
+				return eval_help(cmd, ptr, "Cannot use opening parenthesis here");
+			++ptr;
+			token_vector newgrp;
+			auto ret = eval_tokenize(ptr, &end, newgrp);
+			if (ret != 0)
+				return ret;
+			ptr = end;
+			if (*end != ')')
+				return eval_help(cmd, ptr, "Expected closing parenthesis");
+			++ptr;
+			tokens.push_back(token_entry{token_type::grp, token_value{std::move(newgrp)}});
+		} else if (end != ptr) {
+			if (last_type != token_type::none && last_type != token_type::op)
+				return eval_help(cmd, ptr, "Cannot use immediate value here");
+			tokens.push_back(token_entry{token_type::imm, token_value{imm}});
+			ptr = end;
+		} else {
+			return eval_help(cmd, ptr, "Unexpected character");
+		}
+		last_type = tokens.back().type;
+	}
+
+	/* Section 2 */
+	if (tokens.empty())
+		return eval_help(cmd, ptr, "No tokens were parsed -- empty parenthesis?");
+	assert(tokens.front().type != token_type::op);
+	if (tokens.back().type == token_type::op)
+		return eval_help(cmd, ptr, "Last token cannot be an operator");
+	if (super_end != nullptr)
+		*super_end = const_cast<char *>(ptr);
+
+	/* Section 3: Precedence maker */
+	static constexpr const char *op_prec[] = {"^", "*/", "+-", "=", ","};
+	for (auto op_group : op_prec) {
+		bool right_assoc = *op_group == '=';
+		if (right_assoc)
+			std::reverse(tokens.begin(), tokens.end());
+		for (size_t i = 1; i < tokens.size(); ) {
+			if (tokens[i].type != token_type::op) {
+				++i;
+				continue;
+			}
+			auto op = std::get<char>(tokens[i].val);
+			if (strchr(op_group, op) == nullptr) {
+				++i;
+				continue;
+			}
+			assert(i < tokens.size() - 1);
+			token_vector newgrp;
+			newgrp.emplace_back(std::move(tokens[i-1]));
+			newgrp.emplace_back(std::move(tokens[i]));
+			newgrp.emplace_back(std::move(tokens[i+1]));
+			if (right_assoc)
+				std::reverse(newgrp.begin(), newgrp.end());
+			tokens[i-1].type = token_type::grp;
+			tokens[i-1].val  = std::move(newgrp);
+			tokens.erase(tokens.begin() + i, tokens.begin() + i + 2);
+			/* Redo at current position i */
+		}
+		if (right_assoc)
+			std::reverse(tokens.begin(), tokens.end());
+	}
+	return 0;
+}
+
+static double eval_rd(mpalette &mpal, size_t idx, char reg)
+{
+	switch (reg) {
+	case 'r': return mpal.ra[idx].r;
+	case 'g': return mpal.ra[idx].g;
+	case 'b': return mpal.ra[idx].b;
+	case 'l': return mpal.la[idx].l;
+	case 'c': return mpal.la[idx].c;
+	case 'h': return mpal.la[idx].h;
+	case 'x': return mpal.x;
+	case 'y': return mpal.y;
+	case 'z': return mpal.z;
+	default: throw -1;
+	}
+}
+
+static token_entry eval_grp(const token_vector &tokens, mpalette &mpal, size_t idx);
+
+static std::pair<token_entry, double>
+eval_arg(const token_entry &token, mpalette &mpal, size_t idx)
+{
+	if (token.type == token_type::imm) {
+		return {token, std::get<double>(token.val)};
+	} else if (token.type == token_type::reg) {
+		return {token, eval_rd(mpal, idx, std::get<char>(token.val))};
+	} else if (token.type == token_type::grp) {
+		auto categ = eval_grp(std::get<token_vector>(token.val), mpal, idx);
+		if (categ.type == token_type::imm) {
+			return {categ, std::get<double>(categ.val)};
+		} else if (categ.type == token_type::reg) {
+			return {categ, eval_rd(mpal, idx, std::get<char>(categ.val))};
+		}
+	}
+	throw "Unhandled subexpr";
+}
+
+static token_entry eval_grp(const token_vector &tokens, mpalette &mpal, size_t idx)
+{
+	if (tokens.size() == 1) {
+		if (tokens[0].type != token_type::grp)
+			return tokens[0];
+		return eval_grp(std::get<token_vector>(tokens[0].val), mpal, idx);
+	} else if (tokens.size() != 3) {
+		eval_help("Expected a group with 3 tokens", tokens);
+		return {};
+	} else if (tokens[1].type != token_type::op) {
+		eval_help("Expected middle token to be an operator", tokens);
+	}
+
+	auto op = std::get<char>(tokens[1].val);
+	/*
+	 * Evaluation order! Take notes from https://en.cppreference.com/w/cpp/language/eval_order .
+	 * For ',', we need lhs before rhs.
+	 */
+	auto [lhs, lhv] = eval_arg(tokens[0], mpal, idx);
+	auto [rhs, rhv] = eval_arg(tokens[2], mpal, idx);
+
+	switch (op) {
+	case '+': return {token_type::imm, lhv + rhv};
+	case '-': return {token_type::imm, lhv - rhv};
+	case '*': return {token_type::imm, lhv * rhv};
+	case '/': return {token_type::imm, lhv / rhv};
+	case '^': return {token_type::imm, pow(std::max(0.0, lhv), rhv)};
+	case ',': return rhs;
+	case '=': break;
+	default:
+		fprintf(stderr, "Unhandled op '%c' in subexpr: %s\n", op, repr(tokens).c_str());
+		return {};
+	}
+
+	if (lhs.type != token_type::reg) {
+		fprintf(stderr, "Left-hand side of subexpr needs to be a register: %s\n", repr(tokens).c_str());
+		return {};
+	}
+	bool mod_la = false, mod_ra = false;
+	auto reg = std::get<char>(lhs.val);
+	switch (reg) {
+	case 'r': mpal.ra[idx].r = rhv; mod_ra = true; break;
+	case 'g': mpal.ra[idx].g = rhv; mod_ra = true; break;
+	case 'b': mpal.ra[idx].b = rhv; mod_ra = true; break;
+	case 'l': mpal.la[idx].l = rhv; mod_la = true; break;
+	case 'c': mpal.la[idx].c = rhv; mod_la = true; break;
+	case 'h': mpal.la[idx].h = HX_flpr(rhv, 360); mod_la = true; break;
+	case 'x': mpal.x = rhv; break;
+	case 'y': mpal.y = rhv; break;
+	case 'z': mpal.z = rhv; break;
+	default:
+		fprintf(stderr, "Left-hand side of subexpr needs to be a register: %s\n", repr(tokens).c_str());
+		return {};
+	}
+	if (mod_la)
+		mpal.mod_la();
+	if (mod_ra)
+		mpal.mod_ra();
+	return lhs;
+}
+
+int do_eval(const char *cmd, mpalette &mpal)
+{
+	token_vector tokens;
+	auto ret = eval_tokenize(cmd, nullptr, tokens);
+	if (ret != 0)
+		return ret;
+	if (g_verbose)
+		fprintf(stderr, "# expr parsed as: %s\n", repr(tokens).c_str());
+	if (mpal.la.size() != mpal.ra.size())
+		throw "Programming error";
+	for (size_t i = 0; i < mpal.la.size(); ++i) {
+		auto d = eval_grp(tokens, mpal, i);
+		if (d.type == token_type::none)
+			return -1;
+	}
+	return 0;
+}
+
+int main(int argc, char **argv)
 {
 	std::unordered_map<std::string, mpalette> allpal;
 	auto xter = allpal.emplace("0", mpalette{});
@@ -641,6 +903,10 @@ int main(int argc, const char **argv)
 		~bb_guard() { ::babl_exit(); }
 	};
 	bb_guard bbg;
+
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
 
 	xyz_to_lrgb_matrix = make_lrgb_matrix(to_xyz(illuminant_d(6500)));
 	srgb888_space = babl_format_with_space("R'G'B' u8", babl_space("sRGB"));
@@ -694,6 +960,12 @@ int main(int argc, const char **argv)
 					mod_ra = true;
 				}
 			}
+		} else if (strncmp(*argv, "eval=", 4) == 0) {
+			if (do_eval(&argv[0][5], mpal) != 0)
+				break;
+		} else if (**argv == '(' || (strchr(EVAL_REGS, **argv) && argv[0][1] == '=')) {
+			if (do_eval(argv[0], mpal) != 0)
+				break;
 		} else if (strncmp(*argv, "ild=", 4) == 0) {
 			fprintf(stderr, "New white_point D_%.2f:\n", arg1 / 100);
 			auto a = illuminant_d(arg1);

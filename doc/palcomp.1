@@ -2,7 +2,7 @@
 .SH Name
 palcomp \(em palette composer
 .SH Syntax
-\fBpalcomp\fP [commands...]
+\fBpalcomp\fP [\fB\-v\fP] [commands...]
 .SH Description
 palcomp can be used to generate palettes for terminals. The most important
 realization is that programs running within a terminal and which use
@@ -17,6 +17,10 @@ palettes in memory. The current working palette is called "0" (cf.
 loadreg/savereg). Each palette is kept in multiple colorspaces (currently sRGB
 and LCh), so as to avoid e.g. RGB-to-LCh-to-RGB conversion round-trips when
 modifying the lightness.
+.SH Options
+.TP
+\fB\-v\fP
+Generate debugging output.
 .SH Commands
 .SS b0
 Set color 0 to actual black.
@@ -42,6 +46,18 @@ Equalize (equal-space) the lightness values of the palette's colors. The b
 parameter (0 <= b <= 100) specifies the mandatory lightness difference from the
 darkest to 2nd darkest color. In practice, b specifies the lightness value that
 blue is to be assigned. If b is absent, uses b=1/16.
+.SS eval=expr
+Evaluate an (almost) arbitrary expression for every palette entry. The
+identifiers \fBr\fP, \fBg\fP and \fBb\fP refer to RGB components of the palette
+entry. The identifiers \fBl\fP, \fBc\fP and \fBh\fP refer to LCh components of
+the palette entry. \fBx\fP, \fBy\fP and \fBz\fP refer to temporaries free for
+use. Known operators are \fB+\fP, \fB\-\fP, \fB*\fP, \fB/\fP, \fB^\fP
+(exponentiation), \fB,\fP (comma operator) and \fB=\fP. Grouping with
+\fB(\fP...\fP)\fP is recognized.
+.PP
+As a shorthand, if \fIexpr\fP begins with an opening parenthesis or a
+one-letter identifier followed by =, the expression can also be used as a
+command without the need to type \fBeval=\fP.
 .SS fg
 Emit a \-fg parameter upon xterm, and use color 7.
 .SS hsltint=h,s,l
