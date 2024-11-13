@@ -985,39 +985,6 @@ int main(int argc, char **argv)
 					cnt, e.l, e.c, e.h);
 				++cnt;
 			}
-		} else if (strncmp(*argv, "litadd=", 7) == 0) {
-			for (auto &e : mpal.la)
-				e.l += arg1;
-			mod_la = true;
-		} else if (strncmp(*argv, "litmul=", 7) == 0) {
-			for (auto &e : mpal.la)
-				e.l *= arg1;
-			mod_la = true;
-		} else if (strncmp(*argv, "litset=", 7) == 0) {
-			for (auto &e : mpal.la)
-				e.l = arg1;
-			mod_la = true;
-		} else if (strncmp(*argv, "satadd=", 7) == 0) {
-			for (auto &e : mpal.la)
-				e.c += arg1;
-			mod_la = true;
-		} else if (strncmp(*argv, "satmul=", 7) == 0) {
-			for (auto &e : mpal.la)
-				e.c *= arg1;
-			mod_la = true;
-		} else if (strncmp(*argv, "satset=", 7) == 0) {
-			for (auto &e : mpal.la)
-				e.c = arg1;
-			mod_la = true;
-		} else if (strncmp(*argv, "hueadd=", 7) == 0) {
-			for (auto &e : mpal.la)
-				e.h = HX_flpr(e.h + arg1, 360);
-			mod_la = true;
-		} else if (strncmp(*argv, "hueset=", 7) == 0) {
-			arg1 = fmod(arg1, 360);
-			for (auto &e : mpal.la)
-				e.h = arg1;
-			mod_la = true;
 		} else if (strncmp(*argv, "hsltint=", 8) == 0) {
 			mpal.ra = hsltint(parse_hsl(&argv[0][8]), mpal.la);
 			mod_ra = true;
