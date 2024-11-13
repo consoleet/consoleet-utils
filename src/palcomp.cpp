@@ -990,7 +990,10 @@ int main(int argc, char **argv)
 			mod_ra = true;
 		} else if (strncmp(*argv, "lchtint=", 8) == 0) {
 			auto base = parse_hsl(&argv[0][8]);
-			mpal.la = lchtint(to_lch(to_srgb(base)), mpal.la);
+			auto v = to_lch(to_srgb(base));
+			if (g_verbose)
+				fprintf(stderr, "# converted %s to LCh(%f,%f,%f)\n", &argv[0][8], v.l, v.c, v.h);
+			mpal.la = lchtint(v, mpal.la);
 			mod_la = true;
 		} else if (strcmp(*argv, "emit") == 0 || strcmp(*argv, "xfce") == 0) {
 			emit_xfce(mpal.ra);
