@@ -966,7 +966,7 @@ int main(int argc, char **argv)
 					mod_ra = true;
 				}
 			}
-		} else if (strncmp(*argv, "eval=", 4) == 0) {
+		} else if (strncmp(*argv, "eval=", 5) == 0) {
 			if (do_eval(&argv[0][5], mpal) != 0)
 				break;
 		} else if (**argv == '(' || (strchr(EVAL_REGS, **argv) && argv[0][1] == '=')) {
