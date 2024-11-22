@@ -62,6 +62,9 @@ use. Known operators are \fB+\fP, \fB\-\fP, \fB*\fP, \fB/\fP, \fB^\fP
 As a shorthand, if \fIexpr\fP begins with an opening parenthesis or a
 one-letter identifier followed by =, the expression can also be used as a
 command without the need to type \fBeval=\fP.
+.SS eval@LIST=expr
+Evaluate expression for the given colors. LIST shall be a comma-separated list
+of palette indices or index ranges, e.g. "0,4-7,12".
 .SS fg
 When the palcomp xterm command is used, also emit a \-fg parameter and use
 color 7.

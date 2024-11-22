@@ -881,7 +881,7 @@ static token_entry eval_grp(const token_vector &tokens, mpalette &mpal, size_t i
 	return lhs;
 }
 
-int do_eval(const char *cmd, mpalette &mpal)
+static int do_eval(const char *cmd, mpalette &mpal, const std::vector<size_t> &indices = {})
 {
 	token_vector tokens;
 	auto ret = eval_tokenize(cmd, nullptr, tokens);
@@ -891,12 +891,55 @@ int do_eval(const char *cmd, mpalette &mpal)
 		fprintf(stderr, "# expr parsed as: %s\n", repr(tokens).c_str());
 	if (mpal.la.size() != mpal.ra.size())
 		throw "Programming error";
-	for (size_t i = 0; i < mpal.la.size(); ++i) {
-		auto d = eval_grp(tokens, mpal, i);
-		if (d.type == token_type::none)
-			return -1;
+	if (indices.empty()) {
+		for (size_t i = 0; i < mpal.la.size(); ++i) {
+			auto d = eval_grp(tokens, mpal, i);
+			if (d.type == token_type::none)
+				return -1;
+		}
+	} else {
+		for (auto i : indices) {
+			if (i >= mpal.la.size())
+				continue;
+			auto d = eval_grp(tokens, mpal, i);
+			if (d.type == token_type::none)
+				return -1;
+		}
 	}
 	return 0;
+}
+
+std::vector<size_t> parse_range(const char *s_input)
+{
+	auto s = s_input;
+	std::vector<size_t> vec;
+	while (*s != '\0' && *s != '=') {
+		char *end = nullptr;
+		auto val = strtoull(s, &end, 0);
+		if (end == s) {
+			fprintf(stderr, "Failed parsing range \"%s\" at ...\"%s\"\n", s_input, s);
+			break;
+		}
+		s = end;
+		if (*s == '-') {
+			++s;
+			auto val2 = strtoull(s, &end, 0);
+			if (end == s) {
+				fprintf(stderr, "Failed parsing range \"%s\" at ...\"%s\"\n", s_input, s);
+				break;
+			}
+			s = end;
+			for (auto j = val; j <= val2; ++j)
+				vec.push_back(j);
+		} else {
+			vec.push_back(val);
+		}
+		if (*s == ',') {
+			++s;
+			continue;
+		}
+	}
+	return vec;
 }
 
 int main(int argc, char **argv)
@@ -965,6 +1008,15 @@ int main(int argc, char **argv)
 					mpal.ra = do_blend(mpal.ra, 1-pct/100, allpal[end].ra, pct/100);
 					mod_ra = true;
 				}
+			}
+
+		} else if (strncmp(*argv, "eval@", 5) == 0) {
+			auto eqsign = strchr(&argv[0][5], '=');
+			if (eqsign != nullptr) {
+				*eqsign++ = '\0';
+				auto indices = parse_range(&argv[0][5]);
+				if (do_eval(eqsign, mpal, indices) != 0)
+					break;
 			}
 		} else if (strncmp(*argv, "eval=", 5) == 0) {
 			if (do_eval(&argv[0][5], mpal) != 0)
