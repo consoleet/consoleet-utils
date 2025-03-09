@@ -1,3 +1,9 @@
+1.9 (2025-03-09)
+================
+
+* palcomp: the eval command can now be limited to specific palette entries
+* palcomp: add "bd" command
+
 1.8 (2024-11-13)
 ================
 
