@@ -107,6 +107,7 @@ static const Babl *lch_space, *srgb_space, *srgb888_space;
 static Eigen::Matrix3d xyz_to_lrgb_matrix;
 
 static constexpr HXoption g_options_table[] = {
+	{{}, 'q', HXTYPE_NONE | HXOPT_DEC, &g_verbose, {}, {}, {}, "Reduce noise"},
 	{{}, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, {}, {}, {}, "Debugging"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -304,15 +305,19 @@ static std::vector<lch> lchtint(const lch &base, const std::vector<lch> &light)
 
 static void colortable_256()
 {
+	char v = g_verbose >= 1 ? '.' : ' ';
 	for (unsigned int b = 0; b < 256; b += 32) {
 		for (unsigned int g = 0; g < 256; g += 32) {
 			for (unsigned int r = 0; r < 256; r += 16)
-				printf("\e[30;48;2;%u;%u;%um.", r, g, b);
+				printf("\e[30;48;2;%u;%u;%um%c", r, g, b, v);
 			printf("\e[0m\n");
 		}
 	}
 	for (unsigned int c = 0x0; c <= 0xFF; ++c) {
-		printf("\e[30;48;5;%um-%02x-", c, c);
+		if (g_verbose >= 1)
+			printf("\e[30;48;5;%um-%02x-", c, c);
+		else
+			printf("\e[30;48;5;%um  ", c);
 		if ((c - 3) % 6 == 0)
 			printf("\e[0m\n");
 	}
@@ -324,7 +329,10 @@ static void colortable_16(std::function<void(int, int, int)> pr = nullptr)
 	if (pr == nullptr) {
 		printf("                  ┌─ bright ───────┐┌─ bold ─────────┐┌─ reverse ──────┐\n");
 		pr = [](int bg, int fg, int sp) {
-			printf("%x%c", bg >= 0 ? bg : 0, fg < 10 ? '0' + fg : 'a' + fg - 10);
+			if (g_verbose == 0)
+				printf("  ");
+			else
+				printf("%x%c", bg >= 0 ? bg : 0, fg < 10 ? '0' + fg : 'a' + fg - 10);
 		};
 		modes = {0, 90, 1, 7};
 	}
