@@ -101,13 +101,13 @@ static constexpr srgb888 win_palette[] = {
 	{0x00,0x00,0xff}, {0xff,0x00,0xff}, {0x00,0xff,0xff}, {0xff,0xff,0xff},
 };
 
-static unsigned int xterm_fg, xterm_bg, xterm_bd, g_verbose;
+static unsigned int xterm_fg, xterm_bg, xterm_bd, g_verbose = 1;
 static double g_continuous_gamma;
 static const Babl *lch_space, *srgb_space, *srgb888_space;
 static Eigen::Matrix3d xyz_to_lrgb_matrix;
 
 static constexpr HXoption g_options_table[] = {
-	{{}, 'v', HXTYPE_NONE, &g_verbose, {}, {}, {}, "Debugging"},
+	{{}, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, {}, {}, {}, "Debugging"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -570,7 +570,7 @@ static std::vector<lch> equalize(std::vector<lch> la, unsigned int sbl_size,
 	std::sort(sbl.begin(), sbl.end(),
 		[&](unsigned int x, unsigned int y) { return la[x].l < la[y].l; });
 
-	if (g_verbose) {
+	if (g_verbose >= 2) {
 		fprintf(stderr, "equalize(%zu) in: ", sbl.size());
 		for (auto z : sbl)
 			fprintf(stderr, "%f(\e[%u;3%um%x\e[0m) ", la[z].l, !!(z & 0x8), z & 0x7, z);
@@ -579,10 +579,10 @@ static std::vector<lch> equalize(std::vector<lch> la, unsigned int sbl_size,
 	for (unsigned int idx = 1; idx < sbl.size(); ++idx) {
 		unsigned int z = sbl[idx];
 		la[z].l = (gray - blue) * (idx - 1) / (sbl.size() - 2) + blue + la[sbl[0]].l;
-		if (g_verbose)
+		if (g_verbose >= 2)
 			fprintf(stderr, "%f(\e[%u;3%um%x\e[0m) ", la[z].l, !!(z & 0x8), z & 0x7, z);
 	}
-	if (g_verbose)
+	if (g_verbose >= 2)
 		fprintf(stderr, "\n");
 	return la;
 }
@@ -887,7 +887,7 @@ static int do_eval(const char *cmd, mpalette &mpal, const std::vector<size_t> &i
 	auto ret = eval_tokenize(cmd, nullptr, tokens);
 	if (ret != 0)
 		return ret;
-	if (g_verbose)
+	if (g_verbose >= 2)
 		fprintf(stderr, "# expr parsed as: %s\n", repr(tokens).c_str());
 	if (mpal.la.size() != mpal.ra.size())
 		throw "Programming error";
@@ -1049,7 +1049,7 @@ int main(int argc, char **argv)
 		} else if (strncmp(*argv, "lchtint=", 8) == 0) {
 			auto base = parse_hsl(&argv[0][8]);
 			auto v = to_lch(to_srgb(base));
-			if (g_verbose)
+			if (g_verbose >= 2)
 				fprintf(stderr, "# converted %s to LCh(%f,%f,%f)\n", &argv[0][8], v.l, v.c, v.h);
 			mpal.la = lchtint(v, mpal.la);
 			mod_la = true;
