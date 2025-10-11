@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2024 Jan Engelhardt
+// SPDX-FileCopyrightText: 2022–2025 Jan Engelhardt
 #include <algorithm>
 #include <functional>
 #include <cctype>
@@ -960,9 +960,10 @@ int main(int argc, char **argv)
 		~bb_guard() { ::babl_exit(); }
 	};
 	bb_guard bbg;
+	HXopt6_auto_result argp;
 
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 
 	xyz_to_lrgb_matrix = make_lrgb_matrix(to_xyz(illuminant_d(6500)));
@@ -982,8 +983,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	while (*++argv != nullptr) {
-		auto le_arg = *argv;
+	for (int ni = 0; ni < argp.nargs; ++ni) {
+		auto le_arg = argp.uarg[ni];
 		auto ptr = strchr(le_arg, '=');
 		auto arg1 = ptr != nullptr ? strtod(ptr + 1, nullptr) : 0;
 		bool mod_ra = false, mod_la = false;
