@@ -1,4 +1,4 @@
-AC_INIT([consoleet-utils], [1.9])
+AC_INIT([consoleet-utils], [1.10])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([config.h])
 AC_PROG_INSTALL
@@ -17,6 +17,6 @@ AC_SUBST([regular_CXXFLAGS])
 
 PKG_CHECK_MODULES([babl], [babl-0.1])
 PKG_CHECK_MODULES([eigen], [eigen3])
-PKG_CHECK_MODULES([libHX], [libHX >= 4.15])
+PKG_CHECK_MODULES([libHX], [libHX >= 4.28])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
