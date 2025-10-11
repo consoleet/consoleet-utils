@@ -983,30 +983,31 @@ int main(int argc, char **argv)
 	}
 
 	while (*++argv != nullptr) {
-		auto ptr = strchr(*argv, '=');
+		auto le_arg = *argv;
+		auto ptr = strchr(le_arg, '=');
 		auto arg1 = ptr != nullptr ? strtod(ptr + 1, nullptr) : 0;
 		bool mod_ra = false, mod_la = false;
 
-		if (strcmp(*argv, "vga") == 0) {
+		if (strcmp(le_arg, "vga") == 0) {
 			mpal.ra = {std::begin(vga_palette), std::end(vga_palette)};
 			mod_ra = true;
-		} else if (strcmp(*argv, "vgs") == 0) {
+		} else if (strcmp(le_arg, "vgs") == 0) {
 			mpal.ra = {std::begin(vgasat_palette), std::end(vgasat_palette)};
 			mod_ra = true;
-		} else if (strcmp(*argv, "win") == 0) {
+		} else if (strcmp(le_arg, "win") == 0) {
 			mpal.ra = {std::begin(win_palette), std::end(win_palette)};
 			mod_ra = true;
-		} else if (strncmp(*argv, "loadpal=", 8) == 0) {
-			if (loadpal(&argv[0][8], mpal.ra) != 0)
+		} else if (strncmp(le_arg, "loadpal=", 8) == 0) {
+			if (loadpal(&le_arg[8], mpal.ra) != 0)
 				return EXIT_FAILURE;
 			mod_ra = true;
-		} else if (strncmp(*argv, "loadreg=", 8) == 0) {
-			mpal = allpal[&argv[0][8]];
-		} else if (strncmp(*argv, "savereg=", 8) == 0) {
-			allpal[&argv[0][8]] = mpal;
-		} else if (strncmp(*argv, "blend=", 6) == 0) {
+		} else if (strncmp(le_arg, "loadreg=", 8) == 0) {
+			mpal = allpal[&le_arg[8]];
+		} else if (strncmp(le_arg, "savereg=", 8) == 0) {
+			allpal[&le_arg[8]] = mpal;
+		} else if (strncmp(le_arg, "blend=", 6) == 0) {
 			char *end = nullptr;
-			auto pct = strtod(&argv[0][6], &end);
+			auto pct = strtod(&le_arg[6], &end);
 			if (*end == ',') {
 				++end;
 				auto bi = allpal.find(end);
@@ -1018,21 +1019,21 @@ int main(int argc, char **argv)
 				}
 			}
 
-		} else if (strncmp(*argv, "eval@", 5) == 0) {
-			auto eqsign = strchr(&argv[0][5], '=');
+		} else if (strncmp(le_arg, "eval@", 5) == 0) {
+			auto eqsign = strchr(&le_arg[5], '=');
 			if (eqsign != nullptr) {
 				*eqsign++ = '\0';
-				auto indices = parse_range(&argv[0][5]);
+				auto indices = parse_range(&le_arg[5]);
 				if (do_eval(eqsign, mpal, indices) != 0)
 					break;
 			}
-		} else if (strncmp(*argv, "eval=", 5) == 0) {
-			if (do_eval(&argv[0][5], mpal) != 0)
+		} else if (strncmp(le_arg, "eval=", 5) == 0) {
+			if (do_eval(&le_arg[5], mpal) != 0)
 				break;
-		} else if (**argv == '(' || (strchr(EVAL_REGS, **argv) && argv[0][1] == '=')) {
-			if (do_eval(argv[0], mpal) != 0)
+		} else if (*le_arg == '(' || (strchr(EVAL_REGS, *le_arg) && le_arg[1] == '=')) {
+			if (do_eval(le_arg, mpal) != 0)
 				break;
-		} else if (strncmp(*argv, "ild=", 4) == 0) {
+		} else if (strncmp(le_arg, "ild=", 4) == 0) {
 			fprintf(stderr, "New white_point D_%.2f:\n", arg1 / 100);
 			auto a = illuminant_d(arg1);
 			fprintf(stderr, "{x=%.15f, y=%.15f}\n", a.x, a.y);
@@ -1042,7 +1043,7 @@ int main(int argc, char **argv)
 			std::stringstream ss;
 			ss << xyz_to_lrgb_matrix;
 			fprintf(stderr, "XYZ-to-LRGB matrix:\n%s\n", ss.str().c_str());
-		} else if (strcmp(*argv, "lch") == 0) {
+		} else if (strcmp(le_arg, "lch") == 0) {
 			printf("#L,c,h\n");
 			unsigned int cnt = 0;
 			for (auto &e : mpal.la) {
@@ -1051,30 +1052,30 @@ int main(int argc, char **argv)
 					cnt, e.l, e.c, e.h);
 				++cnt;
 			}
-		} else if (strncmp(*argv, "hsltint=", 8) == 0) {
-			mpal.ra = hsltint(parse_hsl(&argv[0][8]), mpal.la);
+		} else if (strncmp(le_arg, "hsltint=", 8) == 0) {
+			mpal.ra = hsltint(parse_hsl(&le_arg[8]), mpal.la);
 			mod_ra = true;
-		} else if (strncmp(*argv, "lchtint=", 8) == 0) {
-			auto base = parse_hsl(&argv[0][8]);
+		} else if (strncmp(le_arg, "lchtint=", 8) == 0) {
+			auto base = parse_hsl(&le_arg[8]);
 			auto v = to_lch(to_srgb(base));
 			if (g_verbose >= 2)
-				fprintf(stderr, "# converted %s to LCh(%f,%f,%f)\n", &argv[0][8], v.l, v.c, v.h);
+				fprintf(stderr, "# converted %s to LCh(%f,%f,%f)\n", &le_arg[8], v.l, v.c, v.h);
 			mpal.la = lchtint(v, mpal.la);
 			mod_la = true;
-		} else if (strcmp(*argv, "emit") == 0 || strcmp(*argv, "xfce") == 0) {
+		} else if (strcmp(le_arg, "emit") == 0 || strcmp(le_arg, "xfce") == 0) {
 			emit_xfce(mpal.ra);
-		} else if (strcmp(*argv, "xterm") == 0) {
+		} else if (strcmp(le_arg, "xterm") == 0) {
 			emit_xterm(mpal.ra);
-		} else if (strcmp(*argv, "fg") == 0) {
+		} else if (strcmp(le_arg, "fg") == 0) {
 			xterm_fg = 1;
-		} else if (strcmp(*argv, "bg") == 0) {
+		} else if (strcmp(le_arg, "bg") == 0) {
 			xterm_bg = 1;
-		} else if (strcmp(*argv, "bd") == 0) {
+		} else if (strcmp(le_arg, "bd") == 0) {
 			xterm_bd = 1;
-		} else if (strcmp(*argv, "b0") == 0) {
+		} else if (strcmp(le_arg, "b0") == 0) {
 			mpal.la[0] = {0,0,0};
 			mpal.ra[0] = {0,0,0};
-		} else if (strcmp(*argv, "inv16") == 0) {
+		} else if (strcmp(le_arg, "inv16") == 0) {
 			decltype(mpal.ra) new_ra(mpal.ra.size());
 			for (size_t i = 0; i < mpal.ra.size(); ++i)
 				new_ra[i] = std::move(mpal.ra[~i % mpal.ra.size()]);
@@ -1089,38 +1090,38 @@ int main(int argc, char **argv)
 			 * h.l = 1 - 0.25 * h.s - h.l;
 			 * e = to_srgb888(to_srgb(h));
 			 */
-		} else if (strcmp(*argv, "ct256") == 0) {
+		} else if (strcmp(le_arg, "ct256") == 0) {
 			colortable_256();
 			colortable_16();
-		} else if (strcmp(*argv, "ct") == 0) {
+		} else if (strcmp(le_arg, "ct") == 0) {
 			colortable_16();
-		} else if (strcmp(*argv, "cxl") == 0) {
+		} else if (strcmp(le_arg, "cxl") == 0) {
 			cxl_command(mpal.la);
-		} else if (strcmp(*argv, "cxa") == 0) {
+		} else if (strcmp(le_arg, "cxa") == 0) {
 			cxa_command(mpal.ra);
-		} else if (strncmp(*argv, "cfgamma=", 8) == 0) {
+		} else if (strncmp(le_arg, "cfgamma=", 8) == 0) {
 			g_continuous_gamma = arg1;
-		} else if (strcmp(*argv, "loeq") == 0) {
+		} else if (strcmp(le_arg, "loeq") == 0) {
 			mpal.la = equalize(mpal.la, 9, 100 / 9.0, 100 * 8 / 9.0);
 			mod_la = true;
-		} else if (strncmp(*argv, "loeq=", 5) == 0) {
+		} else if (strncmp(le_arg, "loeq=", 5) == 0) {
 			char *end = nullptr;
-			arg1 = strtod(&argv[0][5], &end);
+			arg1 = strtod(&le_arg[5], &end);
 			double arg2 = *end == ',' ? strtod(end + 1, &end) : 100 / 9.0 * 8;
 			mpal.la = equalize(mpal.la, 9, arg1, arg2);
 			mod_la = true;
-		} else if (strcmp(*argv, "eq") == 0) {
+		} else if (strcmp(le_arg, "eq") == 0) {
 			mpal.la = equalize(mpal.la, 16, 100 / 16.0, 100);
 			mod_la = true;
-		} else if (strncmp(*argv, "eq=", 3) == 0) {
+		} else if (strncmp(le_arg, "eq=", 3) == 0) {
 			mpal.la = equalize(mpal.la, 16, arg1, 100);
 			mod_la = true;
-		} else if (strcmp(*argv, "syncfromrgb") == 0) {
+		} else if (strcmp(le_arg, "syncfromrgb") == 0) {
 			mpal.mod_ra();
-		} else if (strcmp(*argv, "syncfromlch") == 0) {
+		} else if (strcmp(le_arg, "syncfromlch") == 0) {
 			mpal.mod_la();
 		} else {
-			fprintf(stderr, "Unrecognized command: \"%s\"\n", *argv);
+			fprintf(stderr, "Unrecognized command: \"%s\"\n", le_arg);
 		}
 		if (mod_ra)
 			mpal.mod_ra();
