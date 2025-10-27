@@ -94,6 +94,21 @@ struct psf2_header {
 	uint32_t version, headersize, flags, length, charsize, height, width;
 };
 
+struct vertex {
+	bool operator<(const struct vertex &) const;
+	bool operator==(const struct vertex &) const;
+	bool operator!=(const struct vertex &a) const { return !operator==(a); }
+	int y, x;
+};
+
+struct edge {
+	bool operator<(const struct edge &) const;
+	bool operator==(const struct edge &) const;
+	bool operator!=(const struct edge &a) const { return !operator==(a); }
+	unsigned int trivial_dir() const;
+	struct vertex start_vtx, end_vtx;
+};
+
 class vectorizer final {
 	public:
 	vectorizer(const glyph &, int descent = 0);
