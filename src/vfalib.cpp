@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// SPDX-FileCopyrightText: 2019 Jan Engelhardt
+// SPDX-FileCopyrightText: 2019–2025 Jan Engelhardt
 /*
  *	I/O and glyph manipulation routines of the "VGA font assembler"
  */
@@ -1471,19 +1471,17 @@ loose_edge_set::iterator vectorizer::next_edge(unsigned int cur_dir,
 closed_path vectorizer::pop_poly(unsigned int flags)
 {
 	closed_path poly;
-	if (emap.size() == 0)
+	if (emap.empty())
 		return poly;
 	poly.push_back(*emap.begin());
 	emap.erase(emap.begin());
 	auto prev_dir = poly[0].trivial_dir();
 
-	while (true) {
-		if (emap.size() == 0)
+	while (emap.size() > 0) {
+		auto &tail_vtx = poly.back().end_vtx;
+		if (tail_vtx == poly.front().start_vtx)
 			break;
-		auto &tail_vtx = poly.rbegin()->end_vtx;
-		if (tail_vtx == poly.cbegin()->start_vtx)
-			break;
-		auto next = next_edge(prev_dir, *poly.rbegin(), flags);
+		auto next = next_edge(prev_dir, poly.back(), flags);
 		if (next == emap.cend()) {
 			fprintf(stderr, "unclosed poly wtf?!\n");
 			break;
@@ -1793,7 +1791,7 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
 	else if (vt == V_N2EV)
 		pmap = vct.n2(vectorizer::P_ISTHMUS);
 	for (const auto &poly : pmap) {
-		const auto &v1 = poly.cbegin()->start_vtx;
+		const auto &v1 = poly.front().start_vtx;
 		fprintf(fp, "%d %d m 25\n", v1.x, v1.y);
 		for (const auto &edge : poly)
 			fprintf(fp, " %d %d l 25\n", edge.end_vtx.x, edge.end_vtx.y);
