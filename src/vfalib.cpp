@@ -109,12 +109,15 @@ struct edge {
 	struct vertex start_vtx, end_vtx;
 };
 
+using loose_edge_set = std::set<edge>;
+using closed_path = std::vector<edge>;
+
 class vectorizer final {
 	public:
 	vectorizer(const glyph &, int descent = 0);
-	std::vector<std::vector<edge>> simple();
-	std::vector<std::vector<edge>> n1();
-	std::vector<std::vector<edge>> n2(unsigned int flags = 0);
+	std::vector<closed_path> simple();
+	std::vector<closed_path> n1();
+	std::vector<closed_path> n2(unsigned int flags = 0);
 
 	/*
 	 * A distance of one pixel is mapped to this many vector font units.
@@ -132,14 +135,14 @@ class vectorizer final {
 	private:
 	void make_squares();
 	void del_antipar();
-	unsigned int neigh_edges(unsigned int dir, const vertex &, std::set<edge>::iterator &, std::set<edge>::iterator &) const;
-	std::set<edge>::iterator next_edge(unsigned int dir, const edge &, unsigned int flags) const;
-	std::vector<edge> pop_poly(unsigned int flags);
+	unsigned int neigh_edges(unsigned int dir, const vertex &, loose_edge_set::iterator &, loose_edge_set::iterator &) const;
+	loose_edge_set::iterator next_edge(unsigned int dir, const edge &, unsigned int flags) const;
+	closed_path pop_poly(unsigned int flags);
 	void add_blot(int, int);
 
 	const glyph &m_glyph;
 	int m_descent = 0;
-	std::set<edge> emap;
+	loose_edge_set emap;
 	static const unsigned int P_SIMPLIFY_LINES = 1 << 0;
 };
 
@@ -1357,7 +1360,7 @@ void vectorizer::del_antipar()
  * Find the next edges (up to two) for @tail.
  */
 unsigned int vectorizer::neigh_edges(unsigned int cur_dir, const vertex &tail,
-    std::set<edge>::iterator &inward, std::set<edge>::iterator &outward) const
+    loose_edge_set::iterator &inward, loose_edge_set::iterator &outward) const
 {
 	inward = emap.lower_bound({tail, {INT_MIN, INT_MIN}});
 	if (inward == emap.end() || inward->start_vtx != tail) {
@@ -1374,11 +1377,11 @@ unsigned int vectorizer::neigh_edges(unsigned int cur_dir, const vertex &tail,
 	return 2;
 }
 
-std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
+loose_edge_set::iterator vectorizer::next_edge(unsigned int cur_dir,
     const edge &cur_edge, unsigned int flags) const
 {
 	const auto &tail = cur_edge.end_vtx;
-	std::set<edge>::iterator inward, outward;
+	loose_edge_set::iterator inward, outward;
 	auto ret = neigh_edges(cur_dir, tail, inward, outward);
 	if (!(flags & P_ISTHMUS) || ret <= 1)
 		return inward;
@@ -1465,9 +1468,9 @@ std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
  * edge and following the path with "right turns only" until we see the same
  * edge again, that will be our polygon.
  */
-std::vector<edge> vectorizer::pop_poly(unsigned int flags)
+closed_path vectorizer::pop_poly(unsigned int flags)
 {
-	std::vector<edge> poly;
+	closed_path poly;
 	if (emap.size() == 0)
 		return poly;
 	poly.push_back(*emap.begin());
@@ -1503,11 +1506,11 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 	return poly;
 }
 
-std::vector<std::vector<edge>> vectorizer::simple()
+std::vector<closed_path> vectorizer::simple()
 {
 	make_squares();
 	del_antipar();
-	std::vector<std::vector<edge>> pmap;
+	std::vector<closed_path> pmap;
 	while (true) {
 		auto poly = pop_poly(P_SIMPLIFY_LINES);
 		if (poly.size() == 0)
@@ -1517,7 +1520,7 @@ std::vector<std::vector<edge>> vectorizer::simple()
 	return pmap;
 }
 
-std::vector<std::vector<edge>> vectorizer::n1()
+std::vector<closed_path> vectorizer::n1()
 {
 	auto &g = m_glyph;
 	const auto &sz = g.m_size;
@@ -1573,7 +1576,7 @@ std::vector<std::vector<edge>> vectorizer::n1()
 	}
 
 	del_antipar();
-	std::vector<std::vector<edge>> pmap;
+	std::vector<closed_path> pmap;
 	while (true) {
 		auto poly = pop_poly(P_SIMPLIFY_LINES);
 		if (poly.size() == 0)
@@ -1583,7 +1586,7 @@ std::vector<std::vector<edge>> vectorizer::n1()
 	return pmap;
 }
 
-static void n2_angle(std::vector<edge> &poly, unsigned int sx, unsigned int sy)
+static void n2_angle(closed_path &poly, unsigned int sx, unsigned int sy)
 {
 	static const unsigned int M_HEAD = 0x20, M_TAIL = 0x02,
 		M_XHEAD = 0x10, M_XTAIL = 0x01;
@@ -1745,12 +1748,12 @@ static void n2_angle(std::vector<edge> &poly, unsigned int sx, unsigned int sy)
 	}
 }
 
-std::vector<std::vector<edge>> vectorizer::n2(unsigned int flags)
+std::vector<closed_path> vectorizer::n2(unsigned int flags)
 {
 	flags &= P_ISTHMUS;
 	make_squares();
 	del_antipar();
-	std::vector<std::vector<edge>> pmap;
+	std::vector<closed_path> pmap;
 	while (true) {
 		/* Have all edges retain length 1 */
 		auto poly = pop_poly(flags);
@@ -1777,7 +1780,7 @@ void font::save_sfd_glyph(FILE *fp, size_t idx, char32_t cp, int asc, int desc,
 	fprintf(fp, "Fore\n");
 	fprintf(fp, "SplineSet\n");
 
-	std::vector<std::vector<edge>> pmap;
+	std::vector<closed_path> pmap;
 	vectorizer vct(m_glyph[idx], desc);
 	vct.scale_factor_x = m_ssfx;
 	vct.scale_factor_y = m_ssfy;
