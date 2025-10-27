@@ -131,11 +131,11 @@ class vectorizer final {
 
 	private:
 	void make_squares();
-	void internal_edge_delete();
+	void del_antipar();
 	unsigned int neigh_edges(unsigned int dir, const vertex &, std::set<edge>::iterator &, std::set<edge>::iterator &) const;
 	std::set<edge>::iterator next_edge(unsigned int dir, const edge &, unsigned int flags) const;
 	std::vector<edge> pop_poly(unsigned int flags);
-	void set(int, int);
+	void add_blot(int, int);
 
 	const glyph &m_glyph;
 	int m_descent = 0;
@@ -1294,7 +1294,7 @@ vectorizer::vectorizer(const glyph &g, int desc) :
  * is implicit in the graph (emap) and a polygon is defined by the
  * smallest walk with right turns only.
  */
-void vectorizer::set(int x, int y)
+void vectorizer::add_blot(int x, int y)
 {
 	/* TTF/OTF spec: right side of line to be interior */
 	const int &sx = scale_factor_x, &sy = scale_factor_y;
@@ -1314,18 +1314,18 @@ void vectorizer::make_squares()
 		for (unsigned int x = 0; x < sz.w; ++x) {
 			bitpos ipos = y * sz.w + x;
 			if (m_glyph.m_data[ipos.byte] & ipos.mask)
-				set(x, yy);
+				add_blot(x, yy);
 		}
 	}
 }
 
-void vectorizer::internal_edge_delete()
+void vectorizer::del_antipar()
 {
 	/*
-	 * Remove overlaps: As enforced by set(), all the abstract polygons are
+	 * Remove overlaps: As enforced by add_blot(), all the abstract polygons are
 	 * added with the same orientation. Polygons at most touch, and never
 	 * overlap. Joining these abstract polygons simply requires removing
-	 * shared contradirectional edges. It follows by induction that the
+	 * antiparallel congruent edges. It follows by induction that the
 	 * intrinsic property {{smallest walk with right turns only} forms a
 	 * closed polygon} is kept.
 	 *
@@ -1461,7 +1461,7 @@ std::set<edge>::iterator vectorizer::next_edge(unsigned int cur_dir,
  *
  * The vectorizer class only keeps a loose set of edge descriptions, but all
  * these edges form valid closed polygons (cf. vectorizer::set,
- * vectorizer::internal_edge_removal). Thus, by starting a walk at an arbitrary
+ * vectorizer::del_antipar). Thus, by starting a walk at an arbitrary
  * edge and following the path with "right turns only" until we see the same
  * edge again, that will be our polygon.
  */
@@ -1506,7 +1506,7 @@ std::vector<edge> vectorizer::pop_poly(unsigned int flags)
 std::vector<std::vector<edge>> vectorizer::simple()
 {
 	make_squares();
-	internal_edge_delete();
+	del_antipar();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
 		auto poly = pop_poly(P_SIMPLIFY_LINES);
@@ -1572,7 +1572,7 @@ std::vector<std::vector<edge>> vectorizer::n1()
 		}
 	}
 
-	internal_edge_delete();
+	del_antipar();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
 		auto poly = pop_poly(P_SIMPLIFY_LINES);
@@ -1749,7 +1749,7 @@ std::vector<std::vector<edge>> vectorizer::n2(unsigned int flags)
 {
 	flags &= P_ISTHMUS;
 	make_squares();
-	internal_edge_delete();
+	del_antipar();
 	std::vector<std::vector<edge>> pmap;
 	while (true) {
 		/* Have all edges retain length 1 */
