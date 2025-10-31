@@ -809,7 +809,7 @@ static double eval_rd(mpalette &mpal, size_t idx, char reg)
 	case 'x': return mpal.x;
 	case 'y': return mpal.y;
 	case 'z': return mpal.z;
-	default: throw -1;
+	default: throw "Illegal register";
 	}
 }
 
@@ -844,6 +844,7 @@ static token_entry eval_grp(const token_vector &tokens, mpalette &mpal, size_t i
 		return {};
 	} else if (tokens[1].type != token_type::op) {
 		eval_help("Expected middle token to be an operator", tokens);
+		return {};
 	}
 
 	auto op = std::get<char>(tokens[1].val);
@@ -894,7 +895,8 @@ static token_entry eval_grp(const token_vector &tokens, mpalette &mpal, size_t i
 	return lhs;
 }
 
-static int do_eval(const char *cmd, mpalette &mpal, const std::vector<size_t> &indices = {})
+static int do_eval(const char *cmd, mpalette &mpal,
+    const std::vector<size_t> &indices = {}) try
 {
 	token_vector tokens;
 	auto ret = eval_tokenize(cmd, nullptr, tokens);
@@ -902,8 +904,10 @@ static int do_eval(const char *cmd, mpalette &mpal, const std::vector<size_t> &i
 		return ret;
 	if (g_verbose >= 2)
 		fprintf(stderr, "# expr parsed as: %s\n", repr(tokens).c_str());
-	if (mpal.la.size() != mpal.ra.size())
-		throw "Programming error";
+	if (mpal.la.size() != mpal.ra.size()) {
+		fprintf(stderr, "Programming error / Debug me here\n");
+		return -1;
+	}
 	if (indices.empty()) {
 		for (size_t i = 0; i < mpal.la.size(); ++i) {
 			auto d = eval_grp(tokens, mpal, i);
@@ -920,6 +924,9 @@ static int do_eval(const char *cmd, mpalette &mpal, const std::vector<size_t> &i
 		}
 	}
 	return 0;
+} catch (const char *e) {
+	fprintf(stderr, "%s\n", e);
+	return -1;
 }
 
 std::vector<size_t> parse_range(const char *s_input)
@@ -1031,14 +1038,14 @@ int main(int argc, char **argv)
 				*eqsign++ = '\0';
 				auto indices = parse_range(&le_arg[5]);
 				if (do_eval(eqsign, mpal, indices) != 0)
-					break;
+					return EXIT_FAILURE;
 			}
 		} else if (strncmp(le_arg, "eval=", 5) == 0) {
 			if (do_eval(&le_arg[5], mpal) != 0)
-				break;
+				return EXIT_FAILURE;
 		} else if (*le_arg == '(' || (strchr(EVAL_REGS, *le_arg) && le_arg[1] == '=')) {
 			if (do_eval(le_arg, mpal) != 0)
-				break;
+				return EXIT_FAILURE;
 		} else if (strncmp(le_arg, "ild=", 4) == 0) {
 			fprintf(stderr, "New white_point D_%.2f:\n", arg1 / 100);
 			auto a = illuminant_d(arg1);
