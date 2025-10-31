@@ -847,13 +847,17 @@ static char32_t nextucs2(FILE *fp)
 
 static unsigned int psf_version(FILE *fp)
 {
-	uint8_t x = fgetc(fp), y = fgetc(fp);
+	int x = fgetc(fp), y = fgetc(fp);
+	if (x == EOF || y == EOF)
+		return 0;
 	if (x == PSF1_MAGIC0 && y == PSF1_MAGIC1)
 		return 1;
 	if (x != PSF2_MAGIC0 || y != PSF2_MAGIC1)
 		return 0;
 	x = fgetc(fp);
 	y = fgetc(fp);
+	if (x == EOF || y == EOF)
+		return 0;
 	return x == PSF2_MAGIC2 && y == PSF2_MAGIC3 ? 2 : 0;
 }
 
