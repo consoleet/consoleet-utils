@@ -547,10 +547,14 @@ static void cx_report(const palstat &o)
 	cx_report(o.x88, " 8x8 ");
 }
 
-static void cxl_command(const std::vector<lch> &lch_pal)
+static void cxl_command(const std::vector<lch> &lch_pal) try
 {
-	printf("\e[1m════ Difference of the L components ════\e[0m\n");
+	if (lch_pal.size() < 16) {
+		fprintf(stderr, "cxl_compute: LCh palette must have 16 entries\n");
+		return;
+	}
 	auto sb = cxl_compute(lch_pal);
+	printf("\e[1m════ Difference of the L components ════\e[0m\n");
 	colortable_16([&](int bg, int fg, int special) {
 		if (special || fg >= 16 || bg >= 16 || fg == bg)
 			printf("   ");
@@ -558,10 +562,15 @@ static void cxl_command(const std::vector<lch> &lch_pal)
 			printf("%3.0f", sb.delta[bg][fg]);
 	});
 	cx_report(sb);
+} catch (int) {
 }
 
 static void cxa_command(const std::vector<srgb888> &pal)
 {
+	if (pal.size() < 16) {
+		fprintf(stderr, "cxl_compute: RGB palette must have 16 entries\n");
+		return;
+	}
 	printf("\e[1m════ APCA lightness contrast ════\e[0m\n");
 	auto sb = cxa_compute(pal);
 	colortable_16([&](int bg, int fg, int special) {
