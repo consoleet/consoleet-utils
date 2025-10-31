@@ -811,7 +811,7 @@ static char32_t nextutf8(FILE *fp)
 {
 	unsigned int nbyte = 0;
 	auto ret = fgetc(fp);
-	if (ret == EOF || ret == 0xFF)
+	if (ret == EOF || ret >= 0xFF)
 		return ~0U;
 	if (ret >= 0x00 && ret < 0xC0)
 		return ret;
@@ -825,7 +825,7 @@ static char32_t nextutf8(FILE *fp)
 	char32_t uc = ret & ~(~0U << (7 - nbyte));
 	for (unsigned int z = 1; z < nbyte; ++z) {
 		ret = fgetc(fp);
-		if (ret == EOF || ret == 0xFF || ((ret & 0xC0) != 0x80))
+		if (ret == EOF || ret >= 0xFF || ((ret & 0xC0) != 0x80))
 			return ~0U;
 		uc <<= 6;
 		uc |= static_cast<unsigned char>(ret & 0x3F);
@@ -841,7 +841,8 @@ static char32_t nextucs2(FILE *fp)
 	auto y = fgetc(fp);
 	if (y == EOF)
 		return ~0U;
-	x |= y << 8;
+	x = x & 0xff;
+	x |= (y & 0xff) << 8;
 	return x < 0xffff ? x : ~0U;
 }
 
