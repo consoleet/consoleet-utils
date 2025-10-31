@@ -397,8 +397,8 @@ void palstat::compute_sums(unsigned int xlim, unsigned int ylim, gvstat &gs)
 				gs.adj_sum += delta[y][x];
 		}
 	}
-	gs.avg = gs.sum / gs.pairs;
-	gs.adj_avg = gs.adj_sum / (gs.pairs - gs.penalized);
+	gs.avg = gs.pairs > 0 ? gs.sum / gs.pairs : 0;
+	gs.adj_avg = gs.pairs - gs.penalized > 0 ? gs.adj_sum / (gs.pairs - gs.penalized) : 0;
 }
 
 void palstat::compute_sums()
