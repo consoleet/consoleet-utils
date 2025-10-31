@@ -1588,7 +1588,11 @@ static void n2_angle(closed_path &poly, unsigned int sx, unsigned int sy)
 {
 	static const unsigned int M_HEAD = 0x20, M_TAIL = 0x02,
 		M_XHEAD = 0x10, M_XTAIL = 0x01;
+	std::vector<unsigned int> tdir(poly.size());
 	std::vector<unsigned int> flags(poly.size());
+
+	for (size_t i = 0; i < poly.size(); ++i)
+		tdir[i] = poly[i].trivial_dir();
 
 	/*
 	 * A sliding window of 7 edges (conceptually, 3 to the left, current
@@ -1610,10 +1614,8 @@ static void n2_angle(closed_path &poly, unsigned int sx, unsigned int sy)
 		auto xp1 = (xm3 + 4) % poly.size();
 		auto xp2 = (xm3 + 5) % poly.size();
 		auto xp3 = (xm3 + 6) % poly.size();
-		auto dm3 = poly[xm3].trivial_dir(), dm2 = poly[xm2].trivial_dir();
-		auto dm1 = poly[xm1].trivial_dir(), d00 = poly[x00].trivial_dir();
-		auto dp1 = poly[xp1].trivial_dir(), dp2 = poly[xp2].trivial_dir();
-		auto dp3 = poly[xp3].trivial_dir();
+		auto dm3 = tdir[xm3], dm2 = tdir[xm2], dm1 = tdir[xm1], d00 = tdir[x00];
+		auto dp1 = tdir[xp1], dp2 = tdir[xp2], dp3 = tdir[xp3];
 
 #if 0
 		printf("I%zu dm3:\e[32m%d\e[0m,dm2:\e[32m%d\e[0m,"
