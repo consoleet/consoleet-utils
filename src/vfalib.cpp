@@ -1038,7 +1038,7 @@ int font::save_clt_glyph(const char *dir, size_t idx, char32_t codepoint)
 	}
 	auto data = m_glyph[idx].as_pclt();
 	auto ret = fwrite(data.c_str(), data.size(), 1, fp.get());
-	if (ret < 0 || (data.size() > 0 && ret != 1)) {
+	if (data.size() > 0 && ret != 1) {
 		fprintf(stderr, "fwrite %s: %s\n", outpath.c_str(), strerror(-errno));
 		return -errno;
 	}
@@ -1105,7 +1105,7 @@ int font::save_pbm_glyph(const char *dir, size_t idx, char32_t codepoint)
 	}
 	auto data = m_glyph[idx].as_pbm();
 	auto ret = fwrite(data.c_str(), data.size(), 1, fp.get());
-	if (ret < 0 || (data.size() > 0 && ret != 1)) {
+	if (data.size() > 0 && ret != 1) {
 		fprintf(stderr, "fwrite %s: %s\n", outpath.c_str(), strerror(-errno));
 		return -errno;
 	}
