@@ -691,16 +691,16 @@ static int load_pcf_props(FILE *fp, std::map<std::string, std::string> &map)
 		return -EINVAL;
 	auto numprop = be ? be32_to_cpu(val) : le32_to_cpu(val);
 	auto tbl_offset = ftell(fp);
-	fseek(fp, numprop * 9, SEEK_CUR);
-	fseek(fp, 4 - (ftell(fp) & 3), SEEK_CUR);
-	if (fread(&val, 4, 1, fp) != 1)
+	if (fseek(fp, numprop * 9, SEEK_CUR) != 0 ||
+	    fseek(fp, 4 - (ftell(fp) & 3), SEEK_CUR) != 0 ||
+	    fread(&val, 4, 1, fp) != 1)
 		return -EINVAL;
 	val = std::min(UINT32_MAX, be ? be32_to_cpu(val) : le32_to_cpu(val));
 	std::string sblk;
 	sblk.resize(val);
-	if (fread(&sblk[0], sblk.size(), 1, fp) != 1)
+	if (fread(&sblk[0], sblk.size(), 1, fp) != 1 ||
+	    fseek(fp, tbl_offset, SEEK_SET) != 0)
 		return -EINVAL;
-	fseek(fp, tbl_offset, SEEK_SET);
 	for (unsigned int i = 0; i < numprop; ++i) {
 		if (fread(&val, 4, 1, fp) != 1)
 			return -EINVAL;
