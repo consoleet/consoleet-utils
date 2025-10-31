@@ -390,8 +390,8 @@ static bool vf_upscale(font &f, char **args)
 {
 	auto xf = strtol(args[0], nullptr, 0);
 	auto yf = strtol(args[1], nullptr, 0);
-	if (xf <= 0 || xf <= 0) {
-		fprintf(stderr, "Error: scaling factor(s) should be positive and not zero.\n");
+	if (xf <= 0 || yf <= 0) {
+		fprintf(stderr, "Error: scaling factor(s) should be positive and greater than zero.\n");
 		return false;
 	}
 	f.upscale(vfsize(xf, yf));
