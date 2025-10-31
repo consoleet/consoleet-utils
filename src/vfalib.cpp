@@ -1591,13 +1591,13 @@ static void n2_angle(closed_path &poly, unsigned int sx, unsigned int sy)
 	std::vector<unsigned int> flags(poly.size());
 
 	/*
-	 * It's a closed polygon and so it does not matter which edge
-	 * processing starts at. (xm3 = x minus 3, x00 = current edge, xp3 = x
-	 * plus 3, etc.)
+	 * A sliding window of 7 edges (conceptually, 3 to the left, current
+	 * edge, and 3 to right) is used. Since the input is a cyclic path, it
+	 * does not matter at which edge the processing starts at.
 	 *
-	 * In the loop, edges are marked with bitflags M_HEAD/M_TAIL to
-	 * indicate that a particular edge allows modification of the start or
-	 * end vertex (or both).
+	 * Edges are marked with bitflags M_HEAD/M_TAIL to indicate that a
+	 * particular edge qualifies for modification of the start or end
+	 * vertex (or both).
 	 *
 	 * M_XHEAD/M_XTAIL are used as veto flags. (We cannot just use e.g.
 	 * `flags[xm3] & ~M_XHEAD` in one iteration, because a subsequent
