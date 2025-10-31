@@ -9,31 +9,7 @@
 #include <vector>
 #include <cstdint>
 #include <cstdio>
-#include <endian.h>
-#if (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || \
-    (defined(_BYTE_ORDER) && _BYTE_ORDER == _BIG_ENDIAN)
-	/* We need to use constexpr functions, and htole16 unfortunately is not. */
-#	define cpu_to_le16(x) __builtin_bswap16(x)
-#	define cpu_to_le32(x) __builtin_bswap32(x)
-#	define cpu_to_le64(x) __builtin_bswap64(x)
-#	define cpu_to_be64(x) (x)
-#	define le16_to_cpu(x) __builtin_bswap16(x)
-#	define le32_to_cpu(x) __builtin_bswap32(x)
-#	define le64_to_cpu(x) __builtin_bswap64(x)
-#	define be32_to_cpu(x) (x)
-#	define be64_to_cpu(x) (x)
-#else
-#	define cpu_to_le16(x) (x)
-#	define cpu_to_le32(x) (x)
-#	define cpu_to_le64(x) (x)
-#	define cpu_to_be64(x) __builtin_bswap64(x)
-#	define le16_to_cpu(x) (x)
-#	define le32_to_cpu(x) (x)
-#	define le64_to_cpu(x) (x)
-#	define be32_to_cpu(x) __builtin_bswap32(x)
-#	define be64_to_cpu(x) __builtin_bswap64(x)
-#endif
-
+#include <libHX/endian.h>
 
 namespace vfalib {
 
