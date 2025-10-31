@@ -208,7 +208,12 @@ static hsl parse_hsl(const char *str)
 {
 	hsl c;
 	if (*str != '#') {
-		sscanf(str, "%lf,%lf,%lf", &c.h, &c.s, &c.l);
+		double h, s, l;
+		if (sscanf(str, "%lf,%lf,%lf", &h, &s, &l) != 3) {
+			fprintf(stderr, "Illegal HSL input: \"%s\"\n", str);
+			return c;
+		}
+		c = {h, s, l};
 		return c;
 	}
 	srgb888 r;
