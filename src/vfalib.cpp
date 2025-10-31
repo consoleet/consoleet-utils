@@ -1242,6 +1242,8 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 			auto b = strtoul(txt, &end, 0);
 			if (end == nullptr || end == txt || *end != '\0') {
 				fprintf(stderr, "ssf \"%s\" ignored: must adhere to form \"x/y\"\n", it->second.c_str());
+			} else if (a == 0 || b == 0) {
+				fprintf(stderr, "ssf \"%s\" ignored: factors must not be 0\n", it->second.c_str());
 			} else {
 				m_ssfx = 2 * a;
 				m_ssfy = 2 * b;
