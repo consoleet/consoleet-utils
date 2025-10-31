@@ -10,6 +10,7 @@
 #include <memory>
 #include <numeric>
 #include <set>
+#include <span>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -107,6 +108,18 @@ struct edge {
 	bool operator!=(const struct edge &a) const { return !operator==(a); }
 	unsigned int trivial_dir() const;
 	struct vertex start_vtx, end_vtx;
+};
+
+template<typename T> class window : public std::span<T> {
+	public:
+	template<typename... A> window(size_t ofs, A &&...args) :
+		std::span<T>(std::forward<A>(args)...), m_ofs(ofs)
+	{}
+	T &operator[](size_t x) { return this->span::operator[]((x + m_ofs) % this->size()); }
+	const T &operator[](size_t x) const { return this->span::operator[]((x + m_ofs) % this->size()); }
+
+	private:
+	size_t m_ofs = 0;
 };
 
 using loose_edge_set = std::set<edge>;
@@ -1607,68 +1620,62 @@ static void n2_angle(closed_path &poly, unsigned int sx, unsigned int sy)
 	 * `flags[xm3] & ~M_XHEAD` in one iteration, because a subsequent
 	 * iteration may set it again via e.g. `flags[xm2] |= M_HEAD`.)
 	 */
-	for (size_t xm3 = 0; xm3 < poly.size(); ++xm3) {
-		auto xm2 = (xm3 + 1) % poly.size();
-		auto xm1 = (xm3 + 2) % poly.size();
-		auto x00 = (xm3 + 3) % poly.size();
-		auto xp1 = (xm3 + 4) % poly.size();
-		auto xp2 = (xm3 + 5) % poly.size();
-		auto xp3 = (xm3 + 6) % poly.size();
-		auto dm3 = tdir[xm3], dm2 = tdir[xm2], dm1 = tdir[xm1], d00 = tdir[x00];
-		auto dp1 = tdir[xp1], dp2 = tdir[xp2], dp3 = tdir[xp3];
+	for (size_t edge_idx = 0; edge_idx < poly.size(); ++edge_idx) {
+		window<unsigned int> D(edge_idx, tdir);
+		window<unsigned int> f(edge_idx, flags);
 
 #if 0
-		printf("I%zu dm3:\e[32m%d\e[0m,dm2:\e[32m%d\e[0m,"
-			"dm1:\e[32m%d\e[0m,d:\e[32m%d\e[0m,dp1:\e[32m%d\e[0m,"
-			"dp2:\e[32m%d\e[0m,dp3:\e[32m%d\e[0m\n",
-			x00, dm3, dm2, dm1, d00, dp1, dp2, dp3);
+		printf("I%zu [-3]:\e[32m%d\e[0m,[-2]:\e[32m%d\e[0m,"
+			"[-1]:\e[32m%d\e[0m,[0]:\e[32m%d\e[0m,[1]:\e[32m%d\e[0m,"
+			"[2]:\e[32m%d\e[0m,[3]:\e[32m%d\e[0m\n",
+			x00, D[-3], D[-2], D[-1], D[0], D[1], D[2], D[3]);
 #endif
 
-		if (d00 == dm2 && d00 == dp2) {
+		if (D[0] == D[-2] && D[0] == D[2]) {
 			/* _|~|_ or ~|_|~ pattern seen */
-			if ((dm3 == d00 || dm3 == dp1) &&
-			    (dp3 == d00 || dp3 == dm1) &&
-			    dm1 == (dm2 + 270) % 360 && dp1 == (dm2 + 90) % 360) {
+			if ((D[-3] == D[0] || D[-3] == D[1]) &&
+			    (D[3] == D[0] || D[3] == D[-1]) &&
+			    D[-1] == (D[-2] + 270) % 360 && D[1] == (D[-2] + 90) % 360) {
 				/* pimple __|~|__ ('f', '4'), retain */
-				flags[xm2] |= M_XTAIL;
-				flags[xm1]  = M_XHEAD | M_XTAIL;
-				flags[x00]  = M_XHEAD | M_XTAIL;
-				flags[xp1]  = M_XHEAD | M_XTAIL;
-				flags[xp2] |= M_XHEAD;
+				f[-2] |= M_XTAIL;
+				f[-1]  = M_XHEAD | M_XTAIL;
+				f[0]   = M_XHEAD | M_XTAIL;
+				f[1]   = M_XHEAD | M_XTAIL;
+				f[2]  |= M_XHEAD;
 				continue;
 			}
 
-			if (dm1 == (dm2 + 90) % 360 && dp1 == (dm2 + 270) % 360) {
+			if (D[-1] == (D[-2] + 90) % 360 && D[1] == (D[-2] + 270) % 360) {
 				/* dimple ~~|_|~~ ('8'), sink it */
-				if (dm3 == dm2) {
+				if (D[-3] == D[-2]) {
 					/* with left-side flat zone */
-					flags[xm2] |= M_TAIL;
-					flags[xm1]  = M_HEAD | M_TAIL;
-					flags[x00] |= M_HEAD;
+					f[-2] |= M_TAIL;
+					f[-1]  = M_HEAD | M_TAIL;
+					f[0]  |= M_HEAD;
 				}
-				if (dp3 == dp2) {
+				if (D[3] == D[2]) {
 					/* with right-side flat zone */
-					flags[x00] |= M_TAIL;
-					flags[xp1]  = M_HEAD | M_TAIL;
-					flags[xp2] |= M_HEAD;
+					f[0] |= M_TAIL;
+					f[1]  = M_HEAD | M_TAIL;
+					f[2] |= M_HEAD;
 				}
 				continue;
 			}
 		}
 
 		/* Test for chicane */
-		if (dm1 != dp1)
+		if (D[-1] != D[1])
 			continue;
-		if ((d00 + 270) % 360 != dp1 && (d00 + 90) % 360 != dp1)
+		if ((D[0] + 270) % 360 != D[1] && (D[0] + 90) % 360 != D[1])
 			continue;
 
 		/* #5: serif (ramp), topleft of ibmvga916 'E' */
-		if (dm2 == dm1 && d00 == (dm1 + 270) % 360 &&
-		    dp1 == dm1 && dp2 == (dm1 + 90) % 360 && dp3 == dp2)
+		if (D[-2] == D[-1] && D[0] == (D[-1] + 270) % 360 &&
+		    D[1] == D[-1] && D[2] == (D[-1] + 90) % 360 && D[3] == D[2])
 			continue;
 		/* bottomleft of ibmvga916 'E' */
-		if (dm3 == dm2 && dm1 == (dm2 + 90) % 360 &&
-		    d00 == (dm2 + 180) % 360 && dp1 == dm1 && dp2 == dp1)
+		if (D[-3] == D[-2] && D[-1] == (D[-2] + 90) % 360 &&
+		    D[0] == (D[-2] + 180) % 360 && D[1] == D[-1] && D[2] == D[1])
 			continue;
 
 		/*
@@ -1677,17 +1684,17 @@ static void n2_angle(closed_path &poly, unsigned int sx, unsigned int sy)
 		 * #3: stairs midpart,
 		 * #4: top of stairs (implies no sump)
 		 */
-		flags[xm1] |= M_TAIL;
-		flags[x00]  = M_HEAD | M_TAIL;
-		flags[xp1] |= M_HEAD;
+		f[-1] |= M_TAIL;
+		f[0]   = M_HEAD | M_TAIL;
+		f[1]  |= M_HEAD;
 
-		if (dp2 == d00) {
-			flags[xp1] |= M_TAIL;
-			flags[xp2] |= M_HEAD;
+		if (D[2] == D[0]) {
+			f[1] |= M_TAIL;
+			f[2] |= M_HEAD;
 		}
-		if (dm2 == d00) {
-			flags[xm2] |= M_TAIL;
-			flags[xm1] |= M_HEAD;
+		if (D[-2] == D[0]) {
+			f[-2] |= M_TAIL;
+			f[-1] |= M_HEAD;
 		}
 	}
 
