@@ -1547,9 +1547,9 @@ std::vector<closed_path> vectorizer::n1()
 {
 	auto &g = m_glyph;
 	const auto &sz = g.m_size;
-	for (unsigned int uy = 0; uy < sz.h; ++uy) {
-		int y = sz.h - 1 - static_cast<int>(uy) - m_descent;
-		for (unsigned int ux = 0; ux < sz.w; ++ux) {
+	for (int uy = 0; uy < static_cast<int>(sz.h); ++uy) {
+		int y = sz.h - 1 - uy - m_descent;
+		for (int ux = 0; ux < static_cast<int>(sz.w); ++ux) {
 			bitpos ipos = uy * sz.w + ux;
 			int x = ux;
 
