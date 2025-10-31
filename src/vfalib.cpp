@@ -695,7 +695,7 @@ static int load_pcf_props(FILE *fp, std::map<std::string, std::string> &map)
 	fseek(fp, 4 - (ftell(fp) & 3), SEEK_CUR);
 	if (fread(&val, 4, 1, fp) != 1)
 		return -EINVAL;
-	val = be ? be32_to_cpu(val) : le32_to_cpu(val);
+	val = std::min(UINT32_MAX, be ? be32_to_cpu(val) : le32_to_cpu(val));
 	std::string sblk;
 	sblk.resize(val);
 	if (fread(&sblk[0], sblk.size(), 1, fp) != 1)
@@ -740,21 +740,23 @@ static int load_pcf_bitmaps(FILE *fp)
 	    fread(&bmpsize[0], 4, glypadopts, fp) != glypadopts)
 		return -EINVAL;
 	for (unsigned int i = 0; i < numbitmaps; ++i) {
-		offsets[i] = be ? be32_to_cpu(offsets[i]) : le32_to_cpu(offsets[i]);
+		offsets[i] = std::min(UINT32_MAX, be ? be32_to_cpu(offsets[i]) : le32_to_cpu(offsets[i]));
 		printf("bmp %u offset %u\n",
 			i, offsets[i]);
 	}
 	for (unsigned int i = 0; i < glypadopts; ++i) {
-		bmpsize[i] = be ? be32_to_cpu(bmpsize[i]) : le32_to_cpu(bmpsize[i]);
+		bmpsize[i] = std::min(UINT32_MAX, be ? be32_to_cpu(bmpsize[i]) : le32_to_cpu(bmpsize[i]));
 		printf("padopt %u size %u\n", i, bmpsize[i]);
 	}
 	std::string bmapbuf;
-	#define PCF_GLYPH_PAD_INDEX(f) ((f) & PCF_GLYPH_PAD_MASK)
+#define PCF_GLYPH_PAD_INDEX(f) ((f) & PCF_GLYPH_PAD_MASK)
+	printf("format %u\n", PCF_GLYPH_PAD_INDEX(fmt));
 	bmapbuf.resize(bmpsize[PCF_GLYPH_PAD_INDEX(fmt)]);
 	fprintf(stderr, "buf %zu\n", bmapbuf.size());
 	if (fread(&bmapbuf[0], bmapbuf.size(), 1, fp) != 1)
 		return -EINVAL;
 	return 0;
+#undef PCF_GLYPH_PAD_INDEX
 }
 
 int font::load_pcf(const char *filename)
