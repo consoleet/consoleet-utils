@@ -10,7 +10,7 @@ regular_CPPFLAGS="-D_FILE_OFFSET_BITS=64 -D_REENTRANT"
 regular_CFLAGS="-Wall -Waggregate-return -Wmissing-declarations \
 	-Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes \
 	-Winline -pipe -std=gnu11"
-regular_CXXFLAGS="-Wall -Wno-pointer-arith -Wshadow -pipe -std=gnu++17"
+regular_CXXFLAGS="-Wall -Wno-pointer-arith -Wshadow -pipe -std=gnu++20"
 AC_SUBST([regular_CPPFLAGS])
 AC_SUBST([regular_CFLAGS])
 AC_SUBST([regular_CXXFLAGS])

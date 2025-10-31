@@ -1008,7 +1008,7 @@ int font::save_clt(const char *dir)
 int font::save_clt_glyph(const char *dir, size_t idx, char32_t codepoint)
 {
 	std::stringstream ss;
-	ss << dir << "/" << std::setfill('0') << std::setw(4) << std::hex << codepoint << ".txt";
+	ss << dir << "/" << std::setfill('0') << std::setw(4) << std::hex << static_cast<unsigned>(codepoint) << ".txt";
 	auto outpath = ss.str();
 	std::unique_ptr<FILE, deleter> fp(vfopen(outpath.c_str(), "w"));
 	if (fp == nullptr) {
@@ -1075,7 +1075,7 @@ int font::save_pbm(const char *dir)
 int font::save_pbm_glyph(const char *dir, size_t idx, char32_t codepoint)
 {
 	std::stringstream ss;
-	ss << dir << "/" << std::setfill('0') << std::setw(4) << std::hex << codepoint << ".pbm";
+	ss << dir << "/" << std::setfill('0') << std::setw(4) << std::hex << static_cast<unsigned>(codepoint) << ".pbm";
 	auto outpath = ss.str();
 	std::unique_ptr<FILE, deleter> fp(::fopen(outpath.c_str(), "w"));
 	if (fp == nullptr) {
