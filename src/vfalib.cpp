@@ -691,6 +691,8 @@ static int load_pcf_props(FILE *fp, std::map<std::string, std::string> &map)
 		return -EINVAL;
 	auto numprop = be ? be32_to_cpu(val) : le32_to_cpu(val);
 	auto tbl_offset = ftell(fp);
+	if (tbl_offset < 0)
+		return -EINVAL;
 	if (fseek(fp, numprop * 9, SEEK_CUR) != 0 ||
 	    fseek(fp, 4 - (ftell(fp) & 3), SEEK_CUR) != 0 ||
 	    fread(&val, 4, 1, fp) != 1)
