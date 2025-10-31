@@ -864,6 +864,7 @@ int font::load_psf(const char *file)
 	struct psf2_header hdr{};
 	switch (psf_version(fp.get())) {
 	case 0:
+		fprintf(stderr, "%s: unrecognized format\n", file);
 		return -EINVAL;
 	case 1: {
 		auto mode = fgetc(fp.get()), charsize = fgetc(fp.get());
@@ -895,6 +896,11 @@ int font::load_psf(const char *file)
 	}
 	}
 
+	if (hdr.charsize != (hdr.width + 7) / 8 * hdr.height) {
+		fprintf(stderr, "width=%u height=%u charsize=%u: awfully big PSF charsize!\n",
+			hdr.width, hdr.height, hdr.charsize);
+		return 0;
+	}
 	std::unique_ptr<char[]> buf(new char[hdr.charsize]);
 	size_t glyph_start = m_glyph.size();
 	for (size_t idx = 0; idx < hdr.length; ++idx) {
