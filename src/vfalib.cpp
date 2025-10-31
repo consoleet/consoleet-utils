@@ -1233,12 +1233,15 @@ int font::save_sfd(const char *file, enum vectoalg vt)
 	if (it != props.end()) {
 		char *end = nullptr;
 		auto a = strtoul(it->second.c_str(), &end, 0);
-		if (end == nullptr || end[0] != '/') {
-			fprintf(stderr, "What garbage is \"%s\"? Ignored -setprop request.\n", it->second.c_str());
-		} else if (end[0] == '/') {
-			auto b = strtoul(end + 1, nullptr, 0);
-			if (b == 0) {
-				fprintf(stderr, "What garbage is \"%s\"? Ignored -setprop request.\n", it->second.c_str());
+		if (end == nullptr) {
+			fprintf(stderr, "ssf \"%s\" ignored: something broke\n", it->second.c_str());
+		} else if (end == it->second.c_str() || *end != '/') {
+			fprintf(stderr, "ssf \"%s\" ignored: must adhere to form \"x/y\"\n", it->second.c_str());
+		} else {
+			auto txt = end + 1;
+			auto b = strtoul(txt, &end, 0);
+			if (end == nullptr || end == txt || *end != '\0') {
+				fprintf(stderr, "ssf \"%s\" ignored: must adhere to form \"x/y\"\n", it->second.c_str());
 			} else {
 				m_ssfx = 2 * a;
 				m_ssfy = 2 * b;
