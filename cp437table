@@ -2,7 +2,12 @@
 # SPDX-License-Identifier: MIT
 # print the cp437 character table (used for font testing)
 
+use Getopt::Long;
 use strict;
+use warnings;
+my $terse = 0;
+&Getopt::Long::Configure(qw(bundling));
+&GetOptions("q" => \$terse);
 my $dir = $0;
 if ($dir !~ s{^(.*)/.*}{$1}) {
 	$dir = ".";
@@ -18,9 +23,36 @@ while (<FH>) {
 close FH;
 $map[0] = ' ';
 binmode(STDOUT, ":utf8");
-for (my $y = 0; $y < 8; ++$y) {
-	for (my $x = 0; $x < 32; ++$x) {
-		print $map[$y*32+$x];
+if ($terse) {
+	exit(&terse_table());
+}
+exit(&nice_table());
+
+sub terse_table
+{
+	for (my $y = 0; $y < 8; ++$y) {
+		for (my $x = 0; $x < 32; ++$x) {
+			print $map[$y*32+$x];
+		}
+		print "\n";
 	}
-	print "\n";
+	return 0;
+}
+
+sub nice_table
+{
+	my $hexkeys = "0123456789ABCDEF";
+	print "\e[7m    ";
+	for (my $x = 0; $x < 16; ++$x) {
+		print " ", substr($hexkeys, $x, 1), " ";
+	}
+	print "\e[0m\n";
+	for (my $y = 0; $y < 16; ++$y) {
+		print "\e[7m ", substr($hexkeys, $y, 1), " \e[0m ";
+		for (my $x = 0; $x < 16; ++$x) {
+			print " ", $map[$y*16+$x], " ";
+		}
+		print "\n";
+	}
+	return 0;
 }
