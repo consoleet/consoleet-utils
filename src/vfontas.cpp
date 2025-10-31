@@ -17,7 +17,6 @@
 #include <sys/stat.h>
 #include <libHX/defs.h>
 #include <libHX/io.h>
-#include <libHX/option.h>
 #include <libHX/string.h>
 #include "vfalib.hpp"
 #define MMAP_NONE reinterpret_cast<void *>(-1)
@@ -620,23 +619,13 @@ static const struct vf_command {
 	{"xlat", 2, vf_xlat},
 };
 
-static constexpr HXoption g_options_table[] = {
-	HXOPT_TABLEEND,
-};
-
 int main(int argc, char **argv)
 {
-	HXopt6_auto_result argp;
-	if (HX_getopt6(g_options_table, argc, argv, &argp,
-	    HXOPT_USAGEONERR | HXOPT_RQ_ORDER | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
-	if (argp.nargs == 0) {
-		fprintf(stderr, "You should specify some commlist.\n");
-		return EXIT_FAILURE;
-	}
 	font f;
-	argc = argp.nargs;
-	argv = argp.uarg;
+	if (argc > 0) {
+		--argc;
+		++argv;
+	}
 	while (argc > 0) {
 		if (argv[0][0] == '-')
 			++argv[0];
