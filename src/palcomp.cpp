@@ -933,6 +933,9 @@ static int do_eval(const char *cmd, mpalette &mpal,
 		}
 	}
 	return 0;
+} catch (const std::bad_variant_access &e) {
+	fprintf(stderr, "%s\n", e.what());
+	return -1;
 } catch (const char *e) {
 	fprintf(stderr, "%s\n", e);
 	return -1;
