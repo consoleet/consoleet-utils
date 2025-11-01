@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -409,7 +410,7 @@ static void vf_extract_sfh(const char *sfhblk, unsigned int num_fonts,
 	for (unsigned int i = 0; i < num_fonts; ++i) {
 		struct cpi_screenfont_header sfh;
 		memcpy(&sfh, sfhblk, sizeof(sfh));
-		sfh.num_chars = le16_to_cpu(sfh.num_chars);
+		sfh.num_chars = std::min(le16_to_cpu(sfh.num_chars), static_cast<uint16_t>(UINT16_MAX));
 		printf("SFH: %ux%u pixels x %u chars\n", sfh.width, sfh.height,
 		       sfh.num_chars);
 		if (sfh.width == 0 || sfh.height == 0 || sfh.num_chars == 0)
@@ -469,7 +470,7 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 		return -EINVAL;
 
 	memcpy(&fih, vdata + ffh.fih_offset, sizeof(fih));
-	fih.num_codepages = le16_to_cpu(fih.num_codepages);
+	fih.num_codepages = std::min(le16_to_cpu(fih.num_codepages), static_cast<uint16_t>(UINT16_MAX));
 
 	const char *cpeblk = vdata + ffh.fih_offset + sizeof(fih);
 	for (unsigned int i = 0; i < fih.num_codepages; ++i) {

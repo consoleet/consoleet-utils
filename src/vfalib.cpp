@@ -689,7 +689,7 @@ static int load_pcf_props(FILE *fp, std::map<std::string, std::string> &map)
 	bool be = val & PCF_BYTE_MASK;
 	if (fread(&val, 4, 1, fp) != 1)
 		return -EINVAL;
-	auto numprop = be ? be32_to_cpu(val) : le32_to_cpu(val);
+	auto numprop = std::min(be ? be32_to_cpu(val) : le32_to_cpu(val), static_cast<uint32_t>(UINT32_MAX));
 	auto tbl_offset = ftell(fp);
 	if (tbl_offset < 0)
 		return -EINVAL;
