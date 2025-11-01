@@ -1449,6 +1449,9 @@ loose_edge_set::iterator vectorizer::next_edge(unsigned int cur_dir,
 	 *   ....####
 	 *
 	 * Right now, we are only testing for A1+A2. Might be enough...?
+	 *
+	 * Not good enough. If we do not consistently return `outward`, this
+	 * routine produces funny patterns with cp437 point 0xb1 (U+2592).
 	 */
 	vertex bmp;
 	if (cur_dir == 0)
