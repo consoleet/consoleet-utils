@@ -899,7 +899,7 @@ int font::load_psf(const char *file)
 		hdr.flags      = le32_to_cpu(hdr.flags);
 		hdr.length     = le32_to_cpu(hdr.length);
 		hdr.charsize   = le32_to_cpu(hdr.charsize);
-		hdr.height     = le32_to_cpu(hdr.height);
+		hdr.height     = std::min(le32_to_cpu(hdr.height), static_cast<uint32_t>(UINT32_MAX));
 		hdr.width      = le32_to_cpu(hdr.width);
 		break;
 	}
@@ -1491,7 +1491,6 @@ loose_edge_set::iterator vectorizer::next_edge(unsigned int cur_dir,
 		return inward;
 	if (cur_dir == 270 && testbit_c(m_glyph, bmp.x - 2, bmp.y + 1) && testbit_c(m_glyph, bmp.x - 1, bmp.y + 2))
 		return inward;
-
 	return outward;
 }
 

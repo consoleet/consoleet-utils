@@ -505,7 +505,7 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 			return -EINVAL;
 		memcpy(&cpih, vdata + cpeh.cpih_offset, sizeof(cpih));
 		cpih.version   = le16_to_cpu(cpih.version);
-		cpih.num_fonts = le16_to_cpu(cpih.num_fonts);
+		cpih.num_fonts = std::min(le16_to_cpu(cpih.num_fonts), static_cast<uint16_t>(UINT16_MAX));
 		cpih.size      = le16_to_cpu(cpih.size);
 		printf("CPIH: version=%u fonts=%u size=%u\n", cpih.version,
 		       cpih.num_fonts, cpih.size);
