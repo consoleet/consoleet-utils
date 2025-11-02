@@ -1,3 +1,10 @@
+1.11 (2025-11-02)
+=================
+
+* vfontas had failed to recognize commands with a leading dash,
+  which was fixed
+
+
 1.10 (2025-10-11)
 =================
 
