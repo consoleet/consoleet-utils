@@ -255,6 +255,15 @@ static bool vf_loadpsf(font &f, char **args)
 	return false;
 }
 
+static bool vf_loadvfnt(font &f, char **args)
+{
+	auto ret = f.load_vfnt(args[0]);
+	if (ret >= 0)
+		return true;
+	fprintf(stderr, "Error loading %s: %s\n", args[0], strerror(-ret));
+	return false;
+}
+
 static bool vf_move(font &f, char **args)
 {
 	auto x = strtol(args[0], nullptr, 0);
@@ -599,6 +608,7 @@ static const struct vf_command {
 	{"loadpcf", 1, vf_loadpcf},
 	{"loadpsf", 1, vf_loadpsf},
 	{"loadraw", 3, vf_loadraw},
+	{"loadvfnt", 1, vf_loadvfnt},
 	{"move", 2, vf_move},
 	{"overstrike", 1, vf_overstrike},
 	{"savebdf", 1, vf_savebdf},

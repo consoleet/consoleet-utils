@@ -932,6 +932,51 @@ int font::load_psf(const char *file)
 	return 0;
 }
 
+int font::load_vfnt(const char *file)
+{
+	struct vfnt_header {
+		uint8_t magic[8], width, height;
+		uint16_t padding;
+		uint32_t numglyphs, nummaps[4];
+	};
+	struct map_entry {
+		uint32_t src;
+		uint16_t dst, len;
+	};
+
+	std::unique_ptr<FILE, deleter> fp(vfopen(file, "rb"));
+	if (fp == nullptr)
+		return -errno;
+
+	struct vfnt_header hdr{};
+	if (fread(&hdr, sizeof(hdr), 1, fp.get()) != 1)
+		return -EINVAL;
+	hdr.numglyphs = be32_to_cpu(hdr.numglyphs);
+	for (auto &e : hdr.nummaps)
+		e = be32_to_cpu(e);
+	auto charsize = (hdr.width + 7) / 8 * hdr.height;
+	std::unique_ptr<char[]> buf(new char[charsize]);
+	for (size_t idx = 0; idx < hdr.numglyphs; ++idx) {
+		if (fread(buf.get(), charsize, 1, fp.get()) != 1)
+			break;
+		m_glyph.push_back(glyph::create_from_rpad(vfsize(hdr.width, hdr.height), buf.get(), charsize));
+	}
+	m_unicode_map = std::make_shared<unicode_map>();
+	for (unsigned int m = 0; m < std::size(hdr.nummaps); ++m) {
+		for (size_t i = 0; i < hdr.nummaps[m]; ++i) {
+			map_entry fm;
+			if (fread(&fm, sizeof(fm), 1, fp.get()) != 1)
+				return -EINVAL;
+			fm.src = be32_to_cpu(fm.src);
+			fm.dst = be16_to_cpu(fm.dst);
+			fm.len = be16_to_cpu(fm.len);
+			for (unsigned int idx = 0; idx <= fm.len; ++idx)
+				m_unicode_map->add_i2u(fm.dst + idx, fm.src + idx);
+		}
+	}
+	return 0;
+}
+
 int font::save_bdf(const char *file)
 {
 	std::unique_ptr<FILE, deleter> filep(vfopen(file, "w"));

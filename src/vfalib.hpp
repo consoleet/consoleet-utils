@@ -83,6 +83,7 @@ class font {
 	int load_hex(const char *file);
 	int load_pcf(const char *file);
 	int load_psf(const char *file);
+	int load_vfnt(const char *file);
 	int save_bdf(const char *file);
 	int save_fnt(const char *file);
 	int save_map(const char *file);
