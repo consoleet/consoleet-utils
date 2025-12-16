@@ -137,9 +137,13 @@ Emit the palette as xterm command line options. Use e.g. `xterm $(palcomp
 vga h=120 xterm)` to utilize.
 .SH Examples
 .PP
-Amber tint via LCh color space:
+Single-hue single-chromatic amber tint:
 .IP \(bu 4
 palcomp vgs lchtint=#ef951d fg b0 emit
+.PP
+Multi-hue multi-chromatic amber tint (hue spectrum compression):
+.IP \(bu 4
+palcomp vgs eval='h=45+40*l/100,c=38+c/2' fg b0 emit
 .PP
 Black-to-green ramp (tint via HSL color space):
 .IP \(bu 4
