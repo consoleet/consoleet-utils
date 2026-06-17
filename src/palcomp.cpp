@@ -273,6 +273,23 @@ static void emit_xfce(const std::vector<srgb888> &pal)
 	printf("\n");
 }
 
+static void emit_kmscon(const std::vector<srgb888> &pal)
+{
+	static constexpr const char names[16][16] = {
+		"black", "red", "green", "yellow", "blue", "magenta", "cyan",
+		"light-grey", "dark-grey", "light-red", "light-green",
+		"light-yellow", "light-blue", "light-magenta", "light-cyan",
+		"white",
+	};
+	printf("palette=custom\n");
+	for (unsigned int idx = 0; idx < 11; ++idx)
+		printf("palette-%s=%u,%u,%u\n", names[idx], pal[idx].r, pal[idx].g, pal[idx].b);
+	if (xterm_fg)
+		printf("palette-foreground=%u,%u,%u\n", pal[7].r, pal[7].g, pal[7].b);
+	if (xterm_bg)
+		printf("palette-background=%u,%u,%u\n", pal[0].r, pal[0].g, pal[0].b);
+}
+
 void mpalette::mod_la() { ra = to_srgb888(la); }
 void mpalette::mod_ra() { la = to_lch(ra); }
 
@@ -1089,6 +1106,8 @@ int main(int argc, char **argv)
 			mod_la = true;
 		} else if (strcmp(le_arg, "emit") == 0 || strcmp(le_arg, "xfce") == 0) {
 			emit_xfce(mpal.ra);
+		} else if (strcmp(le_arg, "kmscon") == 0) {
+			emit_kmscon(mpal.ra);
 		} else if (strcmp(le_arg, "xterm") == 0) {
 			emit_xterm(mpal.ra);
 		} else if (strcmp(le_arg, "fg") == 0) {
