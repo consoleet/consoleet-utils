@@ -513,7 +513,8 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 		       static_cast<int>(std::size(cpeh.device_name)),
 		       cpeh.device_name, cpeh.device_type);
 
-		if (cpeh.next_cpeh_offset + sizeof(cpeh) >= vsize) {
+		if (i + 1 < fih.num_codepages &&
+		    cpeh.next_cpeh_offset + sizeof(cpeh) >= vsize) {
 			fprintf(stderr, "xcpi: codepage #%u's declaration of the next CPE header offset (%u) is at/past EOF\n",
 				i, cpeh.next_cpeh_offset);
 			return -EINVAL;
