@@ -486,12 +486,17 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 		struct cpi_cpentry_header cpeh;
 		struct cpi_cpinfo_header cpih;
 
-		if (cpeblk - vdata + sizeof(cpeh) >= vsize)
+		if (cpeblk - vdata + sizeof(cpeh) >= vsize) {
+			fprintf(stderr, "xcpi: codepage #%u is beyond EOF\n", i);
 			return -EINVAL;
+		}
 		memcpy(&cpeh, cpeblk, sizeof(cpeh));
 		cpeh.cpeh_size        = le16_to_cpu(cpeh.cpeh_size);
-		if (cpeh.cpeh_size != sizeof(cpeh))
+		if (cpeh.cpeh_size != sizeof(cpeh)) {
+			fprintf(stderr, "xcpi: codepage #%u declares an unsupported header size of %u\n",
+				i, cpeh.cpeh_size);
 			return -EINVAL;
+		}
 		cpeh.next_cpeh_offset = seg_mode ?
 		                        xlate_segoff(le32_to_cpu(cpeh.next_cpeh_offset)) :
 		                        le32_to_cpu(cpeh.next_cpeh_offset);
@@ -508,10 +513,15 @@ static int vf_extract_cpi2(const char *vdata, size_t vsize,
 		       static_cast<int>(std::size(cpeh.device_name)),
 		       cpeh.device_name, cpeh.device_type);
 
-		if (cpeh.next_cpeh_offset + sizeof(cpeh) >= vsize)
+		if (cpeh.next_cpeh_offset + sizeof(cpeh) >= vsize) {
+			fprintf(stderr, "xcpi: codepage #%u's declaration of the next CPE header offset (%u) is at/past EOF\n",
+				i, cpeh.next_cpeh_offset);
 			return -EINVAL;
-		if (cpeh.cpih_offset + sizeof(cpih) >= vsize)
+		} else if (cpeh.cpih_offset + sizeof(cpih) >= vsize) {
+			fprintf(stderr, "xcpi: codepage #%u's declaration of the CPIH offset (%u) is at/past EOF\n",
+				i, cpeh.cpih_offset);
 			return -EINVAL;
+		}
 		memcpy(&cpih, vdata + cpeh.cpih_offset, sizeof(cpih));
 		cpih.version   = le16_to_cpu(cpih.version);
 		cpih.num_fonts = std::min(le16_to_cpu(cpih.num_fonts), static_cast<uint16_t>(UINT16_MAX));
